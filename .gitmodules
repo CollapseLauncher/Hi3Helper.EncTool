@@ -4,3 +4,6 @@
 [submodule "UABT"]
 	path = UABT
 	url = https://github.com/neon-nyan/UABT
+[submodule "CacheStream"]
+	path = CacheStream
+	url = https://github.com/neon-nyan/CacheStream
