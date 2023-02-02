@@ -23,13 +23,21 @@ namespace Hi3Helper.EncTool
             if (!xmf.Exists) return false;
             if (versionBytes.Length != XMFParser._versioningLength) return false;
 
-            using (EndianBinaryReader reader = new EndianBinaryReader(xmf.OpenRead(), EndianType.LittleEndian))
+            try
             {
-                reader.Position = XMFParser._signatureLength;
-                ReadOnlySpan<int> versionXMF = XMFParser.ReadVersion(reader);
+                using (EndianBinaryReader reader = new EndianBinaryReader(xmf.OpenRead(), EndianType.LittleEndian))
+                {
+                    reader.Position = XMFParser._signatureLength;
+                    ReadOnlySpan<int> versionXMF = XMFParser.ReadVersion(reader);
 
-                return versionXMF[0] == versionBytes[0] && versionXMF[1] == versionBytes[1]
-                    && versionXMF[2] == versionBytes[2] && versionXMF[3] == versionBytes[3];
+                    return versionXMF[0] == versionBytes[0] && versionXMF[1] == versionBytes[1]
+                        && versionXMF[2] == versionBytes[2] && versionXMF[3] == versionBytes[3];
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"error while reading XMF file!\r\n{e}");
+                return false;
             }
         }
     }
