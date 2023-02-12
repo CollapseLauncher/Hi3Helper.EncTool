@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package Hi3Helper.EncTool.Proto.StarRail;
+
+message StarRailGateway {
+    uint32 UNK1                   = 11;
+    uint32 UNK2                   = 15;
+    uint32 UNK3                   = 793;
+
+    string RepoDesignDataURL      = 1;
+    string RepoAsbURL             = 3;
+    string RepoLuaURL             = 6;
+    string RepoHotfixURL          = 554;
+
+    string ReportReplayURL        = 639;
+    string ReportReplayUploadURL  = 721;
+
+    string ProtoServerIP          = 8;
+    uint32 ProtoServerPort        = 10;
+    string ProtoServerName        = 12;
+    string ProtoServerKey         = 879;
+
+    string FeedbackURL            = 1051;
+
+    string SessionID              = 1210;
+    string SessionMessage         = 1259;
+    string SessionReturn          = 1317;
+}

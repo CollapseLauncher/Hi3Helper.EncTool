@@ -25,4 +25,8 @@
 	  <None Remove="UABT\.gitignore" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="Google.Protobuf" Version="3.21.12" />
+	</ItemGroup>
+
 </Project>

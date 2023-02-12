@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package Hi3Helper.EncTool.Proto.Genshin;
+
+message GenshinGateway {
+    Properties  GatewayProperties     = 3;
+
+    bytes       ServerProtoPrivKey1   = 11;
+    bytes       ServerProtoPrivKey2   = 12;
+
+    message Properties {
+        string      ServerName                  = 7;
+        
+        string      ServerOAURL                 = 3;
+        string      ServerServiceCenterURL      = 10;
+        string      ServerLoginURL              = 31;
+        string      ServerCDKeyURL              = 32;
+        string      ServerAgreementURL          = 33;
+
+        string      ServerProtoIP               = 1;
+        uint32      ServerProtoPort             = 2;
+        string      ServerProtoVersion          = 12;
+        bytes       ServerProtoPubKey           = 23;
+
+        string      RepoResVersionURL           = 8;
+        ResVersion  RepoResVersionProperties    = 22;
+
+        string      RepoDesignDataURL           = 9;
+        uint32      RepoDesignDataNumber        = 14;
+        string      RepoDesignDataJSON          = 19;
+        string      RepoDesignDataHash          = 26;
+        uint32      RepoDesignDataSilenceNumber = 18;
+        string      RepoDesignDataSilenceJSON   = 20;
+        string      RepoDesignDataSilenceHash   = 27;
+
+        string      EventVersionPreviewURL      = 16;
+        string      EventFrontURL               = 24;
+
+        string      GameCodename                = 36;
+
+        message ResVersion {
+            uint32    ResVersionNumber      = 1;
+            string    ResVersionMapJSON     = 3;
+            string    ResVersionMinVersion  = 4;
+            string    ResVersionHash        = 5;
+            string    ResVersion            = 6;
+        }
+    }
+}
