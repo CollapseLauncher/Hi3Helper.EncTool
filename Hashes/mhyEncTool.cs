@@ -61,9 +61,29 @@ namespace Hi3Helper.EncTool
 
         public void DecryptStringWithMasterKey(ref string a)
         {
+            if (a == null)
+            {
+                return;
+            }
+
             a = Encoding.UTF8.GetString(this._f8j51(a));
             byte[] buffer = DecryptRSAContent(this._MasterKeyRSA, a, this._MasterKeyBitLength, this._MasterKeyPadding);
             a = Encoding.UTF8.GetString(buffer);
+        }
+
+        public void DecryptStringWithMasterKey(ref string[] a)
+        {
+            if (a == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < a.Length; i++)
+            {
+                a[i] = Encoding.UTF8.GetString(this._f8j51(a[i]));
+                byte[] buffer = DecryptRSAContent(this._MasterKeyRSA, a[i], this._MasterKeyBitLength, this._MasterKeyPadding);
+                a[i] = Encoding.UTF8.GetString(buffer);
+            }
         }
 
         public byte[] GetSalt()
