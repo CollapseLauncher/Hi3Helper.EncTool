@@ -148,8 +148,7 @@ namespace Hi3Helper.EncTool.KianaManifest
             // Read data
             string name = reader.ReadString();
             string path = reader.ReadString();
-            long hash1 = reader.ReadInt64();
-            long hash2 = reader.ReadInt64();
+            byte[] hash = reader.ReadBytes(16);
             int size = reader.ReadInt32();
             AssetLanguage language = (AssetLanguage)reader.ReadInt32();
             int pcktype = reader.ReadInt32();
@@ -165,8 +164,7 @@ namespace Hi3Helper.EncTool.KianaManifest
             {
                 Name = name,
                 Path = path,
-                Hash1 = hash1,
-                Hash2 = hash2,
+                Hash = hash,
                 Size = size,
                 Language = language,
                 PckType = pcktype,

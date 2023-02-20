@@ -19,7 +19,7 @@ namespace Hi3Helper.EncTool.KianaManifest
 
         public string AudioFilename { get; private set; }
         public string PatchFilename { get => $"{_PatchFileMD5}.patch"; }
-        public byte[] CurrentAudioMD5Array { get => HexTool.HexToBytesUnsafe(_OldAudioFileMD5); }
+        public byte[] OldAudioMD5Array { get => HexTool.HexToBytesUnsafe(_OldAudioFileMD5); }
         public byte[] NewAudioMD5Array { get => HexTool.HexToBytesUnsafe(_NewAudioFileMD5); }
         public byte[] PatchMD5Array { get => HexTool.HexToBytesUnsafe(_PatchFileMD5); }
         public uint PatchFileSize { get; private set; } // 0x30

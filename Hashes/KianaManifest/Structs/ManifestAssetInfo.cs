@@ -1,4 +1,6 @@
-﻿namespace Hi3Helper.EncTool.KianaManifest
+﻿using Hi3Helper.Data;
+
+namespace Hi3Helper.EncTool.KianaManifest
 {
     public enum AssetLanguage : int
     {
@@ -11,8 +13,8 @@
     {
         public string Name { get; set; } // 0x10
         public string Path { get; set; } // 0x18
-        public long Hash1 { get; set; } // 0x20
-        public long Hash2 { get; set; } // 0x28
+        public byte[] Hash { get; set; } // 0x20
+        public string HashString { get => HexTool.BytesToHexUnsafe(Hash); }
         public int Size { get; set; } // 0x30
         public AssetLanguage Language { get; set; } // 0x34
         public int PckType { get; set; } // 0x38

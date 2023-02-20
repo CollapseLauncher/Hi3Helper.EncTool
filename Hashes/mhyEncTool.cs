@@ -49,6 +49,7 @@ namespace Hi3Helper.EncTool
         }
 
         public RSA GetMasterKeyRSA() => this._MasterKeyRSA;
+        public string GetMasterKey() => this._MasterKey;
 
         public void InitMasterKey(string Key, int KeyBitLength, RSAEncryptionPadding KeyPadding)
         {

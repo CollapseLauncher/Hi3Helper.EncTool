@@ -61,6 +61,22 @@ namespace Hi3Helper.Data
 
         private static readonly uint* _lookup32UnsafeP = (uint*)GCHandle.Alloc(_lookup32Unsafe, GCHandleType.Pinned).AddrOfPinnedObject();
 
+        public static string LongToHexUnsafe(long number)
+        {
+            var lookupP = _lookup32UnsafeP;
+            var result = new char[8];
+            byte* bytesP = (byte*)&number;
+            fixed (char* resultP = result)
+            {
+                uint* resultP2 = (uint*)resultP;
+                for (int i = 0; i < 8; i++)
+                {
+                    resultP2[i] = lookupP[bytesP[i]];
+                }
+            }
+            return new string(result);
+        }
+
         public static string BytesToHexUnsafe(ReadOnlySpan<byte> bytes)
         {
             var lookupP = _lookup32UnsafeP;
