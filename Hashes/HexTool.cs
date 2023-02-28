@@ -61,7 +61,7 @@ namespace Hi3Helper.Data
 
         private static readonly uint* _lookup32UnsafeP = (uint*)GCHandle.Alloc(_lookup32Unsafe, GCHandleType.Pinned).AddrOfPinnedObject();
 
-        public static string LongToHexUnsafe(long number)
+        public static unsafe string LongToHexUnsafe(long number)
         {
             var lookupP = _lookup32UnsafeP;
             var result = new char[8];
@@ -77,7 +77,7 @@ namespace Hi3Helper.Data
             return new string(result);
         }
 
-        public static string BytesToHexUnsafe(ReadOnlySpan<byte> bytes)
+        public static unsafe string BytesToHexUnsafe(ReadOnlySpan<byte> bytes)
         {
             var lookupP = _lookup32UnsafeP;
             var result = new char[bytes.Length * 2];
@@ -93,7 +93,7 @@ namespace Hi3Helper.Data
             return new string(result);
         }
 
-        public static byte[] HexToBytesUnsafe(string source)
+        public static unsafe byte[] HexToBytesUnsafe(string source)
         {
             if (string.IsNullOrEmpty(source)) return new byte[0];
 
@@ -137,6 +137,17 @@ namespace Hi3Helper.Data
                     }
                     return result;
                 }
+            }
+        }
+
+        public static unsafe int BytesToInt32Unsafe(ReadOnlySpan<byte> array, int offset = 0)
+        {
+            if ((array.Length - offset) < 4) throw new OverflowException("Offset is beyond the length of the array");
+
+            fixed (byte* addr = &array[offset])
+            {
+                int value = *(int*)addr;
+                return *(int*)addr;
             }
         }
     }
