@@ -117,16 +117,16 @@ namespace Hi3Helper.Data
 
                 byte add = 0;
                 byte[] result = new byte[len];
-                
+
                 fixed (byte* hiRef = _lookupFromHexTable16)
-                
+
                 fixed (byte* lowRef = _lookupFromHexTable)
-                
+
                 fixed (byte* resultRef = result)
                 {
                     char* s = &sourceRef[index];
                     byte* r = resultRef;
-                    
+
                     while (*s != 0)
                     {
                         if (*s > 102 || (*r = hiRef[*s++]) == 255 || *s > 102 || (add = lowRef[*s++]) == 255)
@@ -147,7 +147,40 @@ namespace Hi3Helper.Data
             fixed (byte* addr = &array[offset])
             {
                 int value = *(int*)addr;
-                return *(int*)addr;
+                return value;
+            }
+        }
+
+        public static unsafe uint BytesToUInt32Unsafe(ReadOnlySpan<byte> array, int offset = 0)
+        {
+            if ((array.Length - offset) < 4) throw new OverflowException("Offset is beyond the length of the array");
+
+            fixed (byte* addr = &array[offset])
+            {
+                uint value = *(uint*)addr;
+                return value;
+            }
+        }
+
+        public static unsafe short BytesToInt16Unsafe(ReadOnlySpan<byte> array, int offset = 0)
+        {
+            if ((array.Length - offset) < 2) throw new OverflowException("Offset is beyond the length of the array");
+
+            fixed (byte* addr = &array[offset])
+            {
+                short value = *(short*)addr;
+                return value;
+            }
+        }
+
+        public static unsafe ushort BytesToUInt16Unsafe(ReadOnlySpan<byte> array, int offset = 0)
+        {
+            if ((array.Length - offset) < 2) throw new OverflowException("Offset is beyond the length of the array");
+
+            fixed (byte* addr = &array[offset])
+            {
+                ushort value = *(ushort*)addr;
+                return value;
             }
         }
     }

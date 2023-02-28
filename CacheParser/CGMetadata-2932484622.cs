@@ -1,8 +1,8 @@
-﻿using Hi3Helper.UABT;
-using Hi3Helper.UABT.Binary;
+﻿using Hi3Helper.Data;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
 namespace Hi3Helper.EncTool.CacheParser
 {
@@ -13,6 +13,8 @@ namespace Hi3Helper.EncTool.CacheParser
 
     public class CGMetadata
     {
+        private static Encoding _encoding { get; set; }
+
         public int CgID { get; set; }
         public byte UnlockType { get; set; }
         public uint UnlockCondition { get; set; }
@@ -34,128 +36,165 @@ namespace Hi3Helper.EncTool.CacheParser
         public string DownloadLimitTime { get; set; }
         public uint AppointmentDownloadScheduleID { get; set; }
 
-        public static CGMetadata[] GetArray(CacheStream stream, EndianType endian = EndianType.LittleEndian)
+        public static CGMetadata[] GetArray(CacheStream stream, Encoding encoding)
         {
-            using (EndianBinaryReader reader = new EndianBinaryReader(stream, endian))
-            {
-                // Get the entry count
-                int entryCount = GetEntryCount(reader);
+            // Set the encoding
+            _encoding = encoding;
 
-                // Initialize the return value of the instance
-                CGMetadata[] entries = new CGMetadata[entryCount];
+            // Get the entry count
+            int entryCount = GetEntryCount(stream);
 
-                // Assign the data to the return value
-                for (int i = 0; i < entryCount; i++) entries[i] = Deserialize(reader);
+            // Initialize the return value of the instance
+            CGMetadata[] entries = new CGMetadata[entryCount];
 
-                // Return the value
-                return entries;
-            }
+            // Assign the data to the return value
+            for (int i = 0; i < entryCount; i++) entries[i] = Deserialize(stream);
+
+            // Return the value
+            return entries;
         }
 
-        public static List<CGMetadata> GetList(CacheStream stream, EndianType endian = EndianType.LittleEndian)
+        public static List<CGMetadata> GetList(CacheStream stream, Encoding encoding)
         {
-            using (EndianBinaryReader reader = new EndianBinaryReader(stream, endian))
-            {
-                // Get the entry count
-                int entryCount = GetEntryCount(reader);
+            // Set the encoding
+            _encoding = encoding;
 
-                // Initialize the return value of the instance
-                List<CGMetadata> entries = new List<CGMetadata>();
+            // Get the entry count
+            int entryCount = GetEntryCount(stream);
 
-                // Assign the data to the return value
-                for (int i = 0; i < entryCount; i++) entries.Add(Deserialize(reader));
+            // Initialize the return value of the instance
+            List<CGMetadata> entries = new List<CGMetadata>();
 
-                // Return the value
-                return entries;
-            }
+            // Assign the data to the return value
+            for (int i = 0; i < entryCount; i++) entries.Add(Deserialize(stream));
+
+            // Return the value
+            return entries;
         }
 
-        public static IEnumerable<CGMetadata> Enumerate(CacheStream stream, EndianType endian = EndianType.LittleEndian)
+        public static IEnumerable<CGMetadata> Enumerate(CacheStream stream, Encoding encoding)
         {
-            using (EndianBinaryReader reader = new EndianBinaryReader(stream, endian))
-            {
-                // Get the entry count
-                int entryCount = GetEntryCount(reader);
+            // Set the encoding
+            _encoding = encoding;
 
-                // Initialize the return value of the instance
-                List<CGMetadata> entries = new List<CGMetadata>();
+            // Get the entry count
+            int entryCount = GetEntryCount(stream);
 
-                // Assign the data to the return value and yield it
-                for (int i = 0; i < entryCount; i++) yield return Deserialize(reader);
-            }
+            // Assign the data to the return value and yield it
+            for (int i = 0; i < entryCount; i++) yield return Deserialize(stream);
         }
 
-        private static int GetEntryCount(EndianBinaryReader reader)
+        private static int GetEntryCount(Stream stream)
         {
             // Skip the file size information and skip to the entry count
-            reader.BaseStream.Position += 4;
-            int entryCount = reader.ReadInt32();
+            stream.Position += 4;
+            int entryCount = ReadInt32(stream);
 
             // Skip the keys and data start offsets
-            reader.BaseStream.Position += (entryCount * 4) * 2;
+            stream.Position += (entryCount * 4) * 2;
 
             return entryCount;
         }
 
-        private static CGMetadata Deserialize(EndianBinaryReader reader)
+        private static CGMetadata Deserialize(CacheStream stream)
         {
             CGMetadata entry = new CGMetadata();
-            entry.CgID = reader.ReadInt32();
+            entry.CgID = ReadInt32(stream);
 
-            entry.UnlockType = reader.ReadByte();
-            entry.UnlockCondition = reader.ReadUInt32();
-            entry.LevelIDBegin = reader.ReadInt32();
-            entry.LevelIDEnd = reader.ReadInt32();
-            entry.CgCategory = reader.ReadInt32();
-            entry.CgSubCategory = reader.ReadInt32();
+            entry.UnlockType = ReadByte(stream);
+            entry.UnlockCondition = ReadUInt32(stream);
+            entry.LevelIDBegin = ReadInt32(stream);
+            entry.LevelIDEnd = ReadInt32(stream);
+            entry.CgCategory = ReadInt32(stream);
+            entry.CgSubCategory = ReadInt32(stream);
 
-            int ptrToCgGroupIDArr = reader.ReadInt32();
+            int ptrToCgGroupIDArr = ReadInt32(stream);
 
-            entry.WikiCgScore = reader.ReadInt32();
-            entry.InitialUnlock = reader.ReadBoolean();
+            entry.WikiCgScore = ReadInt32(stream);
+            entry.InitialUnlock = ReadBoolean(stream);
 
-            int ptrToCgPath = reader.ReadInt32();
-            int ptrToCgIconSpritePath = reader.ReadInt32();
-            int ptrToPckType = reader.ReadInt32();
+            int ptrToCgPath = ReadInt32(stream);
+            int ptrToCgIconSpritePath = ReadInt32(stream);
+            int ptrToPckType = ReadInt32(stream);
 
-            entry.InStreamingAssets = reader.ReadInt32();
-            entry.CgPlayMode = reader.ReadInt32();
+            entry.InStreamingAssets = ReadInt32(stream);
+            entry.CgPlayMode = ReadInt32(stream);
 
-            int ptrToCgExtraKey = reader.ReadInt32();
+            int ptrToCgExtraKey = ReadInt32(stream);
 
-            entry.FileSize = reader.ReadInt32();
+            entry.FileSize = ReadInt32(stream);
 
-            entry.PckType = reader.ReadByte();
-            int ptrToDownloadLimitTime = reader.ReadInt32();
+            entry.PckType = ReadByte(stream);
+            int ptrToDownloadLimitTime = ReadInt32(stream);
 
-            entry.AppointmentDownloadScheduleID = reader.ReadUInt32();
+            entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
 
-            reader.BaseStream.Position = ptrToCgGroupIDArr;
-            uint CgGroupIDCount = reader.ReadUInt32();
+            stream.Position = ptrToCgGroupIDArr;
+            uint CgGroupIDCount = ReadUInt32(stream);
             entry.CgGroupID = new int[CgGroupIDCount];
             for (int i = 0; i < CgGroupIDCount; i++)
             {
-                entry.CgGroupID[i] = reader.ReadInt32();
+                entry.CgGroupID[i] = ReadInt32(stream);
             }
 
-            reader.BaseStream.Position = ptrToCgPath;
-            entry.CgPath = reader.ReadString();
+            stream.Position = ptrToCgPath;
+            entry.CgPath = ReadString(stream);
 
-            reader.BaseStream.Position = ptrToCgIconSpritePath;
-            entry.CgIconSpritePath = reader.ReadString();
+            stream.Position = ptrToCgIconSpritePath;
+            entry.CgIconSpritePath = ReadString(stream);
 
-            reader.BaseStream.Position++;
-            entry.CgLockHint = new CgHash { Hash = reader.ReadInt32() };
+            stream.Position++;
+            entry.CgLockHint = new CgHash { Hash = ReadInt32(stream) };
 
-            reader.BaseStream.Position = ptrToPckType + 1;
+            stream.Position = ptrToPckType + 1;
 
-            reader.BaseStream.Position = ptrToCgExtraKey;
-            entry.CgExtraKey = reader.ReadString();
+            stream.Position = ptrToCgExtraKey;
+            entry.CgExtraKey = ReadString(stream);
 
-            reader.BaseStream.Position = ptrToDownloadLimitTime;
-            entry.DownloadLimitTime = reader.ReadString();
+            stream.Position = ptrToDownloadLimitTime;
+            entry.DownloadLimitTime = ReadString(stream);
 
             return entry;
         }
+
+        private static int ReadInt32(Stream stream)
+        {
+            Span<byte> buf = stackalloc byte[4];
+            stream.Read(buf);
+            return HexTool.BytesToInt32Unsafe(buf);
+        }
+
+        private static uint ReadUInt32(Stream stream)
+        {
+            Span<byte> buf = stackalloc byte[4];
+            stream.Read(buf);
+            return HexTool.BytesToUInt32Unsafe(buf);
+        }
+
+        private static short ReadInt16(Stream stream)
+        {
+            Span<byte> buf = stackalloc byte[2];
+            stream.Read(buf);
+            return HexTool.BytesToInt16Unsafe(buf);
+        }
+
+        private static ushort ReadUInt16(Stream stream)
+        {
+            Span<byte> buf = stackalloc byte[2];
+            stream.Read(buf);
+            return HexTool.BytesToUInt16Unsafe(buf);
+        }
+
+        private static string ReadString(Stream stream)
+        {
+            ushort len = ReadUInt16(stream);
+            Span<byte> strArr = stackalloc byte[len];
+            stream.Read(strArr);
+            return _encoding.GetString(strArr);
+        }
+
+        private static byte ReadByte(Stream stream) => (byte)stream.ReadByte();
+
+        private static bool ReadBoolean(Stream stream) => ReadByte(stream) == 1;
     }
 }
