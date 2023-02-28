@@ -34,7 +34,7 @@ namespace Hi3Helper.EncTool.CacheParser
         public string DownloadLimitTime { get; set; }
         public uint AppointmentDownloadScheduleID { get; set; }
 
-        public static CGMetadata[] GetArray(Stream stream, EndianType endian = EndianType.LittleEndian)
+        public static CGMetadata[] GetArray(CacheStream stream, EndianType endian = EndianType.LittleEndian)
         {
             using (EndianBinaryReader reader = new EndianBinaryReader(stream, endian))
             {
@@ -52,7 +52,7 @@ namespace Hi3Helper.EncTool.CacheParser
             }
         }
 
-        public static List<CGMetadata> GetList(Stream stream, EndianType endian = EndianType.LittleEndian)
+        public static List<CGMetadata> GetList(CacheStream stream, EndianType endian = EndianType.LittleEndian)
         {
             using (EndianBinaryReader reader = new EndianBinaryReader(stream, endian))
             {
@@ -70,7 +70,7 @@ namespace Hi3Helper.EncTool.CacheParser
             }
         }
 
-        public static IEnumerable<CGMetadata> Enumerate(Stream stream, EndianType endian = EndianType.LittleEndian)
+        public static IEnumerable<CGMetadata> Enumerate(CacheStream stream, EndianType endian = EndianType.LittleEndian)
         {
             using (EndianBinaryReader reader = new EndianBinaryReader(stream, endian))
             {
