@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Hi3Helper.EncTool
+namespace Hi3Helper.EncTool.Parser
 {
     public sealed partial class XMFParser
     {

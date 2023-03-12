@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Hi3Helper.EncTool.CacheParser
+namespace Hi3Helper.EncTool.Parser.Cache
 {
     public class CgHash
     {

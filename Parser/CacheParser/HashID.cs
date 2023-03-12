@@ -1,4 +1,4 @@
-﻿namespace Hi3Helper.EncTool.CacheParser
+﻿namespace Hi3Helper.EncTool.Parser.Cache
 {
     public static class HashID
     {

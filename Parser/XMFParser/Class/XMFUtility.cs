@@ -3,7 +3,7 @@ using Hi3Helper.UABT.Binary;
 using System;
 using System.IO;
 
-namespace Hi3Helper.EncTool
+namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
     public static class XMFUtility
     {

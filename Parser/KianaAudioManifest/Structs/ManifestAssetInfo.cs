@@ -1,6 +1,6 @@
 ﻿using Hi3Helper.Data;
 
-namespace Hi3Helper.EncTool.KianaManifest
+namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
     public enum AssetLanguage : int
     {

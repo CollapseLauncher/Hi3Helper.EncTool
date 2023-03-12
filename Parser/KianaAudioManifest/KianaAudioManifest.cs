@@ -5,9 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 
-namespace Hi3Helper.EncTool.KianaManifest
+namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
-    public sealed class Manifest
+    public sealed class KianaAudioManifest
     {
         private const byte _rsaKeyL = 0x80;
         private const byte _aesKeyL = 0x20;
@@ -18,7 +18,7 @@ namespace Hi3Helper.EncTool.KianaManifest
         public int[] ManifestVersion { get; private set; }
         public List<ManifestAssetInfo> AudioAssets { get; set; }
 
-        public Manifest(string filePath, string key, int[] gameVersion)
+        public KianaAudioManifest(string filePath, string key, int[] gameVersion)
         {
             _gameVersion = gameVersion;
             using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
@@ -27,7 +27,7 @@ namespace Hi3Helper.EncTool.KianaManifest
             }
         }
 
-        public Manifest(Stream stream, string key, int[] gameVersion, bool disposeStream = false)
+        public KianaAudioManifest(Stream stream, string key, int[] gameVersion, bool disposeStream = false)
         {
             _gameVersion = gameVersion;
             Initialize(stream, key);

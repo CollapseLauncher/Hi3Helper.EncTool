@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Hi3Helper.EncTool
+namespace Hi3Helper.EncTool.Parser
 {
     public class XMFBlock
     {
