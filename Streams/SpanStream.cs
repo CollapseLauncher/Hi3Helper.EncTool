@@ -7,7 +7,7 @@ namespace Hi3Helper.EncTool
     {
         private readonly Memory<byte> Base;
         private long _position = 0;
-        
+
         public SpanStream(Memory<byte> buffer)
         {
             Base = buffer;
@@ -70,7 +70,7 @@ namespace Hi3Helper.EncTool
         public override long Position
         {
             get
-            { 
+            {
                 return _position;
             }
             set
