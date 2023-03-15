@@ -150,8 +150,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             string path = reader.ReadString();
             byte[] hash = reader.ReadBytes(16);
             int size = reader.ReadInt32();
-            AssetLanguage language = (AssetLanguage)reader.ReadInt32();
-            int pcktype = reader.ReadInt32();
+            AudioLanguageType language = (AudioLanguageType)reader.ReadInt32();
+            AudioPCKType pcktype = (AudioPCKType)reader.ReadInt32();
             bool needmap = reader.ReadBoolean();
 
 #if DEBUG

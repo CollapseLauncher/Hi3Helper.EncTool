@@ -76,7 +76,17 @@ namespace Hi3Helper.EncTool.Parser
             int[] ver = new int[_versioningLength];
             for (int i = 0; i < _versioningLength; i++)
             {
-                ver[i] = reader.ReadInt32();
+                // If the offset is more than 2, then read the revision number as byte.
+                if (i > 2)
+                {
+                    ver[i] = reader.ReadByte();
+                }
+                // Else, read it as int.
+                else
+                {
+                    ver[i] = reader.ReadInt32();
+                }
+
                 if (ver[i] < _allowedMinVersion || ver[i] > _allowedMaxVersion)
                 {
                     throw new InvalidDataException($"Header version on array: {i} is invalid with value: {ver[i]}. The allowed range is: ({_allowedMinVersion} - {_allowedMaxVersion})");
@@ -91,18 +101,14 @@ namespace Hi3Helper.EncTool.Parser
             // Read signature (32 bytes).
             VersionSignature = ReadSignature(reader);
 
+            // Skip unknown field
+            _ = reader.ReadInt32();
+
             // Read block version.
             Version = ReadVersion(reader);
 
-            // Try read endian mode.
-            byte readMode = reader.ReadByte();
-            if (readMode > 1)
-            {
-                throw new InvalidDataException("Read mode is invalid! The value should be 0 for Big-endian and 1 for Little-endian");
-            }
-
-            // If readMode == 0, then switch to Big-endian.
-            if (readMode == 0) reader.endian = UABT.EndianType.BigEndian;
+            // Switch to Big-endian.
+            reader.endian = UABT.EndianType.BigEndian;
 
             // Allocate the size of Block array.
             BlockEntry = new XMFBlock[reader.ReadUInt32()];
