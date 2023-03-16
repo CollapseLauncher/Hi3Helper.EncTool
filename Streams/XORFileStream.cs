@@ -7,6 +7,7 @@ namespace Hi3Helper.EncTool
     {
         private protected readonly Stream _stream;
         private protected readonly byte _xorKey;
+        private protected bool _leaveOpen;
         public XORStream(string path, FileMode fileMode, FileAccess fileAccess, FileShare fileShare = FileShare.Read, FileOptions fileOptions = FileOptions.None, byte XORKey = 0xA5)
             : base()
         {
@@ -14,11 +15,12 @@ namespace Hi3Helper.EncTool
             _stream = new FileStream(path, fileMode, fileAccess, fileShare, 4 << 10, fileOptions);
         }
 
-        public XORStream(Stream stream, byte XORKey = 0xA5)
+        public XORStream(Stream stream, byte XORKey = 0xA5, bool leaveOpen = false)
             : base()
         {
             _xorKey = XORKey;
             _stream = stream;
+            _leaveOpen = leaveOpen;
         }
 
         public XORStream(byte XORKey = 0xA5)
@@ -124,7 +126,10 @@ namespace Hi3Helper.EncTool
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            _stream.Dispose();
+            if (!_leaveOpen)
+            {
+                _stream.Dispose();
+            }
         }
     }
 }

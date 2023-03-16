@@ -21,7 +21,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         {
             FileInfo xmf = new FileInfo(xmfPath);
 
-            if (!xmf.Exists) return false;
+            if (!xmf.Exists || (xmf.Exists && xmf.Length < 0xFF)) return false;
             if (versionBytes.Length != XMFParser._versioningLength) return false;
 
             try
