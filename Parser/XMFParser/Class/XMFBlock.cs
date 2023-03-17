@@ -31,7 +31,7 @@ namespace Hi3Helper.EncTool.Parser
             for (int i = 0; i < _uniqueIDLength; i++)
             {
                 UniqueID[i] = reader.ReadInt32();
-            }
+            } 
 
             // Read size of the block file and allocate the AssetEntry based on the
             // count in XMF metadata.
