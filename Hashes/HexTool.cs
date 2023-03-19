@@ -119,9 +119,7 @@ namespace Hi3Helper.Data
                 byte[] result = new byte[len];
 
                 fixed (byte* hiRef = _lookupFromHexTable16)
-
                 fixed (byte* lowRef = _lookupFromHexTable)
-
                 fixed (byte* resultRef = result)
                 {
                     char* s = &sourceRef[index];
