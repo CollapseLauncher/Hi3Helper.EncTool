@@ -3,9 +3,19 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Hi3Helper.EncTool.Parser.Cache
 {
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum CGPCKType : byte // TypeDefIndex: 34029
+    {
+        MustHave = 0,
+        WithAll = 1,
+        Needing = 2,
+        All = 100
+    }
+
     public class CgHash
     {
         public int Hash { get; set; }
@@ -28,11 +38,11 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public string CgPath { get; set; }
         public string CgIconSpritePath { get; set; }
         public CgHash CgLockHint { get; set; }
-        public int InStreamingAssets { get; set; }
+        public bool InStreamingAssets { get; set; }
         public int CgPlayMode { get; set; }
         public string CgExtraKey { get; set; }
         public int FileSize { get; set; }
-        public byte PckType { get; set; }
+        public CGPCKType PckType { get; set; }
         public string DownloadLimitTime { get; set; }
         public uint AppointmentDownloadScheduleID { get; set; }
 
@@ -117,14 +127,14 @@ namespace Hi3Helper.EncTool.Parser.Cache
             int ptrToCgIconSpritePath = ReadInt32(stream);
             int ptrToPckType = ReadInt32(stream);
 
-            entry.InStreamingAssets = ReadInt32(stream);
+            entry.InStreamingAssets = ReadInt32(stream) == 1;
             entry.CgPlayMode = ReadInt32(stream);
 
             int ptrToCgExtraKey = ReadInt32(stream);
 
             entry.FileSize = ReadInt32(stream);
 
-            entry.PckType = ReadByte(stream);
+            entry.PckType = (CGPCKType)ReadByte(stream);
             int ptrToDownloadLimitTime = ReadInt32(stream);
 
             entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
@@ -153,6 +163,10 @@ namespace Hi3Helper.EncTool.Parser.Cache
 
             stream.Position = ptrToDownloadLimitTime;
             entry.DownloadLimitTime = ReadString(stream);
+
+#if DEBUG
+            Console.WriteLine($"CG [Type: {entry.PckType}][IsBuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} bytes]");
+#endif
 
             return entry;
         }
