@@ -5,6 +5,7 @@
 		<Platforms>x64</Platforms>
 		<Configurations>Debug;Release;Publish</Configurations>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -20,13 +21,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove="UABT\.git" />
-	  <None Remove="UABT\.gitattributes" />
-	  <None Remove="UABT\.gitignore" />
+		<None Remove="UABT\.git" />
+		<None Remove="UABT\.gitattributes" />
+		<None Remove="UABT\.gitignore" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Google.Protobuf" Version="3.22.1" />
+		<PackageReference Include="Google.Protobuf" Version="3.22.1" />
 	</ItemGroup>
 
 </Project>
