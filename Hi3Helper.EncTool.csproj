@@ -1,12 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
-		<TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>net7.0</TargetFrameworks>
 		<Platforms>x64</Platforms>
 		<Configurations>Debug;Release;Publish</Configurations>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<DebugType>embedded</DebugType>
 		<DebugType>portable</DebugType>
 	</PropertyGroup>
 
