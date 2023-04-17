@@ -86,7 +86,7 @@ namespace Hi3Helper.EncTool
 
         public override bool CanWrite
         {
-            get { return false; }
+            get { return true; }
         }
 
         public override void Flush()
