@@ -4,13 +4,14 @@ syntax = "proto3";
 package Hi3Helper.EncTool.Proto.StarRail;
 
 message StarRailDispatch {
-    repeated GatewayInfo Gateways = 4;
+    repeated RegionInfo region_list = 4;
 }
 
-message GatewayInfo {
-    string Name         = 1;
-    string Host         = 3;
-    string Unknown      = 4;
-    string RegionName   = 5;
-    string oginWhiteMsg = 6;
+message RegionInfo {
+    string name         = 1;
+    string title        = 2;
+    string dispatch_url = 3;
+    string env_type     = 4;
+    string display_name = 5;
+    string msg          = 6;
 }
