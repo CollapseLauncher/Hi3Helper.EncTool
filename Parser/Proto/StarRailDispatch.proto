@@ -1,0 +1,16 @@
+// Last changes: 2023/04/25 13:57 +07
+syntax = "proto3";
+
+package Hi3Helper.EncTool.Proto.StarRail;
+
+message StarRailDispatch {
+    repeated GatewayInfo Gateways = 4;
+}
+
+message GatewayInfo {
+    string Name         = 1;
+    string Host         = 3;
+    string Unknown      = 4;
+    string RegionName   = 5;
+    string oginWhiteMsg = 6;
+}
