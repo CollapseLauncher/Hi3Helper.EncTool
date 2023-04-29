@@ -10,9 +10,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
     {
         private Dictionary<string, SRDispatchArchiveInfo> _dispatchArchiveInfo;
         private SRAMBMMetadataStruct _structSRAMData;
-        private string _baseAssetURL;
 
         protected string MetadataRemoteName = "M_AsbV";
+        protected SRAssetType AssetType { get; set; }
         protected SRAMBMMetadataType MetadataType { get; set; }
         protected override string ParentRemotePath { get; set; }
         protected override string MetadataPath { get; set; }
@@ -24,6 +24,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             ParentRemotePath = "/client/Windows/Block";
             MetadataRemoteName = "M_AsbV";
             MetadataType = SRAMBMMetadataType.SRAM;
+            AssetType = SRAssetType.Asb;
         }
 
         internal static SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, Http.Http httpClient) => new SRAsbMetadata(dictArchiveInfo, baseURL, httpClient);
@@ -31,21 +32,29 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal override async Task GetRemoteMetadata(CancellationToken token)
         {
             MetadataPath = GetMetadataPathFromArchiveInfo(_dispatchArchiveInfo, MetadataRemoteName);
-            using (SRAMBMMetadataReader _SRAMReader = new SRAMBMMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataPath, MetadataType))
-            {
-                await _SRAMReader.GetRemoteMetadata(token);
-                _SRAMReader.Deserialize();
-                string metadataURL = BaseURL + ParentRemotePath + MetadataPath;
-                AssetProperty.BaseURL = BaseURL + ParentRemotePath;
-                AssetProperty.MetadataRemoteURL = metadataURL;
-                AssetProperty.MetadataRevision = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
-                AssetProperty.MetadataLocalName = MetadataPath.TrimStart('/');
-                Magic = _SRAMReader.Magic;
-                TypeID = _SRAMReader.TypeID;
 
-                _baseAssetURL = _dispatchArchiveInfo[MetadataRemoteName].FullAssetsDownloadUrl;
-                _structSRAMData = _SRAMReader.StructList[0];
+            AssetProperty.MetadataRemoteURL = BaseURL + ParentRemotePath + MetadataPath;
+            AssetProperty.MetadataRevision = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
+            AssetProperty.MetadataLocalName = MetadataPath.TrimStart('/');
+            AssetProperty.BaseURL = _dispatchArchiveInfo[MetadataRemoteName].FullAssetsDownloadUrl;
+
+            if (MetadataType != SRAMBMMetadataType.JSON)
+            {
+                using (SRAMBMMetadataReader _SRAMReader = new SRAMBMMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataPath, MetadataType))
+                {
+                    await _SRAMReader.GetRemoteMetadata(token);
+                    _SRAMReader.Deserialize();
+                    Magic = _SRAMReader.Magic;
+                    TypeID = _SRAMReader.TypeID;
+
+                    _structSRAMData = _SRAMReader.StructList[0];
+                }
+
+                return;
             }
+
+            await _httpClient.Download(AssetProperty.MetadataRemoteURL, AssetProperty.MetadataStream, null, null, token);
+            AssetProperty.MetadataStream.Seek(0, System.IO.SeekOrigin.Begin);
         }
 
         internal override void Deserialize()
@@ -75,10 +84,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
                     AssetProperty.AssetList.Add(new SRAsset
                     {
-                        AssetType = SRAssetType.Asb,
+                        AssetType = AssetType,
                         Hash = hash.ToArray(),
                         LocalName = assetName,
-                        RemoteURL = _baseAssetURL + '/' + assetName,
+                        RemoteURL = AssetProperty.BaseURL + '/' + assetName,
                         Size = size
                     });
                 }

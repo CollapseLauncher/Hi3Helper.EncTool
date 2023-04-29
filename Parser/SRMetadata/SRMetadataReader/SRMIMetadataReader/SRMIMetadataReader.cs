@@ -7,8 +7,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
     internal class SRMIMetadataReader : SRMetadataBase
     {
-        internal override string Magic { get; set; }
-        internal override ushort TypeID { get; set; }
         protected override string ParentRemotePath { get; set; }
         protected override string MetadataPath { get; set; }
         protected override SRAssetProperty AssetProperty { get; set; }

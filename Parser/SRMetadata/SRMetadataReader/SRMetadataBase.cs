@@ -32,12 +32,13 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         public long Size { get; set; }
         public byte[] Hash { get; set; }
         public SRAssetType AssetType { get; set; }
+        public bool IsPatch { get; set; }
     }
 
     public enum SRAssetType
     {
         IFix,
-        Design,
+        DesignData,
         Asb,
         Block,
         Lua,
@@ -90,7 +91,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             SRDispatchArchiveInfo archiveInfo = dictArchiveInfo[key];
             ReadOnlySpan<char> baseName = archiveInfo.FileName.AsSpan().Slice(2);
 
-            return '/' + string.Concat(baseName, new char[] {'_'}, archiveInfo.ContentHash, ".bytes");
+            return '/' + string.Concat(baseName, new char[] { '_' }, archiveInfo.ContentHash, ".bytes");
         }
 
         public void Dispose()

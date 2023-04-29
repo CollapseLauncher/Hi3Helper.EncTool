@@ -67,6 +67,17 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             _httpClient.DownloadProgress -= HttpProgressAdapter;
         }
 
+        public async Task ReadDesignMetadataInformation(CancellationToken threadToken)
+        {
+            _httpClient.DownloadProgress += HttpProgressAdapter;
+
+            MetadataDesign = SRDesignMetadata.CreateInstance(_dispatcherInfo._regionGateway.DesignDataBundleVersionUpdateUrl, _httpClient);
+            await MetadataDesign.GetRemoteMetadata(threadToken);
+            MetadataDesign.Deserialize();
+
+            _httpClient.DownloadProgress -= HttpProgressAdapter;
+        }
+
         public async Task ReadLuaMetadataInformation(CancellationToken threadToken)
         {
             _httpClient.DownloadProgress += HttpProgressAdapter;
@@ -96,6 +107,28 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             MetadataBlock = SRBlockMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._regionGateway.AssetBundleVersionUpdateUrl, _httpClient);
             await MetadataBlock.GetRemoteMetadata(threadToken);
             MetadataBlock.Deserialize();
+
+            _httpClient.DownloadProgress -= HttpProgressAdapter;
+        }
+
+        public async Task ReadAudioMetadataInformation(CancellationToken threadToken)
+        {
+            _httpClient.DownloadProgress += HttpProgressAdapter;
+
+            MetadataAudio = SRAudioMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._regionGateway.AssetBundleVersionUpdateUrl, _httpClient);
+            await MetadataAudio.GetRemoteMetadata(threadToken);
+            MetadataAudio.Deserialize();
+
+            _httpClient.DownloadProgress -= HttpProgressAdapter;
+        }
+
+        public async Task ReadVideoMetadataInformation(CancellationToken threadToken)
+        {
+            _httpClient.DownloadProgress += HttpProgressAdapter;
+
+            MetadataVideo = SRVideoMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._regionGateway.AssetBundleVersionUpdateUrl, _httpClient);
+            await MetadataVideo.GetRemoteMetadata(threadToken);
+            MetadataVideo.Deserialize();
 
             _httpClient.DownloadProgress -= HttpProgressAdapter;
         }

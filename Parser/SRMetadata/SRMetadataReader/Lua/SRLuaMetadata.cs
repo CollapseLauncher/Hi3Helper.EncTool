@@ -1,44 +1,22 @@
 ﻿using Hi3Helper.Data;
 using Hi3Helper.UABT.Binary;
 using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRLuaMetadata : SRMetadataBase
+    internal class SRLuaMetadata : SRIFixMetadata
     {
-        protected override string ParentRemotePath { get; set; }
-        protected override string MetadataPath { get; set; }
-        protected override SRAssetProperty AssetProperty { get; set; }
+        protected SRAssetType InheritedAssetType { get; set; }
+
         protected SRLuaMetadata(string baseURL, Http.Http httpClient) : base(baseURL, httpClient)
         {
             AssetProperty = new SRAssetProperty();
             ParentRemotePath = "/client/Windows";
             MetadataPath = "/M_LuaV.bytes";
+            InheritedAssetType = SRAssetType.Lua;
         }
 
-        internal static SRMetadataBase CreateInstance(string baseURL, Http.Http httpClient) => new SRLuaMetadata(baseURL, httpClient);
-
-        internal override async Task GetRemoteMetadata(CancellationToken token)
-        {
-            using (SRMIMetadataReader _SRMIReader = new SRMIMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataPath))
-            {
-                await _SRMIReader.GetRemoteMetadata(token);
-                _SRMIReader.Deserialize();
-                string metadataURL = BaseURL + ParentRemotePath + '/' + _SRMIReader.AssetListFilename;
-                AssetProperty.BaseURL = BaseURL + ParentRemotePath;
-                AssetProperty.MetadataRemoteURL = metadataURL;
-                AssetProperty.MetadataRevision = _SRMIReader.RemoteRevisionID;
-                AssetProperty.MetadataLocalName = _SRMIReader.AssetListFilename;
-                Magic = _SRMIReader.Magic;
-                TypeID = _SRMIReader.TypeID;
-
-                await _httpClient.Download(AssetProperty.MetadataRemoteURL, AssetProperty.MetadataStream, null, null, token);
-                AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);
-            }
-        }
+        internal static new SRMetadataBase CreateInstance(string baseURL, Http.Http httpClient) => new SRLuaMetadata(baseURL, httpClient);
 
         internal override void Deserialize()
         {
@@ -47,7 +25,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 uint count = reader.ReadUInt32();
                 ReadOnlySpan<byte> empty = new byte[4];
 #if DEBUG
-                Console.WriteLine($"Lua Assets Parsed Info: ({reader.BaseStream.Length} bytes) ({count} assets)");
+                Console.WriteLine($"{InheritedAssetType} Assets Parsed Info: ({reader.BaseStream.Length} bytes) ({count} assets)");
 #endif
 
                 for (int i = 0; i < count; i++)
@@ -69,7 +47,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                     string assetName = $"{hashName}.bytes";
                     AssetProperty.AssetList.Add(new SRAsset
                     {
-                        AssetType = SRAssetType.Lua,
+                        AssetType = InheritedAssetType,
                         Hash = hash.ToArray(),
                         LocalName = assetName,
                         RemoteURL = BaseURL + ParentRemotePath + '/' + assetName,
@@ -87,13 +65,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 }
 #endif
             }
-        }
-
-        internal override void Dispose(bool Disposing)
-        {
-            AssetProperty?.MetadataStream?.Dispose();
-            AssetProperty?.AssetList?.Clear();
-            AssetProperty = null;
         }
     }
 }
