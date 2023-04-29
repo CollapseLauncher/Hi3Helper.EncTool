@@ -25,16 +25,17 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "ChZTdGFyUmFpbERpc3BhdGNoLnByb3RvEiBIaTNIZWxwZXIuRW5jVG9vbC5Q",
-            "cm90by5TdGFyUmFpbCJTChBTdGFyUmFpbERpc3BhdGNoEj8KCEdhdGV3YXlz",
-            "GAQgAygLMi0uSGkzSGVscGVyLkVuY1Rvb2wuUHJvdG8uU3RhclJhaWwuR2F0",
-            "ZXdheUluZm8iZAoLR2F0ZXdheUluZm8SDAoETmFtZRgBIAEoCRIMCgRIb3N0",
-            "GAMgASgJEg8KB1Vua25vd24YBCABKAkSEgoKUmVnaW9uTmFtZRgFIAEoCRIU",
-            "CgxvZ2luV2hpdGVNc2cYBiABKAliBnByb3RvMw=="));
+            "cm90by5TdGFyUmFpbCJVChBTdGFyUmFpbERpc3BhdGNoEkEKC3JlZ2lvbl9s",
+            "aXN0GAQgAygLMiwuSGkzSGVscGVyLkVuY1Rvb2wuUHJvdG8uU3RhclJhaWwu",
+            "UmVnaW9uSW5mbyJ0CgpSZWdpb25JbmZvEgwKBG5hbWUYASABKAkSDQoFdGl0",
+            "bGUYAiABKAkSFAoMZGlzcGF0Y2hfdXJsGAMgASgJEhAKCGVudl90eXBlGAQg",
+            "ASgJEhQKDGRpc3BsYXlfbmFtZRgFIAEoCRILCgNtc2cYBiABKAliBnByb3Rv",
+            "Mw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Hi3Helper.EncTool.Proto.StarRail.StarRailDispatch), global::Hi3Helper.EncTool.Proto.StarRail.StarRailDispatch.Parser, new[]{ "Gateways" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Hi3Helper.EncTool.Proto.StarRail.GatewayInfo), global::Hi3Helper.EncTool.Proto.StarRail.GatewayInfo.Parser, new[]{ "Name", "Host", "Unknown", "RegionName", "OginWhiteMsg" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hi3Helper.EncTool.Proto.StarRail.StarRailDispatch), global::Hi3Helper.EncTool.Proto.StarRail.StarRailDispatch.Parser, new[]{ "RegionList" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Hi3Helper.EncTool.Proto.StarRail.RegionInfo), global::Hi3Helper.EncTool.Proto.StarRail.RegionInfo.Parser, new[]{ "Name", "Title", "DispatchUrl", "EnvType", "DisplayName", "Msg" }, null, null, null, null)
           }));
     }
     #endregion
@@ -75,7 +76,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public StarRailDispatch(StarRailDispatch other) : this() {
-      gateways_ = other.gateways_.Clone();
+      regionList_ = other.regionList_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -85,15 +86,15 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
       return new StarRailDispatch(this);
     }
 
-    /// <summary>Field number for the "Gateways" field.</summary>
-    public const int GatewaysFieldNumber = 4;
-    private static readonly pb::FieldCodec<global::Hi3Helper.EncTool.Proto.StarRail.GatewayInfo> _repeated_gateways_codec
-        = pb::FieldCodec.ForMessage(34, global::Hi3Helper.EncTool.Proto.StarRail.GatewayInfo.Parser);
-    private readonly pbc::RepeatedField<global::Hi3Helper.EncTool.Proto.StarRail.GatewayInfo> gateways_ = new pbc::RepeatedField<global::Hi3Helper.EncTool.Proto.StarRail.GatewayInfo>();
+    /// <summary>Field number for the "region_list" field.</summary>
+    public const int RegionListFieldNumber = 4;
+    private static readonly pb::FieldCodec<global::Hi3Helper.EncTool.Proto.StarRail.RegionInfo> _repeated_regionList_codec
+        = pb::FieldCodec.ForMessage(34, global::Hi3Helper.EncTool.Proto.StarRail.RegionInfo.Parser);
+    private readonly pbc::RepeatedField<global::Hi3Helper.EncTool.Proto.StarRail.RegionInfo> regionList_ = new pbc::RepeatedField<global::Hi3Helper.EncTool.Proto.StarRail.RegionInfo>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public pbc::RepeatedField<global::Hi3Helper.EncTool.Proto.StarRail.GatewayInfo> Gateways {
-      get { return gateways_; }
+    public pbc::RepeatedField<global::Hi3Helper.EncTool.Proto.StarRail.RegionInfo> RegionList {
+      get { return regionList_; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -111,7 +112,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
       if (ReferenceEquals(other, this)) {
         return true;
       }
-      if(!gateways_.Equals(other.gateways_)) return false;
+      if(!regionList_.Equals(other.regionList_)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -119,7 +120,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override int GetHashCode() {
       int hash = 1;
-      hash ^= gateways_.GetHashCode();
+      hash ^= regionList_.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -138,7 +139,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      gateways_.WriteTo(output, _repeated_gateways_codec);
+      regionList_.WriteTo(output, _repeated_regionList_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -149,7 +150,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      gateways_.WriteTo(ref output, _repeated_gateways_codec);
+      regionList_.WriteTo(ref output, _repeated_regionList_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -160,7 +161,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public int CalculateSize() {
       int size = 0;
-      size += gateways_.CalculateSize(_repeated_gateways_codec);
+      size += regionList_.CalculateSize(_repeated_regionList_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -173,7 +174,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
       if (other == null) {
         return;
       }
-      gateways_.Add(other.gateways_);
+      regionList_.Add(other.regionList_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -190,7 +191,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
           case 34: {
-            gateways_.AddEntriesFrom(input, _repeated_gateways_codec);
+            regionList_.AddEntriesFrom(input, _repeated_regionList_codec);
             break;
           }
         }
@@ -209,7 +210,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
           case 34: {
-            gateways_.AddEntriesFrom(ref input, _repeated_gateways_codec);
+            regionList_.AddEntriesFrom(ref input, _repeated_regionList_codec);
             break;
           }
         }
@@ -219,16 +220,16 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
 
   }
 
-  public sealed partial class GatewayInfo : pb::IMessage<GatewayInfo>
+  public sealed partial class RegionInfo : pb::IMessage<RegionInfo>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
   #endif
   {
-    private static readonly pb::MessageParser<GatewayInfo> _parser = new pb::MessageParser<GatewayInfo>(() => new GatewayInfo());
+    private static readonly pb::MessageParser<RegionInfo> _parser = new pb::MessageParser<RegionInfo>(() => new RegionInfo());
     private pb::UnknownFieldSet _unknownFields;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public static pb::MessageParser<GatewayInfo> Parser { get { return _parser; } }
+    public static pb::MessageParser<RegionInfo> Parser { get { return _parser; } }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -244,7 +245,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public GatewayInfo() {
+    public RegionInfo() {
       OnConstruction();
     }
 
@@ -252,22 +253,23 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public GatewayInfo(GatewayInfo other) : this() {
+    public RegionInfo(RegionInfo other) : this() {
       name_ = other.name_;
-      host_ = other.host_;
-      unknown_ = other.unknown_;
-      regionName_ = other.regionName_;
-      oginWhiteMsg_ = other.oginWhiteMsg_;
+      title_ = other.title_;
+      dispatchUrl_ = other.dispatchUrl_;
+      envType_ = other.envType_;
+      displayName_ = other.displayName_;
+      msg_ = other.msg_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public GatewayInfo Clone() {
-      return new GatewayInfo(this);
+    public RegionInfo Clone() {
+      return new RegionInfo(this);
     }
 
-    /// <summary>Field number for the "Name" field.</summary>
+    /// <summary>Field number for the "name" field.</summary>
     public const int NameFieldNumber = 1;
     private string name_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -279,63 +281,75 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
       }
     }
 
-    /// <summary>Field number for the "Host" field.</summary>
-    public const int HostFieldNumber = 3;
-    private string host_ = "";
+    /// <summary>Field number for the "title" field.</summary>
+    public const int TitleFieldNumber = 2;
+    private string title_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string Host {
-      get { return host_; }
+    public string Title {
+      get { return title_; }
       set {
-        host_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+        title_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
       }
     }
 
-    /// <summary>Field number for the "Unknown" field.</summary>
-    public const int UnknownFieldNumber = 4;
-    private string unknown_ = "";
+    /// <summary>Field number for the "dispatch_url" field.</summary>
+    public const int DispatchUrlFieldNumber = 3;
+    private string dispatchUrl_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string Unknown {
-      get { return unknown_; }
+    public string DispatchUrl {
+      get { return dispatchUrl_; }
       set {
-        unknown_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+        dispatchUrl_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
       }
     }
 
-    /// <summary>Field number for the "RegionName" field.</summary>
-    public const int RegionNameFieldNumber = 5;
-    private string regionName_ = "";
+    /// <summary>Field number for the "env_type" field.</summary>
+    public const int EnvTypeFieldNumber = 4;
+    private string envType_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string RegionName {
-      get { return regionName_; }
+    public string EnvType {
+      get { return envType_; }
       set {
-        regionName_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+        envType_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
       }
     }
 
-    /// <summary>Field number for the "oginWhiteMsg" field.</summary>
-    public const int OginWhiteMsgFieldNumber = 6;
-    private string oginWhiteMsg_ = "";
+    /// <summary>Field number for the "display_name" field.</summary>
+    public const int DisplayNameFieldNumber = 5;
+    private string displayName_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public string OginWhiteMsg {
-      get { return oginWhiteMsg_; }
+    public string DisplayName {
+      get { return displayName_; }
       set {
-        oginWhiteMsg_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+        displayName_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "msg" field.</summary>
+    public const int MsgFieldNumber = 6;
+    private string msg_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Msg {
+      get { return msg_; }
+      set {
+        msg_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
       }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
-      return Equals(other as GatewayInfo);
+      return Equals(other as RegionInfo);
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public bool Equals(GatewayInfo other) {
+    public bool Equals(RegionInfo other) {
       if (ReferenceEquals(other, null)) {
         return false;
       }
@@ -343,10 +357,11 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
         return true;
       }
       if (Name != other.Name) return false;
-      if (Host != other.Host) return false;
-      if (Unknown != other.Unknown) return false;
-      if (RegionName != other.RegionName) return false;
-      if (OginWhiteMsg != other.OginWhiteMsg) return false;
+      if (Title != other.Title) return false;
+      if (DispatchUrl != other.DispatchUrl) return false;
+      if (EnvType != other.EnvType) return false;
+      if (DisplayName != other.DisplayName) return false;
+      if (Msg != other.Msg) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -355,10 +370,11 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     public override int GetHashCode() {
       int hash = 1;
       if (Name.Length != 0) hash ^= Name.GetHashCode();
-      if (Host.Length != 0) hash ^= Host.GetHashCode();
-      if (Unknown.Length != 0) hash ^= Unknown.GetHashCode();
-      if (RegionName.Length != 0) hash ^= RegionName.GetHashCode();
-      if (OginWhiteMsg.Length != 0) hash ^= OginWhiteMsg.GetHashCode();
+      if (Title.Length != 0) hash ^= Title.GetHashCode();
+      if (DispatchUrl.Length != 0) hash ^= DispatchUrl.GetHashCode();
+      if (EnvType.Length != 0) hash ^= EnvType.GetHashCode();
+      if (DisplayName.Length != 0) hash ^= DisplayName.GetHashCode();
+      if (Msg.Length != 0) hash ^= Msg.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -381,21 +397,25 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
         output.WriteRawTag(10);
         output.WriteString(Name);
       }
-      if (Host.Length != 0) {
+      if (Title.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Title);
+      }
+      if (DispatchUrl.Length != 0) {
         output.WriteRawTag(26);
-        output.WriteString(Host);
+        output.WriteString(DispatchUrl);
       }
-      if (Unknown.Length != 0) {
+      if (EnvType.Length != 0) {
         output.WriteRawTag(34);
-        output.WriteString(Unknown);
+        output.WriteString(EnvType);
       }
-      if (RegionName.Length != 0) {
+      if (DisplayName.Length != 0) {
         output.WriteRawTag(42);
-        output.WriteString(RegionName);
+        output.WriteString(DisplayName);
       }
-      if (OginWhiteMsg.Length != 0) {
+      if (Msg.Length != 0) {
         output.WriteRawTag(50);
-        output.WriteString(OginWhiteMsg);
+        output.WriteString(Msg);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -411,21 +431,25 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
         output.WriteRawTag(10);
         output.WriteString(Name);
       }
-      if (Host.Length != 0) {
+      if (Title.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteString(Title);
+      }
+      if (DispatchUrl.Length != 0) {
         output.WriteRawTag(26);
-        output.WriteString(Host);
+        output.WriteString(DispatchUrl);
       }
-      if (Unknown.Length != 0) {
+      if (EnvType.Length != 0) {
         output.WriteRawTag(34);
-        output.WriteString(Unknown);
+        output.WriteString(EnvType);
       }
-      if (RegionName.Length != 0) {
+      if (DisplayName.Length != 0) {
         output.WriteRawTag(42);
-        output.WriteString(RegionName);
+        output.WriteString(DisplayName);
       }
-      if (OginWhiteMsg.Length != 0) {
+      if (Msg.Length != 0) {
         output.WriteRawTag(50);
-        output.WriteString(OginWhiteMsg);
+        output.WriteString(Msg);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -440,17 +464,20 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
       if (Name.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(Name);
       }
-      if (Host.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(Host);
+      if (Title.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Title);
       }
-      if (Unknown.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(Unknown);
+      if (DispatchUrl.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(DispatchUrl);
       }
-      if (RegionName.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(RegionName);
+      if (EnvType.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(EnvType);
       }
-      if (OginWhiteMsg.Length != 0) {
-        size += 1 + pb::CodedOutputStream.ComputeStringSize(OginWhiteMsg);
+      if (DisplayName.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(DisplayName);
+      }
+      if (Msg.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Msg);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -460,24 +487,27 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public void MergeFrom(GatewayInfo other) {
+    public void MergeFrom(RegionInfo other) {
       if (other == null) {
         return;
       }
       if (other.Name.Length != 0) {
         Name = other.Name;
       }
-      if (other.Host.Length != 0) {
-        Host = other.Host;
+      if (other.Title.Length != 0) {
+        Title = other.Title;
       }
-      if (other.Unknown.Length != 0) {
-        Unknown = other.Unknown;
+      if (other.DispatchUrl.Length != 0) {
+        DispatchUrl = other.DispatchUrl;
       }
-      if (other.RegionName.Length != 0) {
-        RegionName = other.RegionName;
+      if (other.EnvType.Length != 0) {
+        EnvType = other.EnvType;
       }
-      if (other.OginWhiteMsg.Length != 0) {
-        OginWhiteMsg = other.OginWhiteMsg;
+      if (other.DisplayName.Length != 0) {
+        DisplayName = other.DisplayName;
+      }
+      if (other.Msg.Length != 0) {
+        Msg = other.Msg;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -498,20 +528,24 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
             Name = input.ReadString();
             break;
           }
+          case 18: {
+            Title = input.ReadString();
+            break;
+          }
           case 26: {
-            Host = input.ReadString();
+            DispatchUrl = input.ReadString();
             break;
           }
           case 34: {
-            Unknown = input.ReadString();
+            EnvType = input.ReadString();
             break;
           }
           case 42: {
-            RegionName = input.ReadString();
+            DisplayName = input.ReadString();
             break;
           }
           case 50: {
-            OginWhiteMsg = input.ReadString();
+            Msg = input.ReadString();
             break;
           }
         }
@@ -533,20 +567,24 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
             Name = input.ReadString();
             break;
           }
+          case 18: {
+            Title = input.ReadString();
+            break;
+          }
           case 26: {
-            Host = input.ReadString();
+            DispatchUrl = input.ReadString();
             break;
           }
           case 34: {
-            Unknown = input.ReadString();
+            EnvType = input.ReadString();
             break;
           }
           case 42: {
-            RegionName = input.ReadString();
+            DisplayName = input.ReadString();
             break;
           }
           case 50: {
-            OginWhiteMsg = input.ReadString();
+            Msg = input.ReadString();
             break;
           }
         }
