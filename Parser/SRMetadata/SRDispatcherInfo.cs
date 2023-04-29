@@ -29,9 +29,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
     internal class SRDispatcherInfo
     {
-        private const string _dispatchURLFormat = "{0}?version={1}{2}&t={3}&language_type=3&platform_type=3&channel_id=1&sub_channel_id=1&is_new_format=1";
-        private const string _gatewayURLFormat = "{0}?version={1}{2}&t={3}&uid=0&language_type=3&platform_type=3&dispatch_seed={4}&channel_id=1&sub_channel_id=1&is_need_url=1";
-
+        private string _dispatchURLFormat { get; set; }
+        private string _gatewayURLFormat { get; set; }
         private string _dispatchURL { get; init; }
         private string _dispatchSeed { get; init; }
         private string _productID { get; init; }
@@ -45,13 +44,15 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         internal Dictionary<string, SRDispatchArchiveInfo> ArchiveInfo { get; set; }
 
-        internal SRDispatcherInfo(Http.Http httpClient, string dispatchURL, string dispatchSeed, string productID, string productVer)
+        internal SRDispatcherInfo(Http.Http httpClient, string dispatchURL, string dispatchSeed, string dispatchFormatTemplate, string gatewayFormatTemplate, string productID, string productVer)
         {
             _httpClient = httpClient;
             _dispatchURL = dispatchURL;
             _dispatchSeed = dispatchSeed;
             _productID = productID;
             _productVer = productVer;
+            _dispatchURLFormat = dispatchFormatTemplate;
+            _gatewayURLFormat = gatewayFormatTemplate;
             _httpClient = new Http.Http(true, 5, 1000, SRMetadata._userAgent);
         }
 
@@ -68,7 +69,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private async Task ParseDispatch()
         {
             // Format dispatcher URL
-            string dispatchURL = string.Format(_dispatchURLFormat, _dispatchURL, _productID, _productVer, SRMetadata.GetUnixTimestamp());
+            string dispatchURL = _dispatchURL + string.Format(_dispatchURLFormat, _productID, _productVer, SRMetadata.GetUnixTimestamp());
 
             // Get the dispatch content
             using (MemoryStream stream = new MemoryStream())
@@ -86,7 +87,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private async Task ParseGateway()
         {
             // Format dispatcher URL
-            string gatewayURL = string.Format(_gatewayURLFormat, _regionInfo.DispatchUrl, _productID, _productVer, SRMetadata.GetUnixTimestamp(), _dispatchSeed);
+            string gatewayURL = _regionInfo.DispatchUrl + string.Format(_gatewayURLFormat, _productID, _productVer, SRMetadata.GetUnixTimestamp(), _dispatchSeed);
 
             // Get the dispatch content
             using (MemoryStream stream = new MemoryStream())

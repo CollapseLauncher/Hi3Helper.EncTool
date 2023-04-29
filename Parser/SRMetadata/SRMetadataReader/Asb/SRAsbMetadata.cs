@@ -63,7 +63,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             try
             {
 #if DEBUG
-                Console.WriteLine($"{MetadataRemoteName} Assets Parsed Info: ({_structSRAMData.structSize} bytes) ({_structSRAMData.structCount} assets)");
+                Console.WriteLine($"{AssetType} Assets Parsed Info: ({_structSRAMData.structSize} bytes) ({_structSRAMData.structCount} assets)");
 #endif
                 Span<byte> hash = stackalloc byte[16];
 

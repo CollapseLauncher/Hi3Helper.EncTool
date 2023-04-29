@@ -23,10 +23,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         public SRMetadataBase MetadataAudio { get; set; }
         public SRMetadataBase MetadataVideo { get; set; }
 
-        public SRMetadata(string dispatchURL, string dispatchSeed, string productID, string productVer)
+        public SRMetadata(string dispatchURL, string dispatchSeed, string dispatchFormatTemplate, string gatewayFormatTemplate, string productID, string productVer)
         {
             _httpClient = new Http.Http(true, 5, 1000, _userAgent);
-            _dispatcherInfo = new SRDispatcherInfo(_httpClient, dispatchURL, dispatchSeed, productID, productVer);
+            _dispatcherInfo = new SRDispatcherInfo(_httpClient, dispatchURL, dispatchSeed, dispatchFormatTemplate, gatewayFormatTemplate, productID, productVer);
         }
 
         public void Dispose()
