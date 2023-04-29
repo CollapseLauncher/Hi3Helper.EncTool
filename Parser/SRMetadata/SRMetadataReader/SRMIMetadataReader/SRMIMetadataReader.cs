@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRMetadataInfo : SRMetadataBase
+    internal class SRMIMetadataReader : SRMetadataBase
     {
         internal override string Magic { get; set; }
         internal override ushort TypeID { get; set; }
@@ -20,7 +20,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal ulong AssetListUnixTimestamp { get; set; }
         internal string AssetListRootPath { get; set; }
 
-        internal SRMetadataInfo(string baseURL, Http.Http httpClient, string parentRemotePath, string metadataPath) : base(baseURL, httpClient)
+        internal SRMIMetadataReader(string baseURL, Http.Http httpClient, string parentRemotePath, string metadataPath) : base(baseURL, httpClient)
         {
             Magic = "SRMI";
             TypeID = 2;

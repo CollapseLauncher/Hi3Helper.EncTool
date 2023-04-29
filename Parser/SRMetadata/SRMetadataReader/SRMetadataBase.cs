@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -84,6 +83,15 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal abstract void Deserialize();
         public SRAssetProperty GetAssets() => AssetProperty;
         internal abstract void Dispose(bool Disposing);
+        internal string GetMetadataPathFromArchiveInfo(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string key)
+        {
+            if (!dictArchiveInfo.ContainsKey(key)) throw new KeyNotFoundException($"Key: {key} in ArchiveInfo dictionary does not exist!");
+
+            SRDispatchArchiveInfo archiveInfo = dictArchiveInfo[key];
+            ReadOnlySpan<char> baseName = archiveInfo.FileName.AsSpan().Slice(2);
+
+            return '/' + string.Concat(baseName, new char[] {'_'}, archiveInfo.ContentHash, ".bytes");
+        }
 
         public void Dispose()
         {

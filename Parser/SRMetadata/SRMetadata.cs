@@ -78,6 +78,28 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             _httpClient.DownloadProgress -= HttpProgressAdapter;
         }
 
+        public async Task ReadAsbMetadataInformation(CancellationToken threadToken)
+        {
+            _httpClient.DownloadProgress += HttpProgressAdapter;
+
+            MetadataAsb = SRAsbMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._regionGateway.AssetBundleVersionUpdateUrl, _httpClient);
+            await MetadataAsb.GetRemoteMetadata(threadToken);
+            MetadataAsb.Deserialize();
+
+            _httpClient.DownloadProgress -= HttpProgressAdapter;
+        }
+
+        public async Task ReadBlockMetadataInformation(CancellationToken threadToken)
+        {
+            _httpClient.DownloadProgress += HttpProgressAdapter;
+
+            MetadataBlock = SRBlockMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._regionGateway.AssetBundleVersionUpdateUrl, _httpClient);
+            await MetadataBlock.GetRemoteMetadata(threadToken);
+            MetadataBlock.Deserialize();
+
+            _httpClient.DownloadProgress -= HttpProgressAdapter;
+        }
+
         private void HttpProgressAdapter(object sender, DownloadEvent e) => HttpEvent?.Invoke(this, e);
 
         internal static int GetUnixTimestamp(bool isUTC = true) => (int)Math.Truncate(isUTC ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);

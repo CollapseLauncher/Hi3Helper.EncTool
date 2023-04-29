@@ -1,5 +1,4 @@
 ﻿using Hi3Helper.Data;
-using System;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -9,8 +8,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
     internal class SRIFixMetadata : SRMetadataBase
     {
-        private SRMetadataInfo _SRMIReader { get; set; }
-
         protected override string ParentRemotePath { get; set; }
         protected override string MetadataPath { get; set; }
         protected override SRAssetProperty AssetProperty { get; set; }
@@ -25,22 +22,21 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override async Task GetRemoteMetadata(CancellationToken token)
         {
-            _SRMIReader = new SRMetadataInfo(BaseURL, _httpClient, ParentRemotePath, MetadataPath);
+            using (SRMIMetadataReader _SRMIReader = new SRMIMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataPath))
+            {
+                await _SRMIReader.GetRemoteMetadata(token);
+                _SRMIReader.Deserialize();
+                string metadataURL = BaseURL + ParentRemotePath + '/' + _SRMIReader.AssetListFilename;
+                AssetProperty.BaseURL = BaseURL + ParentRemotePath;
+                AssetProperty.MetadataRemoteURL = metadataURL;
+                AssetProperty.MetadataRevision = _SRMIReader.RemoteRevisionID;
+                AssetProperty.MetadataLocalName = _SRMIReader.AssetListFilename;
+                Magic = _SRMIReader.Magic;
+                TypeID = _SRMIReader.TypeID;
 
-            await _SRMIReader.GetRemoteMetadata(token);
-            _SRMIReader.Deserialize();
-            string metadataURL = BaseURL + ParentRemotePath + '/' + _SRMIReader.AssetListFilename;
-            AssetProperty.BaseURL = BaseURL + ParentRemotePath;
-            AssetProperty.MetadataRemoteURL = metadataURL;
-            AssetProperty.MetadataRevision = _SRMIReader.RemoteRevisionID;
-            AssetProperty.MetadataLocalName = _SRMIReader.AssetListFilename;
-            Magic = _SRMIReader.Magic;
-            TypeID = _SRMIReader.TypeID;
-
-            await _httpClient.Download(AssetProperty.MetadataRemoteURL, AssetProperty.MetadataStream, null, null, token);
-            AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);
-
-            _SRMIReader?.Dispose();
+                await _httpClient.Download(AssetProperty.MetadataRemoteURL, AssetProperty.MetadataStream, null, null, token);
+                AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);
+            }
         }
 
         internal override void Deserialize()
@@ -64,7 +60,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Dispose(bool Disposing)
         {
-            _SRMIReader?.Dispose();
             AssetProperty?.MetadataStream?.Dispose();
             AssetProperty?.AssetList?.Clear();
             AssetProperty = null;

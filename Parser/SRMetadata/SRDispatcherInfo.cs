@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
-    internal class SRDispatchArchiveInfo
+    internal struct SRDispatchArchiveInfo
     {
         public uint MajorVersion { get; set; }
         public uint MinorVersion { get; set; }
@@ -20,6 +20,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         public uint TimeStamp { get; set; }
         public string FileName { get; set; }
         public string BaseAssetsDownloadUrl { get; set; }
+        public string FullAssetsDownloadUrl { get; set; }
     }
 
     [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true, WriteIndented = false)]
@@ -42,7 +43,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         internal RegionInfo _regionInfo { get; set; }
         internal StarRailGateway _regionGateway { get; set; }
 
-        internal Dictionary<string, SRDispatchArchiveInfo> ArchiveInfo { get; set; } 
+        internal Dictionary<string, SRDispatchArchiveInfo> ArchiveInfo { get; set; }
 
         internal SRDispatcherInfo(Http.Http httpClient, string dispatchURL, string dispatchSeed, string productID, string productVer)
         {
@@ -115,10 +116,25 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                     {
                         string line = reader.ReadLine();
                         SRDispatchArchiveInfo archiveInfo = (SRDispatchArchiveInfo)JsonSerializer.Deserialize(line, typeof(SRDispatchArchiveInfo), SRDispatchArchiveInfoContext.Default);
+                        archiveInfo.FullAssetsDownloadUrl = TrimLastURLRelativePath(_regionGateway.AssetBundleVersionUpdateUrl)
+                            + '/' + archiveInfo.BaseAssetsDownloadUrl + (archiveInfo.FileName switch
+                            {
+                                "M_AudioV" => "/client/Windows/AudioBlock",
+                                "M_VideoV" => "/client/Windows/VideoBlock",
+                                _ => "/client/Windows/Block"
+                            });
                         ArchiveInfo.Add(archiveInfo.FileName, archiveInfo);
                     }
                 }
             }
+        }
+
+        private string TrimLastURLRelativePath(string url)
+        {
+            string[] urlPart = url.Split('/');
+
+            string ret = string.Join('/', urlPart[..(urlPart.Length - 1)]);
+            return ret;
         }
     }
 }
