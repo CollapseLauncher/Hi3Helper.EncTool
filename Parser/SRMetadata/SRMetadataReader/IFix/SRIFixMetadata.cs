@@ -13,20 +13,23 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected override SRAssetProperty AssetProperty { get; set; }
         protected SRIFixMetadata(string baseURL, Http.Http httpClient) : base(baseURL, httpClient)
         {
-            AssetProperty = new SRAssetProperty();
             ParentRemotePath = "/client/Windows";
             MetadataPath = "/M_IFixV.bytes";
         }
 
         internal static SRMetadataBase CreateInstance(string baseURL, Http.Http httpClient) => new SRIFixMetadata(baseURL, httpClient);
 
-        internal override async Task GetRemoteMetadata(CancellationToken token)
+        internal override async Task GetRemoteMetadata(string persistentPath, CancellationToken token, string localManifestPath)
         {
+            PersistentPath = persistentPath;
             using (SRMIMetadataReader _SRMIReader = new SRMIMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataPath))
             {
-                await _SRMIReader.GetRemoteMetadata(token);
+                await _SRMIReader.GetRemoteMetadata(persistentPath, token, localManifestPath);
                 _SRMIReader.Deserialize();
+                string metadataPath = Path.Combine(persistentPath, localManifestPath, _SRMIReader.AssetListFilename);
                 string metadataURL = BaseURL + ParentRemotePath + '/' + _SRMIReader.AssetListFilename;
+
+                AssetProperty = new SRAssetProperty(metadataPath);
                 AssetProperty.BaseURL = BaseURL + ParentRemotePath;
                 AssetProperty.MetadataRemoteURL = metadataURL;
                 AssetProperty.MetadataRevision = _SRMIReader.RemoteRevisionID;
@@ -41,7 +44,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Deserialize()
         {
-            using (StreamReader reader = new StreamReader(AssetProperty.MetadataStream, Encoding.UTF8, true, -1, true))
+            using (StreamReader reader = new StreamReader(AssetProperty.MetadataStream, Encoding.UTF8, true, -1, false))
             {
                 while (!reader.EndOfStream)
                 {

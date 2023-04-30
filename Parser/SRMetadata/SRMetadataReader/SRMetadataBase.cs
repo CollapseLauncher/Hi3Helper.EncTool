@@ -18,8 +18,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         public string MetadataStartRemoteURL { get; set; }
         public string MetadataLocalName { get; set; }
         public string MetadataStartLocalName { get; set; }
-        public MemoryStream MetadataStream { get; set; }
-        public MemoryStream MetadataStartStream { get; set; }
+        public Stream MetadataStream { get; set; }
+        public Stream MetadataStartStream { get; set; }
         public uint MetadataRevision { get; set; }
         public uint MetadataStartRevision { get; set; }
         public long AssetTotalSize { get => AssetList.Count == 0 ? 0 : AssetList.Sum(x => x.Size); }
@@ -29,6 +29,27 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         {
             MetadataStream = new MemoryStream();
             MetadataStartStream = new MemoryStream();
+            AssetList = new List<SRAsset>();
+        }
+
+        public SRAssetProperty(string metadataPath, string metadataStartPath = null)
+        {
+            string metadataFolder = Path.GetDirectoryName(metadataPath);
+            if (!Directory.Exists(metadataFolder))
+            {
+                Directory.CreateDirectory(metadataFolder);
+            }
+
+            MetadataStream = new FileStream(metadataPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+            if (!string.IsNullOrEmpty(metadataStartPath))
+            {
+                string metadataStartFolder = Path.GetDirectoryName(metadataStartPath);
+                if (!Directory.Exists(metadataStartFolder))
+                {
+                    Directory.CreateDirectory(metadataStartFolder);
+                }
+                MetadataStartStream = new FileStream(metadataStartPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+            }
             AssetList = new List<SRAsset>();
         }
     }
@@ -65,6 +86,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected abstract string ParentRemotePath { get; set; }
         protected abstract string MetadataPath { get; set; }
         protected string BaseURL { get; init; }
+        protected string PersistentPath { get; set; }
 
         protected Http.Http _httpClient { get; init; }
 
@@ -74,10 +96,13 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             _httpClient = httpClient;
         }
 
-        internal virtual async Task GetRemoteMetadata(CancellationToken token)
+        internal virtual async Task GetRemoteMetadata(string persistentPath, CancellationToken token, string localManifestPath)
         {
-            AssetProperty = new SRAssetProperty();
+            PersistentPath = persistentPath;
+            string metadataPath = Path.Combine(PersistentPath, localManifestPath, MetadataPath.TrimStart('/'));
             string metadataURL = BaseURL + ParentRemotePath + MetadataPath;
+
+            AssetProperty = new SRAssetProperty(metadataPath);
 
             await _httpClient.Download(metadataURL, AssetProperty.MetadataStream, null, null, token);
             AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);

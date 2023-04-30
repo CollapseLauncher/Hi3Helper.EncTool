@@ -1,6 +1,7 @@
 ﻿using Hi3Helper.Data;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,7 +21,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected override SRAssetProperty AssetProperty { get; set; }
         protected SRAsbMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, Http.Http httpClient) : base(baseURL, httpClient)
         {
-            AssetProperty = new SRAssetProperty();
             _dispatchArchiveInfo = dictArchiveInfo;
             ParentRemotePath = "/client/Windows/Block";
             MetadataRemoteName = "M_AsbV";
@@ -31,26 +31,30 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal static SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, Http.Http httpClient) => new SRAsbMetadata(dictArchiveInfo, baseURL, httpClient);
 
-        internal override async Task GetRemoteMetadata(CancellationToken token)
+        internal override async Task GetRemoteMetadata(string persistentPath, CancellationToken token, string localManifestPath)
         {
+            PersistentPath = persistentPath;
             MetadataPath = GetMetadataPathFromArchiveInfo(_dispatchArchiveInfo, MetadataRemoteName);
+
+            if (MetadataType != SRAMBMMetadataType.JSON)
+            {
+                AssetProperty = new SRAssetProperty();
+            }
+            else
+            {
+                AssetProperty = new SRAssetProperty(Path.Combine(persistentPath, localManifestPath, MetadataPath.TrimStart('/')));
+            }
 
             AssetProperty.MetadataRemoteURL = BaseURL + ParentRemotePath + MetadataPath;
             AssetProperty.MetadataRevision = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
             AssetProperty.MetadataLocalName = MetadataPath.TrimStart('/');
             AssetProperty.BaseURL = _dispatchArchiveInfo[MetadataRemoteName].FullAssetsDownloadUrl;
 
-            string MetadataStartPath = GetMetadataPathFromArchiveInfo(_dispatchArchiveInfo, MetadataStartRemoteName);
-            AssetProperty.MetadataStartRemoteURL = BaseURL + ParentRemotePath + MetadataStartPath;
-            AssetProperty.MetadataStartRevision = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
-            AssetProperty.MetadataStartLocalName = MetadataStartPath.TrimStart('/');
-            AssetProperty.StartBaseURL = BaseURL + ParentRemotePath;
-
             if (MetadataType != SRAMBMMetadataType.JSON)
             {
                 using (SRAMBMMetadataReader _SRAMReader = new SRAMBMMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataPath, MetadataType))
                 {
-                    await _SRAMReader.GetRemoteMetadata(token);
+                    await _SRAMReader.GetRemoteMetadata(persistentPath, token, "Asb\\Windows");
                     _SRAMReader.Deserialize();
                     Magic = _SRAMReader.Magic;
                     TypeID = _SRAMReader.TypeID;
@@ -58,11 +62,22 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                     _structSRAMData = _SRAMReader.StructList[0];
                 }
 
+                string MetadataStartPath = GetMetadataPathFromArchiveInfo(_dispatchArchiveInfo, MetadataStartRemoteName);
+                AssetProperty.MetadataStartRemoteURL = BaseURL + ParentRemotePath + MetadataStartPath;
+                AssetProperty.MetadataStartRevision = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
+                AssetProperty.MetadataStartLocalName = MetadataStartPath.TrimStart('/');
+                AssetProperty.StartBaseURL = BaseURL + ParentRemotePath;
+
+                using (SRAMBMMetadataReader _SRAMReader = new SRAMBMMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataStartPath, MetadataType))
+                {
+                    await _SRAMReader.GetRemoteMetadata(persistentPath, token, "Asb\\Windows");
+                }
+
                 return;
             }
 
             await _httpClient.Download(AssetProperty.MetadataRemoteURL, AssetProperty.MetadataStream, null, null, token);
-            AssetProperty.MetadataStream.Seek(0, System.IO.SeekOrigin.Begin);
+            AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);
         }
 
         internal override void Deserialize()
@@ -144,6 +159,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal override void Dispose(bool Disposing)
         {
             AssetProperty?.MetadataStream?.Dispose();
+            AssetProperty?.MetadataStartStream?.Dispose();
             AssetProperty?.AssetList?.Clear();
             AssetProperty = null;
         }

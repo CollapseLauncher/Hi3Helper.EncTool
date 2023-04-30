@@ -35,7 +35,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Deserialize()
         {
-            using (StreamReader reader = new StreamReader(AssetProperty.MetadataStream, Encoding.UTF8, true, -1, true))
+            using (StreamReader reader = new StreamReader(AssetProperty.MetadataStream, Encoding.UTF8, true, -1, false))
             {
 #if DEBUG
                 Console.WriteLine($"{AssetType} Assets Parsed Info: ({AssetProperty.MetadataStream.Length} bytes)");
@@ -51,7 +51,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                         AssetType = AssetType,
                         Hash = HexTool.HexToBytesUnsafe(assetInfo.Md5),
                         LocalName = assetInfo.Path,
-                        RemoteURL = AssetProperty.BaseURL + '/' + assetInfo.Path,
+                        RemoteURL = (assetInfo.Patch ? BaseURL + ParentRemotePath : AssetProperty.BaseURL) + '/' + assetInfo.Path,
                         Size = assetInfo.Size,
                         IsPatch = assetInfo.Patch
                     };

@@ -149,8 +149,11 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Dispose(bool Disposing)
         {
-            StructList.Clear();
-            StructList = null;
+            if (StructList != null)
+            {
+                StructList.Clear();
+                StructList = null;
+            }
 
             AssetProperty?.MetadataStream?.Dispose();
             AssetProperty?.AssetList?.Clear();

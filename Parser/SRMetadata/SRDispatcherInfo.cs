@@ -30,6 +30,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
     internal class SRDispatcherInfo
     {
+        private string _persistentDirectory { get; set; }
         private string _dispatchURLFormat { get; set; }
         private string _gatewayURLFormat { get; set; }
         private string _dispatchURL { get; init; }
@@ -57,8 +58,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             _httpClient = new Http.Http(true, 5, 1000, SRMetadata._userAgent);
         }
 
-        internal async Task Initialize(CancellationToken threadToken, string regionName)
+        internal async Task Initialize(CancellationToken threadToken, string persistentDirectory, string regionName)
         {
+            _persistentDirectory = persistentDirectory;
             _threadToken = threadToken;
             _regionName = regionName;
 
@@ -108,8 +110,15 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         {
             ArchiveInfo = new Dictionary<string, SRDispatchArchiveInfo>();
             string archiveURL = _regionGateway.AssetBundleVersionUpdateUrl + "/client/Windows/Archive/M_ArchiveV.bytes";
+            string localPath = Path.Combine(_persistentDirectory, "Archive\\Windows\\M_ArchiveV_cache.bytes");
+            string localDir = Path.GetDirectoryName(localPath);
 
-            using (MemoryStream stream = new MemoryStream())
+            if (!Directory.Exists(localDir))
+            {
+                Directory.CreateDirectory(localDir);
+            }
+
+            using (FileStream stream = new FileStream(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 await _httpClient.Download(archiveURL, stream, null, null, _threadToken);
                 stream.Position = 0;
