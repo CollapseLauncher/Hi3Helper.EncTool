@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -38,7 +39,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private Http.Http _httpClient { get; set; }
         private CancellationToken _threadToken { get; set; }
 
-        internal byte _regionID { get; set; }
+        internal string _regionName { get; set; }
         internal RegionInfo _regionInfo { get; set; }
         internal StarRailGateway _regionGateway { get; set; }
 
@@ -56,10 +57,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             _httpClient = new Http.Http(true, 5, 1000, SRMetadata._userAgent);
         }
 
-        internal async Task Initialize(CancellationToken threadToken, byte regionID)
+        internal async Task Initialize(CancellationToken threadToken, string regionName)
         {
             _threadToken = threadToken;
-            _regionID = regionID;
+            _regionName = regionName;
 
             await ParseDispatch();
             await ParseGateway();
@@ -80,7 +81,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
                 // Deserialize dispatcher and assign the region
                 StarRailDispatch dispatch = StarRailDispatch.Parser.ParseFrom(content);
-                _regionInfo = dispatch.RegionList[_regionID];
+                _regionInfo = dispatch.RegionList.Where(x => x.Name == _regionName).FirstOrDefault();
+
+                if (_regionInfo == null) throw new KeyNotFoundException($"Region: {_regionName} is not found in the dispatcher!");
             }
         }
 

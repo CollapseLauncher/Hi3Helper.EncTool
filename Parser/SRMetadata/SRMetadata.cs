@@ -53,14 +53,14 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             _isInitialized = false;
         }
 
-        public async Task Initialize(CancellationToken threadToken, byte regionID, bool forceInitialize = false)
+        public async Task Initialize(CancellationToken threadToken, string regionName, bool forceInitialize = false)
         {
             if (!_isInitialized || forceInitialize)
             {
                 try
                 {
                     _httpClient.DownloadProgress += HttpProgressAdapter;
-                    await _dispatcherInfo.Initialize(threadToken, regionID);
+                    await _dispatcherInfo.Initialize(threadToken, regionName);
 
                     _isInitialized = true;
                 }

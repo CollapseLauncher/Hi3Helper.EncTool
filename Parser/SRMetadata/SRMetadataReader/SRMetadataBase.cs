@@ -1,4 +1,6 @@
-﻿using Hi3Helper.UABT.Binary;
+﻿using Hi3Helper.Data;
+using Hi3Helper.Preset;
+using Hi3Helper.UABT.Binary;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,7 +27,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         }
     }
 
-    public class SRAsset
+    public class SRAsset : IAssetIndexSummary
     {
         public string LocalName { get; set; }
         public string RemoteURL { get; set; }
@@ -33,6 +35,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         public byte[] Hash { get; set; }
         public SRAssetType AssetType { get; set; }
         public bool IsPatch { get; set; }
+
+        public string PrintSummary() => $"File [T: {AssetType}]: {LocalName}\t{ConverterTool.SummarizeSizeSimple(Size)} ({Size} bytes)";
+        public long GetAssetSize() => Size;
     }
 
     public enum SRAssetType
