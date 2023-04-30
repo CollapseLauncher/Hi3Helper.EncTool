@@ -11,6 +11,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         private Dictionary<string, SRDispatchArchiveInfo> _dispatchArchiveInfo;
         private SRAMBMMetadataStruct _structSRAMData;
 
+        protected string MetadataStartRemoteName = "M_Start_AsbV";
         protected string MetadataRemoteName = "M_AsbV";
         protected SRAssetType AssetType { get; set; }
         protected SRAMBMMetadataType MetadataType { get; set; }
@@ -23,6 +24,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             _dispatchArchiveInfo = dictArchiveInfo;
             ParentRemotePath = "/client/Windows/Block";
             MetadataRemoteName = "M_AsbV";
+            MetadataStartRemoteName = "M_Start_AsbV";
             MetadataType = SRAMBMMetadataType.SRAM;
             AssetType = SRAssetType.Asb;
         }
@@ -37,6 +39,12 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             AssetProperty.MetadataRevision = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
             AssetProperty.MetadataLocalName = MetadataPath.TrimStart('/');
             AssetProperty.BaseURL = _dispatchArchiveInfo[MetadataRemoteName].FullAssetsDownloadUrl;
+
+            string MetadataStartPath = GetMetadataPathFromArchiveInfo(_dispatchArchiveInfo, MetadataStartRemoteName);
+            AssetProperty.MetadataStartRemoteURL = BaseURL + ParentRemotePath + MetadataStartPath;
+            AssetProperty.MetadataStartRevision = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
+            AssetProperty.MetadataStartLocalName = MetadataStartPath.TrimStart('/');
+            AssetProperty.StartBaseURL = BaseURL + ParentRemotePath;
 
             if (MetadataType != SRAMBMMetadataType.JSON)
             {
@@ -62,40 +70,52 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             if (_structSRAMData.structData == null) throw new InvalidOperationException($"Struct data is empty! Please initialize it using GetRemoteMetadata()");
             try
             {
-#if DEBUG
-                Console.WriteLine($"{AssetType} Assets Parsed Info: ({_structSRAMData.structSize} bytes) ({_structSRAMData.structCount} assets)");
-#endif
-                Span<byte> hash = stackalloc byte[16];
-
-                for (int index = 0; index < _structSRAMData.structData.Length; index++)
-                {
-                    ReadOnlySpan<byte> bufferSpan = _structSRAMData.structData[index];
-                    ReadOnlySpan<byte> hashBuffer = bufferSpan.Slice(0, 16);
-                    ReadOnlySpan<byte> assetID = bufferSpan.Slice(16, 4);
-                    uint size = HexTool.BytesToUInt32Unsafe(bufferSpan.Slice(20, 4));
-
-                    hash = BigEndianBytesToHexBytes(hashBuffer);
-                    string hashName = HexTool.BytesToHexUnsafe(hash);
-                    string assetName = $"{hashName}.block";
-
-#if DEBUG
-                    Console.WriteLine($"    Mark: {HexTool.BytesToHexUnsafe(assetID)} {hashName} -> Size: {size} Pos: {index}");
-#endif
-
-                    AssetProperty.AssetList.Add(new SRAsset
-                    {
-                        AssetType = AssetType,
-                        Hash = hash.ToArray(),
-                        LocalName = assetName,
-                        RemoteURL = AssetProperty.BaseURL + '/' + assetName,
-                        Size = size
-                    });
-                }
+                DeserializeAsset();
             }
             catch { throw; }
             finally
             {
                 _structSRAMData.ClearStruct();
+            }
+        }
+
+        private void DeserializeAsset()
+        {
+            if (AssetType == SRAssetType.Asb) return;
+
+            SRAMBMMetadataStruct refStruct = _structSRAMData;
+#if DEBUG
+            Console.WriteLine($"{AssetType} Assets Parsed Info: ({refStruct.structSize} bytes) ({refStruct.structCount} assets)");
+#endif
+            Span<byte> hash = stackalloc byte[16];
+
+            for (int index = 0; index < refStruct.structData.Length; index++)
+            {
+                ReadOnlySpan<byte> bufferSpan = refStruct.structData[index];
+                ReadOnlySpan<byte> hashBuffer = bufferSpan.Slice(0, 16);
+                ReadOnlySpan<byte> assetID = bufferSpan.Slice(16, 4);
+                uint size = HexTool.BytesToUInt32Unsafe(bufferSpan.Slice(20, 4));
+
+                hash = BigEndianBytesToHexBytes(hashBuffer);
+                string hashName = HexTool.BytesToHexUnsafe(hash);
+                string assetName = $"{hashName}.block";
+
+                bool isStart = (assetID[2] >> 4) > 0;
+
+#if DEBUG
+                Console.WriteLine($"    Mark: {HexTool.BytesToHexUnsafe(assetID)} {hashName} -> Size: {size} Pos: {index} IsStart: {isStart}");
+#endif
+
+                SRAsset asset = new SRAsset
+                {
+                    AssetType = AssetType,
+                    Hash = hash.ToArray(),
+                    LocalName = assetName,
+                    RemoteURL = (isStart ? AssetProperty.StartBaseURL : AssetProperty.BaseURL) + '/' + assetName,
+                    Size = size
+                };
+
+                AssetProperty.AssetList.Add(asset);
             }
         }
 

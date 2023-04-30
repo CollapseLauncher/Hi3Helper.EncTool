@@ -13,16 +13,22 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
     public class SRAssetProperty
     {
         public string BaseURL { get; set; }
+        public string StartBaseURL { get; set; }
         public string MetadataRemoteURL { get; set; }
+        public string MetadataStartRemoteURL { get; set; }
         public string MetadataLocalName { get; set; }
+        public string MetadataStartLocalName { get; set; }
         public MemoryStream MetadataStream { get; set; }
+        public MemoryStream MetadataStartStream { get; set; }
         public uint MetadataRevision { get; set; }
+        public uint MetadataStartRevision { get; set; }
         public long AssetTotalSize { get => AssetList.Count == 0 ? 0 : AssetList.Sum(x => x.Size); }
         public List<SRAsset> AssetList { get; set; }
 
         public SRAssetProperty()
         {
             MetadataStream = new MemoryStream();
+            MetadataStartStream = new MemoryStream();
             AssetList = new List<SRAsset>();
         }
     }

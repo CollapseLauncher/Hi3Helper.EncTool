@@ -7,6 +7,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected SRBlockMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, Http.Http httpClient) : base(dictArchiveInfo, baseURL, httpClient)
         {
             MetadataRemoteName = "M_BlockV";
+            MetadataStartRemoteName = "M_Start_BlockV";
             MetadataType = SRAMBMMetadataType.SRBM;
             AssetType = SRAssetType.Block;
         }
