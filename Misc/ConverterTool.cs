@@ -15,6 +15,14 @@ namespace Hi3Helper.Data
         private static readonly Crc32Algorithm CRCEncoder = new Crc32Algorithm();
         private static readonly string[] SizeSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
         public static string BytesToCRC32Simple(Stream buffer) => HexTool.BytesToHexUnsafe(CRCEncoder.ComputeHash(buffer));
+        public static string BytesToCRC32Simple(string str)
+        {
+            byte[] strBytes = Encoding.UTF8.GetBytes(str);
+            byte[] hashSpan = CRCEncoder.ComputeHash(strBytes);
+
+            return HexTool.BytesToHexUnsafe(hashSpan);
+        }
+
         public static string CreateMD5Shared(Stream fs)
         {
             MD5Hash.Initialize();
