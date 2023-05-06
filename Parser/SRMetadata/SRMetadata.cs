@@ -35,6 +35,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         public void Dispose()
         {
             _httpClient?.Dispose();
+            _dispatcherInfo?.Dispose();
             MetadataIFix?.Dispose();
             MetadataDesign?.Dispose();
             MetadataAsb?.Dispose();

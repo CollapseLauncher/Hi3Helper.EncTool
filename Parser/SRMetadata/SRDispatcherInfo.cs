@@ -28,7 +28,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
     [JsonSerializable(typeof(SRDispatchArchiveInfo))]
     internal partial class SRDispatchArchiveInfoContext : JsonSerializerContext { }
 
-    internal class SRDispatcherInfo
+    internal class SRDispatcherInfo : IDisposable
     {
         private string _persistentDirectory { get; set; }
         private string _dispatchURLFormat { get; set; }
@@ -56,6 +56,18 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             _dispatchURLFormat = dispatchFormatTemplate;
             _gatewayURLFormat = gatewayFormatTemplate;
             _httpClient = new Http.Http(true, 5, 1000, SRMetadata._userAgent);
+        }
+
+        ~SRDispatcherInfo() => Dispose();
+
+        public void Dispose()
+        {
+            if (ArchiveInfo != null)
+            {
+                ArchiveInfo.Clear();
+            }
+            _regionInfo = null;
+            _httpClient?.Dispose();
         }
 
         internal async Task Initialize(CancellationToken threadToken, string persistentDirectory, string regionName)
