@@ -145,7 +145,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                             + '/' + archiveInfo.BaseAssetsDownloadUrl + (archiveInfo.FileName switch
                             {
                                 "M_AudioV" => "/client/Windows/AudioBlock",
-                                "M_VideoV" => "/client/Windows/VideoBlock",
+                                "M_VideoV" => "/client/Windows/Video",
                                 _ => "/client/Windows/Block"
                             });
                         ArchiveInfo.Add(archiveInfo.FileName, archiveInfo);
