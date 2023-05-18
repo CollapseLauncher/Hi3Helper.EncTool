@@ -21,8 +21,16 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public int Hash { get; set; }
     }
 
+    public struct CgGroupID
+    {
+        public int ID;
+        internal int FileOffset;
+        internal CgGroupID SetFileOffset(int offset) => new CgGroupID { ID = ID, FileOffset = offset };
+    }
+
     public class CGMetadata
     {
+        private static List<CgGroupID> _groupID = new List<CgGroupID>();
         private static Encoding _encoding { get; set; }
 
         public int CgID { get; set; }
@@ -32,7 +40,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public int LevelIDEnd { get; set; }
         public int CgCategory { get; set; }
         public int CgSubCategory { get; set; }
-        public int[] CgGroupID { get; set; }
+        public CgGroupID CgGroupID { get; set; }
         public int WikiCgScore { get; set; }
         public bool InitialUnlock { get; set; }
         public string CgPath { get; set; }
@@ -58,7 +66,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             CGMetadata[] entries = new CGMetadata[entryCount];
 
             // Assign the data to the return value
-            for (int i = 0; i < entryCount; i++) entries[i] = Deserialize(stream);
+            for (int i = 0; i < entryCount; i++) entries[i] = Deserialize(stream, i);
 
             // Return the value
             return entries;
@@ -76,7 +84,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             List<CGMetadata> entries = new List<CGMetadata>();
 
             // Assign the data to the return value
-            for (int i = 0; i < entryCount; i++) entries.Add(Deserialize(stream));
+            for (int i = 0; i < entryCount; i++) entries.Add(Deserialize(stream, i));
 
             // Return the value
             return entries;
@@ -91,7 +99,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             int entryCount = GetEntryCount(stream);
 
             // Assign the data to the return value and yield it
-            for (int i = 0; i < entryCount; i++) yield return Deserialize(stream);
+            for (int i = 0; i < entryCount; i++) yield return Deserialize(stream, i);
         }
 
         private static int GetEntryCount(Stream stream)
@@ -100,15 +108,41 @@ namespace Hi3Helper.EncTool.Parser.Cache
             stream.Position += 4;
             int entryCount = ReadInt32(stream);
 
-            // Skip the keys and data start offsets
-            stream.Position += (entryCount * 4) * 2;
+            // Read GroupID and Offsets
+            ReadGroupID(stream, entryCount);
+            ReadOffset(stream, entryCount);
 
             return entryCount;
         }
 
-        private static CGMetadata Deserialize(CacheStream stream)
+        private static void ReadGroupID(Stream stream, int readCount)
+        {
+            // Clear the _groupID cache
+            _groupID.Clear();
+            for (int i = 0; i < readCount; i++)
+            {
+                // Read the GroupID number
+                CgGroupID groupID = new CgGroupID
+                {
+                    ID = ReadInt32(stream),
+                };
+                _groupID.Add(groupID);
+            }
+        }
+
+        private static void ReadOffset(Stream stream, int readCount)
+        {
+            for (int i = 0; i < readCount; i++)
+            {
+                // Update GroupID and add the Offset number
+                _groupID[i] = _groupID[i].SetFileOffset(ReadInt32(stream));
+            }
+        }
+
+        private static CGMetadata Deserialize(CacheStream stream, int groupIDIndex)
         {
             CGMetadata entry = new CGMetadata();
+            stream.Position = _groupID[groupIDIndex].FileOffset;
             entry.CgID = ReadInt32(stream);
 
             entry.UnlockType = ReadByte(stream);
@@ -117,8 +151,6 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.LevelIDEnd = ReadInt32(stream);
             entry.CgCategory = ReadInt32(stream);
             entry.CgSubCategory = ReadInt32(stream);
-
-            int ptrToCgGroupIDArr = ReadInt32(stream);
 
             entry.WikiCgScore = ReadInt32(stream);
             entry.InitialUnlock = ReadBoolean(stream);
@@ -139,13 +171,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
 
             entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
 
-            stream.Position = ptrToCgGroupIDArr;
-            uint CgGroupIDCount = ReadUInt32(stream);
-            entry.CgGroupID = new int[CgGroupIDCount];
-            for (int i = 0; i < CgGroupIDCount; i++)
-            {
-                entry.CgGroupID[i] = ReadInt32(stream);
-            }
+            entry.CgGroupID = _groupID[groupIDIndex];
 
             stream.Position = ptrToCgPath;
             entry.CgPath = ReadString(stream);
