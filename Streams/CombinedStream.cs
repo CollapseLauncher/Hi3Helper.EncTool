@@ -3,8 +3,8 @@
  * https://raw.githubusercontent.com/lassevk/Streams/master/Streams/CombinedStream.cs
  */
 
-using System.IO;
 using System;
+using System.IO;
 
 namespace Hi3Helper.EncTool
 {
