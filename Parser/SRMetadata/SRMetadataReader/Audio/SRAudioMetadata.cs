@@ -17,9 +17,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         public int SubPackId { get; set; }
     }
 
-    [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true, WriteIndented = false)]
+    [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true)]
     [JsonSerializable(typeof(SRJSONAssetInfo))]
-    internal partial class SRJSONAssetInfoContext : JsonSerializerContext { }
+    internal sealed partial class SRJSONAssetInfoContext : JsonSerializerContext { }
 
     internal class SRAudioMetadata : SRAsbMetadata
     {

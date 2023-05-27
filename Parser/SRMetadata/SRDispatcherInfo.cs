@@ -24,9 +24,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         public string FullAssetsDownloadUrl { get; set; }
     }
 
-    [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true, WriteIndented = false)]
+    [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true)]
     [JsonSerializable(typeof(SRDispatchArchiveInfo))]
-    internal partial class SRDispatchArchiveInfoContext : JsonSerializerContext { }
+    internal sealed partial class SRDispatchArchiveInfoContext : JsonSerializerContext { }
 
     internal class SRDispatcherInfo : IDisposable
     {
