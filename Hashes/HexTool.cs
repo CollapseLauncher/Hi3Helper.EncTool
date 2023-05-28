@@ -138,6 +138,17 @@ namespace Hi3Helper.Data
             }
         }
 
+        public static unsafe double BytesToDoubleUnsafe(ReadOnlySpan<byte> array, int offset = 0)
+        {
+            if ((array.Length - offset) < 4) throw new OverflowException("Offset is beyond the length of the array");
+
+            fixed (byte* addr = &array[offset])
+            {
+                double value = *(double*)addr;
+                return value;
+            }
+        }
+
         public static unsafe long BytesToInt64Unsafe(ReadOnlySpan<byte> array, int offset = 0)
         {
             if ((array.Length - offset) < 8) throw new OverflowException("Offset is beyond the length of the array");
@@ -156,6 +167,17 @@ namespace Hi3Helper.Data
             fixed (byte* addr = &array[offset])
             {
                 ulong value = *(ulong*)addr;
+                return value;
+            }
+        }
+
+        public static unsafe float BytesToFloatUnsafe(ReadOnlySpan<byte> array, int offset = 0)
+        {
+            if ((array.Length - offset) < 4) throw new OverflowException("Offset is beyond the length of the array");
+
+            fixed (byte* addr = &array[offset])
+            {
+                float value = *(float*)addr;
                 return value;
             }
         }
