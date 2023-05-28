@@ -16,16 +16,16 @@ namespace Hi3Helper.EncTool.Parser.Cache
         All = 100
     }
 
-    public class CgHash
-    {
-        public int Hash { get; set; }
-    }
-
     public struct CgGroupID
     {
         public int ID;
         internal int FileOffset;
         internal CgGroupID SetFileOffset(int offset) => new CgGroupID { ID = ID, FileOffset = offset };
+    }
+
+    public struct TextID
+    {
+        public int hash;
     }
 
     public class CGMetadata
@@ -40,12 +40,12 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public int LevelIDEnd { get; set; }
         public int CgCategory { get; set; }
         public int CgSubCategory { get; set; }
-        public CgGroupID CgGroupID { get; set; }
+        public int[] CgGroupID { get; set; }
         public int WikiCgScore { get; set; }
         public bool InitialUnlock { get; set; }
         public string CgPath { get; set; }
         public string CgIconSpritePath { get; set; }
-        public CgHash CgLockHint { get; set; }
+        public TextID CgLockHint { get; set; }
         public bool InStreamingAssets { get; set; }
         public int CgPlayMode { get; set; }
         public string CgExtraKey { get; set; }
@@ -142,8 +142,10 @@ namespace Hi3Helper.EncTool.Parser.Cache
         private static CGMetadata Deserialize(CacheStream stream, int groupIDIndex)
         {
             CGMetadata entry = new CGMetadata();
+
             stream.Position = _groupID[groupIDIndex].FileOffset;
-            entry.CgID = ReadInt32(stream);
+            entry.CgID = _groupID[groupIDIndex].FileOffset;
+            stream.Position += 4;
 
             entry.UnlockType = ReadByte(stream);
             entry.UnlockCondition = ReadUInt32(stream);
@@ -171,18 +173,19 @@ namespace Hi3Helper.EncTool.Parser.Cache
 
             entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
 
-            entry.CgGroupID = _groupID[groupIDIndex];
+            int CgGroupIDCount = ReadInt32(stream);
+            entry.CgGroupID = new int[CgGroupIDCount];
+            for (int i = 0; i < CgGroupIDCount; i++)
+            {
+                entry.CgGroupID[i] = ReadInt32(stream);
+            }
 
             stream.Position = ptrToCgPath;
             entry.CgPath = ReadString(stream);
-
-            stream.Position = ptrToCgIconSpritePath;
             entry.CgIconSpritePath = ReadString(stream);
 
             stream.Position++;
-            entry.CgLockHint = new CgHash { Hash = ReadInt32(stream) };
-
-            stream.Position = ptrToPckType + 1;
+            entry.CgLockHint = new TextID { hash = ReadInt32(stream) };
 
             stream.Position = ptrToCgExtraKey;
             entry.CgExtraKey = ReadString(stream);
@@ -191,44 +194,44 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.DownloadLimitTime = ReadString(stream);
 
 #if DEBUG
-            Console.WriteLine($"CG [Type: {entry.PckType}][IsBuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} bytes]");
+            Console.WriteLine($"CG [T: {entry.PckType}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} b] [ID: {entry.CgID}]");
 #endif
 
             return entry;
         }
 
+        private static byte[] buf2 = new byte[2];
+        private static byte[] buf4 = new byte[4];
+        private static byte[] buf8 = new byte[8];
+
         private static int ReadInt32(Stream stream)
         {
-            Span<byte> buf = stackalloc byte[4];
-            stream.Read(buf);
-            return HexTool.BytesToInt32Unsafe(buf);
+            stream.Read(buf4);
+            return HexTool.BytesToInt32Unsafe(buf4);
         }
 
         private static uint ReadUInt32(Stream stream)
         {
-            Span<byte> buf = stackalloc byte[4];
-            stream.Read(buf);
-            return HexTool.BytesToUInt32Unsafe(buf);
+            stream.Read(buf4);
+            return HexTool.BytesToUInt32Unsafe(buf4);
         }
 
         private static short ReadInt16(Stream stream)
         {
-            Span<byte> buf = stackalloc byte[2];
-            stream.Read(buf);
-            return HexTool.BytesToInt16Unsafe(buf);
+            stream.Read(buf2);
+            return HexTool.BytesToInt16Unsafe(buf2);
         }
 
         private static ushort ReadUInt16(Stream stream)
         {
-            Span<byte> buf = stackalloc byte[2];
-            stream.Read(buf);
-            return HexTool.BytesToUInt16Unsafe(buf);
+            stream.Read(buf2);
+            return HexTool.BytesToUInt16Unsafe(buf2);
         }
 
         private static string ReadString(Stream stream)
         {
             ushort len = ReadUInt16(stream);
-            Span<byte> strArr = stackalloc byte[len];
+            byte[] strArr = new byte[len];
             stream.Read(strArr);
             return _encoding.GetString(strArr);
         }

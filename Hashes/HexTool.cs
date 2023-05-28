@@ -138,6 +138,28 @@ namespace Hi3Helper.Data
             }
         }
 
+        public static unsafe long BytesToInt64Unsafe(ReadOnlySpan<byte> array, int offset = 0)
+        {
+            if ((array.Length - offset) < 8) throw new OverflowException("Offset is beyond the length of the array");
+
+            fixed (byte* addr = &array[offset])
+            {
+                long value = *(long*)addr;
+                return value;
+            }
+        }
+
+        public static unsafe ulong BytesToUInt64Unsafe(ReadOnlySpan<byte> array, int offset = 0)
+        {
+            if ((array.Length - offset) < 8) throw new OverflowException("Offset is beyond the length of the array");
+
+            fixed (byte* addr = &array[offset])
+            {
+                ulong value = *(ulong*)addr;
+                return value;
+            }
+        }
+
         public static unsafe int BytesToInt32Unsafe(ReadOnlySpan<byte> array, int offset = 0)
         {
             if ((array.Length - offset) < 4) throw new OverflowException("Offset is beyond the length of the array");
