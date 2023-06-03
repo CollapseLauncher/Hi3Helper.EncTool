@@ -109,7 +109,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 ReadOnlySpan<byte> bufferSpan = refStruct.structData[index];
                 ReadOnlySpan<byte> hashBuffer = bufferSpan.Slice(0, 16);
                 ReadOnlySpan<byte> assetID = bufferSpan.Slice(16, 4);
-                uint size = HexTool.BytesToUInt32Unsafe(bufferSpan.Slice(20, 4));
+                uint size = BitConverter.ToUInt32(bufferSpan.Slice(20, 4));
 
                 hash = BigEndianBytesToHexBytes(hashBuffer);
                 string hashName = HexTool.BytesToHexUnsafe(hash);

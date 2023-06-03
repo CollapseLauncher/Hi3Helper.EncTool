@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Data;
+using System;
 using System.Text.Json.Serialization;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata

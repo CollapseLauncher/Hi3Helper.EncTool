@@ -207,31 +207,31 @@ namespace Hi3Helper.EncTool.Parser.Cache
         private static int ReadInt32(Stream stream)
         {
             stream.Read(buf4);
-            return HexTool.BytesToInt32Unsafe(buf4);
+            return BitConverter.ToInt32(buf4);
         }
 
         private static uint ReadUInt32(Stream stream)
         {
             stream.Read(buf4);
-            return HexTool.BytesToUInt32Unsafe(buf4);
+            return BitConverter.ToUInt32(buf4);
         }
 
         private static short ReadInt16(Stream stream)
         {
             stream.Read(buf2);
-            return HexTool.BytesToInt16Unsafe(buf2);
+            return BitConverter.ToInt16(buf2);
         }
 
         private static ushort ReadUInt16(Stream stream)
         {
             stream.Read(buf2);
-            return HexTool.BytesToUInt16Unsafe(buf2);
+            return BitConverter.ToUInt16(buf2);
         }
 
         private static string ReadString(Stream stream)
         {
             ushort len = ReadUInt16(stream);
-            byte[] strArr = new byte[len];
+            Span<byte> strArr = stackalloc byte[len];
             stream.Read(strArr);
             return _encoding.GetString(strArr);
         }

@@ -63,8 +63,8 @@ namespace Hi3Helper.Data
 
         public static unsafe string LongToHexUnsafe(long number)
         {
-            var lookupP = _lookup32UnsafeP;
-            var result = new char[8];
+            uint* lookupP = _lookup32UnsafeP;
+            ReadOnlySpan<char> result = stackalloc char[8];
             byte* bytesP = (byte*)&number;
             fixed (char* resultP = result)
             {
@@ -79,8 +79,8 @@ namespace Hi3Helper.Data
 
         public static unsafe string BytesToHexUnsafe(ReadOnlySpan<byte> bytes)
         {
-            var lookupP = _lookup32UnsafeP;
-            var result = new char[bytes.Length * 2];
+            uint* lookupP = _lookup32UnsafeP;
+            ReadOnlySpan<char> result = stackalloc char[bytes.Length * 2];
             fixed (byte* bytesP = bytes)
             fixed (char* resultP = result)
             {
@@ -93,10 +93,9 @@ namespace Hi3Helper.Data
             return new string(result);
         }
 
-        public static unsafe byte[] HexToBytesUnsafe(string source)
+        public static unsafe byte[] HexToBytesUnsafe(ReadOnlySpan<char> source)
         {
-            if (string.IsNullOrEmpty(source)) return new byte[0];
-
+            if (source.IsEmpty) return new byte[0];
             if (source.Length % 2 == 1) throw new ArgumentException();
 
             int index = 0;
@@ -135,94 +134,6 @@ namespace Hi3Helper.Data
                     }
                     return result;
                 }
-            }
-        }
-
-        public static unsafe double BytesToDoubleUnsafe(ReadOnlySpan<byte> array, int offset = 0)
-        {
-            if ((array.Length - offset) < 4) throw new OverflowException("Offset is beyond the length of the array");
-
-            fixed (byte* addr = &array[offset])
-            {
-                double value = *(double*)addr;
-                return value;
-            }
-        }
-
-        public static unsafe long BytesToInt64Unsafe(ReadOnlySpan<byte> array, int offset = 0)
-        {
-            if ((array.Length - offset) < 8) throw new OverflowException("Offset is beyond the length of the array");
-
-            fixed (byte* addr = &array[offset])
-            {
-                long value = *(long*)addr;
-                return value;
-            }
-        }
-
-        public static unsafe ulong BytesToUInt64Unsafe(ReadOnlySpan<byte> array, int offset = 0)
-        {
-            if ((array.Length - offset) < 8) throw new OverflowException("Offset is beyond the length of the array");
-
-            fixed (byte* addr = &array[offset])
-            {
-                ulong value = *(ulong*)addr;
-                return value;
-            }
-        }
-
-        public static unsafe float BytesToFloatUnsafe(ReadOnlySpan<byte> array, int offset = 0)
-        {
-            if ((array.Length - offset) < 4) throw new OverflowException("Offset is beyond the length of the array");
-
-            fixed (byte* addr = &array[offset])
-            {
-                float value = *(float*)addr;
-                return value;
-            }
-        }
-
-        public static unsafe int BytesToInt32Unsafe(ReadOnlySpan<byte> array, int offset = 0)
-        {
-            if ((array.Length - offset) < 4) throw new OverflowException("Offset is beyond the length of the array");
-
-            fixed (byte* addr = &array[offset])
-            {
-                int value = *(int*)addr;
-                return value;
-            }
-        }
-
-        public static unsafe uint BytesToUInt32Unsafe(ReadOnlySpan<byte> array, int offset = 0)
-        {
-            if ((array.Length - offset) < 4) throw new OverflowException("Offset is beyond the length of the array");
-
-            fixed (byte* addr = &array[offset])
-            {
-                uint value = *(uint*)addr;
-                return value;
-            }
-        }
-
-        public static unsafe short BytesToInt16Unsafe(ReadOnlySpan<byte> array, int offset = 0)
-        {
-            if ((array.Length - offset) < 2) throw new OverflowException("Offset is beyond the length of the array");
-
-            fixed (byte* addr = &array[offset])
-            {
-                short value = *(short*)addr;
-                return value;
-            }
-        }
-
-        public static unsafe ushort BytesToUInt16Unsafe(ReadOnlySpan<byte> array, int offset = 0)
-        {
-            if ((array.Length - offset) < 2) throw new OverflowException("Offset is beyond the length of the array");
-
-            fixed (byte* addr = &array[offset])
-            {
-                ushort value = *(ushort*)addr;
-                return value;
             }
         }
     }
