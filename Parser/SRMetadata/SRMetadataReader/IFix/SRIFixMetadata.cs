@@ -8,13 +8,16 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
     internal class SRIFixMetadata : SRMetadataBase
     {
+        private ushort SRMIID { get; set; }
+
         protected override string ParentRemotePath { get; set; }
         protected override string MetadataPath { get; set; }
         protected override SRAssetProperty AssetProperty { get; set; }
-        protected SRIFixMetadata(string baseURL, Http.Http httpClient) : base(baseURL, httpClient)
+        protected SRIFixMetadata(string baseURL, Http.Http httpClient, ushort idSRMI = 2) : base(baseURL, httpClient)
         {
             ParentRemotePath = "/client/Windows";
             MetadataPath = "/M_IFixV.bytes";
+            SRMIID = idSRMI;
         }
 
         internal static SRMetadataBase CreateInstance(string baseURL, Http.Http httpClient) => new SRIFixMetadata(baseURL, httpClient);
@@ -22,7 +25,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal override async Task GetRemoteMetadata(string persistentPath, CancellationToken token, string localManifestPath)
         {
             PersistentPath = persistentPath;
-            using (SRMIMetadataReader _SRMIReader = new SRMIMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataPath))
+            using (SRMIMetadataReader _SRMIReader = new SRMIMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataPath, SRMIID))
             {
                 await _SRMIReader.GetRemoteMetadata(persistentPath, token, localManifestPath);
                 _SRMIReader.Deserialize();

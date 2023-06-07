@@ -1,80 +1,14 @@
-// Last changes: 2023/04/25 13:57 +07
-// Original Proto Name: LAFNAGEECEK -> ServerDispatchData (Class)
+// Last changes: 2023/06/07 21:54 +07
+// Original Proto Name: OBNNLPMNKJK -> ServerDispatchData (Class)
 syntax = "proto3";
 
 package Hi3Helper.EncTool.Proto.StarRail;
 
 message StarRailGateway {
-    enum ServerDispatchReturnCode {
-      Success             = 0;
-      Failure             = 1;
-      ServerStop          = 2;
-      VersionError        = 3;
-      RET_FORCE_UPDATE    = 4;
-      RET_LANGUAGE_ERROR  = 5;
-      RET_PLATFORM_ERROR  = 6;
-      RET_CDN_ERROR       = 7;
-    }
-    
-    enum ReloginTypeCode // FEJKFBDCOKM
-    {
-      NoKick              = 0;
-      ForceKick           = 1;
-      IdleKick            = 2;
-      Silence             = 3;
-    }
-
-    string                    AssetBundleVersionUpdateUrl         = 1;    // AIKOOECPBDD (ID: CGJMIEFOCCO)
-    // string                    VideoBundleVersionUpdateUrl         = 1;    // AIKOOECPBDD (ID: CGJMIEFOCCO)
-    // string                    AudioBundleVersionUpdateUrl         = 1;    // AIKOOECPBDD (ID: CGJMIEFOCCO)
-    
-    ReloginTypeCode           DesignDataReloginType               = 3;    // BJCFOMFMCFK (ID: OGGPLLHBIDA)
-    string                    LuaBundleVersionUpdateUrl           = 4;    // IBEIMOGAMGA (ID: GCFGGHNFNPA)
-    bool                      EnableDesignDataBundleVersionUpdate = 5;    // BMKALDCKHAJ (ID: CBKGDJPINIJ)
-    string                    DesignDataBundleVersionUpdateUrl    = 6;    // IDNKMBGNKIL (ID: BIBHFBLBPJJ)
-    string                    AsbReloginDesc                      = 7;    // HOIPFMFLHHK (ID: OFBGHLGCDJH)
-    string                    Name                                = 9;    // IKCHCOJCMPD (ID: DCCGHHKGFHD)
-    ReloginTypeCode           AsbReloginType                      = 10;   // PGOMDHLJOPH (ID: GGIBIHBADDG)
-    uint32                    Port                                = 11;   // JEFMFJPJGNP (ID: LMJLNMBDGJF)
-    
-    bool                      EnableAssetBundleVersionUpdate      = 12;   // OBOMKLDGJEE (ID: LOOAFGDHODB)
-    // bool                      EnableLuaBundleVersionUpdate        = 12;   // OBOMKLDGJEE (ID: LOOAFGDHODB)
-    // bool                      EnableAudioBundleVersionUpdate      = 12;   // OBOMKLDGJEE (ID: LOOAFGDHODB)
-    
-    string                    Host                                = 13;   // FLAEJCLONHP (ID: JMDDFENIPBD)
-    string                    LuaPatchVersion                     = 270;  // MKHJMFGMBEP (ID: NFLMHAFPLIB)
-    string                    loginWhiteMsg                       = 471;  // FBFCOIJPBGO (ID: NOIJIDEGNNO)
-    string                    DesignDataReloginDesc               = 926;  // BENMINCEINB (ID: IODJOCFACMI)
-    string                    predownloadUpdateUrl                = 1276; // IKFBKCBANEP (ID: NDKLIDBFNPD)
-    string                    IFixPatchRevision                   = 1423; // EMDBODLHPLO (ID: PGIJCGEANLB)
-    string                    IFixPatchVersionUpdateUrl           = 1471; // CALDCNKAOOC (ID: DNJOPGPODAF)
-    
-    int64                     StopBeginTime                       = 2;    // NNKEGHJFMNI (ID: NHIOLGGDGJI)
-    int64                     StopEndTime                         = 8;    // EIPHLGAIMNC (ID: FCBHJIKANFA)
-    string                    StopDesc                            = 14;   // GJLKPCECODB (ID: GDHDLOHEGMJ)
-    
-    string                    ServerUrlDict1                      = 789;  // FEGCFGOCLBC (ID: IGNKGIMGNHK)
-    string                    ServerUrlDict2                      = 87;   // GCABNHLBOIM (ID: AOHDOKCDECN)
-    string                    ServerUrlDict3                      = 971;  // DINFFHGNGJM (ID: FAGJGKGDGNH)
-    string                    ServerUrlDict4                      = 659;  // BCOMKKNJABD (ID: GJMLCLJLBOA)
-    string                    ServerUrlDict5                      = 704;  // JPHBIKEGMHK (ID: EIDBKLDJGEB)
-    string                    ServerUrlDict6                      = 1521; // JEJFEKODNJI (ID: NGPOIJCAFBJ)
-    string                    ServerUrlDict7                      = 385;  // EDJCFNAJIHE (ID: CEIJLIIJKLD)
-    string                    ServerUrlDict8                      = 1751; // KDPOOELNBPP (ID: JJDLBDJOHPE)
-    string                    ServerUrlDict9                      = 1084; // KDGMBDCEONC (ID: NFCPHIODPLI)
-    string                    ServerUrlDict10                     = 241;  // DHOKJOICDGD (ID: JHLJJBAKFOC)
-    
-    bool                      UseTcp                              = 2044; // FNHPEALEAHC (ID: GGOLCPDLLGA)
-    bool                      EnableSaveReplayFile                = 306;  // GMKEGAOOBPI (ID: APMLEGLHFHD)
-    bool                      EnableUploadBattleLog               = 1340; // JFLAHKKOJBP (ID: OAOFAAEPGOD)
-    string                    ServerDescription                   = 242;  // HKNFIHHKHGF (ID: MCPODGKNNKJ)
-    string                    OnlineReplayUploadUrl               = 188;  // DINPGLAFGNL (ID: AEPNLIPJALP)
-    string                    OnlineReplayDownloadUrl             = 1771; // GIGMBOMLCOL (ID: PLAAFMIMEAF)
-    bool                      EnableRedeemCode                    = 415;  // FOIJNCKDHNK (ID: CDNACJDFOBI)
-    bool                      ForbidRecharge                      = 1659; // DBOACCLGMEC (ID: BAAMPBFABKO)
-    bool                      MTPSwitch                           = 684;  // JOOBMKHDODK (ID: GMPLEKIEHHE)
-    bool                      EventTrackingOpen                   = 549;  // EHPIEINBAAK (ID: NALOBJGAOCN)
-    bool                      IOSExam                             = 1115; // BPFFNLHNCLI (ID: APOMFMHPLNL)
-    
-    ServerDispatchReturnCode  DispatchInfo                        = 15;   // IBIOCHNGJKO (ID: HFCDDOBFELF)
+    string  AssetBundleVersionUpdateUrl         = 14;   // IPHLBNFCFFN (ID: PMKKDKEANEO)
+    string  LuaBundleVersionUpdateUrl           = 4;    // MKFJCHLFCIF (ID: FIOJEGIPIFF)
+    string  DesignDataBundleVersionUpdateUrl    = 6;    // MHGJIDCHHBG (ID: FLIIBKIBNLG)
+    string  LuaPatchVersion                     = 349;  // BDILALNCMDN (ID: ECOCFJGEDDL)
+    string  IFixPatchRevision                   = 1107; // OKGBJBACNKG (ID: JMDLMJHNFEB)
+    string  IFixPatchVersionUpdateUrl           = 2040; // AIBNAEGGFDA (ID: CBILGKGKIOK)
 }

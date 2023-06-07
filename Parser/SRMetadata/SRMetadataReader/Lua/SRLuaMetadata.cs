@@ -8,7 +8,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
     {
         protected SRAssetType InheritedAssetType { get; set; }
 
-        protected SRLuaMetadata(string baseURL, Http.Http httpClient) : base(baseURL, httpClient)
+        protected SRLuaMetadata(string baseURL, Http.Http httpClient) : base(baseURL, httpClient, 3)
         {
             AssetProperty = new SRAssetProperty();
             ParentRemotePath = "/client/Windows";

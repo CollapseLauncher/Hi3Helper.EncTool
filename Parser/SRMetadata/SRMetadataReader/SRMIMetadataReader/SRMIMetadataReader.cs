@@ -18,10 +18,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal ulong AssetListUnixTimestamp { get; set; }
         internal string AssetListRootPath { get; set; }
 
-        internal SRMIMetadataReader(string baseURL, Http.Http httpClient, string parentRemotePath, string metadataPath) : base(baseURL, httpClient)
+        internal SRMIMetadataReader(string baseURL, Http.Http httpClient, string parentRemotePath, string metadataPath, ushort typeID = 2) : base(baseURL, httpClient)
         {
             Magic = "SRMI";
-            TypeID = 2;
+            TypeID = typeID;
             ParentRemotePath = parentRemotePath;
             MetadataPath = metadataPath;
         }
@@ -55,31 +55,28 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         private unsafe void ReadAssets(EndianBinaryReader reader)
         {
             Span<byte> fullHash = stackalloc byte[16];
-            while (reader.BaseStream.Length - reader.BaseStream.Position > 0)
+            for (
+                int i = 0, k = 0;
+                i < 4;
+                i++)
             {
+                int hashC = reader.ReadInt32();
+                byte* chunk = (byte*)&hashC;
                 for (
-                    int i = 0, k = 0;
-                    i < 4;
-                    i++)
+                    int j = 3;
+                    j >= 0;
+                    j--, k++)
                 {
-                    int hashC = reader.ReadInt32();
-                    byte* chunk = (byte*)&hashC;
-                    for (
-                        int j = 3;
-                        j >= 0;
-                        j--, k++)
-                    {
-                        fullHash[k] = chunk[j];
-                    }
+                    fullHash[k] = chunk[j];
                 }
-
-                AssetListFilesize = reader.ReadUInt32();
-                _ = reader.ReadUInt32();
-                AssetListUnixTimestamp = reader.ReadUInt64();
-                AssetListRootPath = reader.ReadString();
-
-                AssetListFilename = MetadataPath.Split('_', '.')[1] + $"_{HexTool.BytesToHexUnsafe(fullHash)}.bytes";
             }
+
+            AssetListFilesize = reader.ReadUInt32();
+            _ = reader.ReadUInt32();
+            AssetListUnixTimestamp = reader.ReadUInt64();
+            AssetListRootPath = reader.ReadString();
+
+            AssetListFilename = MetadataPath.Split('_', '.')[1] + $"_{HexTool.BytesToHexUnsafe(fullHash)}.bytes";
         }
 
         internal override void Dispose(bool Disposing)

@@ -140,6 +140,13 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 Console.WriteLine($"    Struct: {a} -> offset: {assetList[a].offset} | count: {assetList[a].structCount} | size: {assetList[a].structSize} bytes | toSize: {assetList[a].structSize * assetList[a].structCount} bytes");
 #endif
                 reader.Position = assetList[a].offset;
+
+                if (a > 0)
+                {
+                    Console.WriteLine($"    Skipping struct index: {a} info");
+                    continue;
+                }
+
                 for (int b = 0; b < assetList[a].structCount; b++)
                 {
                     assetList[a].structData[b] = reader.ReadBytes((int)assetList[a].structSize);
