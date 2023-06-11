@@ -57,7 +57,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
         public static async Task<KianaDispatch> GetGameserver(KianaDispatch dispatch, string regionName, CancellationToken token)
         {
             // Find the correct region as per key from codename and select the first entry. If none, then return null (because .FirstOrDefault())
-            KianaDispatch region = dispatch.Regions.Where(x => x.DispatchCodename == regionName).FirstOrDefault();
+            KianaDispatch? region = dispatch.Regions.Where(x => x.DispatchCodename == regionName)?.FirstOrDefault();
             // If null, then throw that the region is not available
             if (region == null) throw new KeyNotFoundException($"Region {regionName} is not exist in the dispatch! (Available region: {string.Join(',', dispatch.Regions.Select(x => x.DispatchCodename))})");
 
