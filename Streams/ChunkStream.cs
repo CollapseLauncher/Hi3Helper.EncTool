@@ -5,14 +5,14 @@ using System.Threading.Tasks;
 
 namespace Hi3Helper.EncTool
 {
-    public class ChunkStream : Stream
+    public sealed class ChunkStream : Stream
     {
         private long _start { get; set; }
         private long _end { get; set; }
         private long _size { get => _end - _start; }
         private long _curPos { get; set; }
         private long _remain { get => _size - _curPos; }
-        private protected readonly Stream _stream;
+        private readonly Stream _stream;
         private bool _isDisposing { get; set; }
 
         public ChunkStream(Stream stream, long start, long end, bool isDisposing = false)
@@ -44,9 +44,11 @@ namespace Hi3Helper.EncTool
             if (_remain == 0) return 0;
 
             int toSlice = (int)(buffer.Length > _remain ? _remain : buffer.Length);
-            _curPos += toSlice;
+            _stream.Position = _start + _curPos;
+            int read = _stream.Read(buffer.Slice(0, toSlice));
+            _curPos += read;
 
-            return _stream.Read(buffer.Slice(0, toSlice));
+            return read;
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
@@ -54,9 +56,11 @@ namespace Hi3Helper.EncTool
             if (_remain == 0) return 0;
 
             int toSlice = (int)(buffer.Length > _remain ? _remain : buffer.Length);
-            _curPos += toSlice;
+            _stream.Position = _start + _curPos;
+            int read = await _stream.ReadAsync(buffer.Slice(0, toSlice), token);
+            _curPos += read;
 
-            return await _stream.ReadAsync(buffer.Slice(0, toSlice), token);
+            return read;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -64,11 +68,10 @@ namespace Hi3Helper.EncTool
             if (_remain == 0) return 0;
 
             int toRead = (int)(_remain < count ? _remain : count);
-            int toOffset = offset > _remain ? 0 : offset;
-            _stream.Position += toOffset;
-            _curPos += toOffset + toRead;
-
-            return _stream.Read(buffer, offset, toRead);
+            _stream.Position = _start + _curPos;
+            int read = _stream.Read(buffer, offset, toRead);
+            _curPos += read;
+            return read;
         }
 
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
@@ -76,9 +79,8 @@ namespace Hi3Helper.EncTool
             if (_remain == 0) return 0;
 
             int toRead = (int)(_remain < count ? _remain : count);
-            int toOffset = offset > _remain ? 0 : offset;
-            _stream.Position += toOffset;
-            _curPos += toOffset + toRead;
+            _curPos += toRead;
+            _stream.Position = _start + _curPos;
 
             return await _stream.ReadAsync(buffer, offset, toRead, token);
         }
@@ -157,7 +159,7 @@ namespace Hi3Helper.EncTool
         {
             get
             {
-                return _stream.Position - _start;
+                return _curPos;
             }
             set
             {
@@ -166,8 +168,8 @@ namespace Hi3Helper.EncTool
                     throw new IndexOutOfRangeException();
                 }
 
-                _stream.Position = value + _start;
                 _curPos = value;
+                _stream.Position = _curPos + _start;
             }
         }
 
