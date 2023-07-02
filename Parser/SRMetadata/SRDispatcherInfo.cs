@@ -86,12 +86,22 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             // Format dispatcher URL
             string dispatchURL = _dispatchURL + string.Format(_dispatchURLFormat, _productID, _productVer, SRMetadata.GetUnixTimestamp());
 
+#if DEBUG
+            Console.WriteLine($"Dispatch URL: {dispatchURL}");
+#endif
+
             // Get the dispatch content
             using (MemoryStream stream = new MemoryStream())
             {
                 await _httpClient.Download(dispatchURL, stream, null, null, _threadToken);
                 stream.Position = 0;
-                byte[] content = Convert.FromBase64String(Encoding.UTF8.GetString(stream.ToArray()));
+                string response = Encoding.UTF8.GetString(stream.ToArray());
+
+#if DEBUG
+                Console.WriteLine($"Response (in Base64): {response}");
+#endif
+
+                byte[] content = Convert.FromBase64String(response);
 
                 // Deserialize dispatcher and assign the region
                 StarRailDispatch dispatch = StarRailDispatch.Parser.ParseFrom(content);
@@ -106,12 +116,22 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             // Format dispatcher URL
             string gatewayURL = _regionInfo.DispatchUrl + string.Format(_gatewayURLFormat, _productID, _productVer, SRMetadata.GetUnixTimestamp(), _dispatchSeed);
 
+#if DEBUG
+            Console.WriteLine($"Gateway URL: {gatewayURL}");
+#endif
+
             // Get the dispatch content
             using (MemoryStream stream = new MemoryStream())
             {
                 await _httpClient.Download(gatewayURL, stream, null, null, _threadToken);
                 stream.Position = 0;
-                byte[] content = Convert.FromBase64String(Encoding.UTF8.GetString(stream.ToArray()));
+                string response = Encoding.UTF8.GetString(stream.ToArray());
+
+#if DEBUG
+                Console.WriteLine($"Response (in Base64): {response}");
+#endif
+
+                byte[] content = Convert.FromBase64String(response);
 
                 // Deserialize gateway
                 _regionGateway = StarRailGateway.Parser.ParseFrom(content);
@@ -124,6 +144,13 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             string archiveURL = _regionGateway.AssetBundleVersionUpdateUrl + "/client/Windows/Archive/M_ArchiveV.bytes";
             string localPath = Path.Combine(_persistentDirectory, "Archive\\Windows\\M_ArchiveV_cache.bytes");
             string localDir = Path.GetDirectoryName(localPath);
+
+#if DEBUG
+            Console.WriteLine($"Parsing Archive -----");
+            Console.WriteLine($"    URL: {archiveURL}");
+            Console.WriteLine($"    LocalPath: {localPath}");
+            Console.WriteLine($"    LocalDir: {localDir}");
+#endif
 
             if (!Directory.Exists(localDir))
             {
