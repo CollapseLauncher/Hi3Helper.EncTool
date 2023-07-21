@@ -119,6 +119,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal abstract void Deserialize();
         public SRAssetProperty GetAssets() => AssetProperty;
+        public IEnumerable<SRAsset> EnumerateAssets() => AssetProperty.AssetList;
         internal abstract void Dispose(bool Disposing);
         internal string GetMetadataPathFromArchiveInfo(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string key)
         {

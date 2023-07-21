@@ -1,14 +1,12 @@
-// Last changes: 2023/06/07 21:54 +07
-// Original Proto Name: OBNNLPMNKJK -> ServerDispatchData (Class)
 syntax = "proto3";
 
 package Hi3Helper.EncTool.Proto.StarRail;
 
 message StarRailGateway {
-    string  AssetBundleVersionUpdateUrl         = 14;   // IPHLBNFCFFN (ID: PMKKDKEANEO)
-    string  LuaBundleVersionUpdateUrl           = 4;    // MKFJCHLFCIF (ID: FIOJEGIPIFF)
-    string  DesignDataBundleVersionUpdateUrl    = 6;    // MHGJIDCHHBG (ID: FLIIBKIBNLG)
-    string  LuaPatchVersion                     = 349;  // BDILALNCMDN (ID: ECOCFJGEDDL)
-    string  IFixPatchRevision                   = 1107; // OKGBJBACNKG (ID: JMDLMJHNFEB)
-    string  IFixPatchVersionUpdateUrl           = 2040; // AIBNAEGGFDA (ID: CBILGKGKIOK)
+    string  AssetBundleVersionUpdateUrl         = 3;
+    string  LuaBundleVersionUpdateUrl           = 5;
+    string  DesignDataBundleVersionUpdateUrl    = 9;
+    string  LuaPatchVersion                     = 869;
+    string  IFixPatchRevision                   = 1858;
+    string  IFixPatchVersionUpdateUrl           = 941;
 }

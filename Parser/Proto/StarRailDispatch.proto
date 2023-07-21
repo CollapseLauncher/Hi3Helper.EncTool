@@ -1,4 +1,3 @@
-// Last changes: 2023/04/25 13:57 +07
 syntax = "proto3";
 
 package Hi3Helper.EncTool.Proto.StarRail;
