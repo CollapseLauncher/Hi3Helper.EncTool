@@ -17,13 +17,17 @@ namespace Hi3Helper.Data
         public static string BytesToCRC32Simple(Stream buffer)
         {
             crc32.Append(buffer);
-            return HexTool.BytesToHexUnsafe(crc32.GetHashAndReset());
+            byte[] arrayResult = crc32.GetHashAndReset();
+            Array.Reverse(arrayResult);
+
+            return HexTool.BytesToHexUnsafe(arrayResult);
         }
 
         public static string BytesToCRC32Simple(string str)
         {
             byte[] strBytes = Encoding.UTF8.GetBytes(str);
             byte[] hashSpan = Crc32.Hash(strBytes);
+            Array.Reverse(hashSpan);
 
             return HexTool.BytesToHexUnsafe(hashSpan);
         }
