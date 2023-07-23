@@ -1,7 +1,7 @@
-﻿using Force.Crc32;
-using System;
+﻿using System;
 using System.Buffers;
 using System.IO;
+using System.IO.Hashing;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
@@ -12,13 +12,18 @@ namespace Hi3Helper.Data
     public static class ConverterTool
     {
         private static readonly MD5 MD5Hash = MD5.Create();
-        private static readonly Crc32Algorithm CRCEncoder = new Crc32Algorithm();
+        private static readonly Crc32 crc32 = new Crc32();
         private static readonly string[] SizeSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
-        public static string BytesToCRC32Simple(Stream buffer) => HexTool.BytesToHexUnsafe(CRCEncoder.ComputeHash(buffer));
+        public static string BytesToCRC32Simple(Stream buffer)
+        {
+            crc32.Append(buffer);
+            return HexTool.BytesToHexUnsafe(crc32.GetHashAndReset());
+        }
+
         public static string BytesToCRC32Simple(string str)
         {
             byte[] strBytes = Encoding.UTF8.GetBytes(str);
-            byte[] hashSpan = CRCEncoder.ComputeHash(strBytes);
+            byte[] hashSpan = Crc32.Hash(strBytes);
 
             return HexTool.BytesToHexUnsafe(hashSpan);
         }
