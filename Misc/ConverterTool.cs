@@ -32,6 +32,24 @@ namespace Hi3Helper.Data
             return HexTool.BytesToHexUnsafe(hashSpan);
         }
 
+        public static int BytesToCRC32Int(Stream buffer)
+        {
+            crc32.Append(buffer);
+            byte[] arrayResult = crc32.GetHashAndReset();
+            Array.Reverse(arrayResult);
+
+            return BitConverter.ToInt32(arrayResult);
+        }
+
+        public static int BytesToCRC32Int(string str)
+        {
+            byte[] strBytes = Encoding.UTF8.GetBytes(str);
+            byte[] hashSpan = Crc32.Hash(strBytes);
+            Array.Reverse(hashSpan);
+
+            return BitConverter.ToInt32(hashSpan);
+        }
+
         public static string CreateMD5Shared(Stream fs)
         {
             MD5Hash.Initialize();
