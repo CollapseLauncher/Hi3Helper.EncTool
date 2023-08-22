@@ -64,9 +64,10 @@ namespace Hi3Helper.Data
         private static readonly SpanAction<char, IntPtr> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
         public static unsafe string NormalizePath(ReadOnlySpan<char> source)
         {
-            fixed (char* ptr = source.TrimStart('/'))
+            ReadOnlySpan<char> sourceTrimmed = source.TrimStart('/');
+            fixed (char* ptr = sourceTrimmed)
             {
-                return string.Create(source.Length, (IntPtr)ptr, s_normalizePathReplaceCore);
+                return string.Create(sourceTrimmed.Length, (IntPtr)ptr, s_normalizePathReplaceCore);
             }
         }
 
