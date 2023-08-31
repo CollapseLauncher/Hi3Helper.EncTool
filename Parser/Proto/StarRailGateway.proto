@@ -3,10 +3,10 @@ syntax = "proto3";
 package Hi3Helper.EncTool.Proto.StarRail;
 
 message StarRailGateway {
-    string  AssetBundleVersionUpdateUrl         = 3;
-    string  LuaBundleVersionUpdateUrl           = 5;
-    string  DesignDataBundleVersionUpdateUrl    = 9;
-    string  LuaPatchVersion                     = 869;
-    string  IFixPatchRevision                   = 1858;
-    string  IFixPatchVersionUpdateUrl           = 941;
+    string  AssetBundleVersionUpdateUrl         = 1;
+    string  LuaBundleVersionUpdateUrl           = 4;
+    string  DesignDataBundleVersionUpdateUrl    = 12;
+    string  LuaPatchVersion                     = 555;
+    string  IFixPatchRevision                   = 1803;
+    string  IFixPatchVersionUpdateUrl           = 723;
 }
