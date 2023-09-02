@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.IO;
 using System.IO.Hashing;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
@@ -39,6 +40,65 @@ namespace Hi3Helper.Data
             Array.Reverse(arrayResult);
 
             return BitConverter.ToInt32(arrayResult);
+        }
+
+        public static bool TrySerializeStruct<T>(T[] input, byte[] output, out int read)
+            where T : struct
+        {
+            read = 0;
+            int lenOfArrayT = Marshal.SizeOf(typeof(T)) * input.Length;
+            if (output.Length < lenOfArrayT) return false;
+
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (!TrySerializeStruct(input[i], ref read, output)) return false;
+            }
+            return true;
+        }
+
+        public static bool TrySerializeStruct<T>(T input, ref int pos, byte[] output)
+            where T : struct
+        {
+            int lenOfT = Marshal.SizeOf(typeof(T));
+            if (pos + lenOfT > output.Length) return false;
+
+            IntPtr dataPtr = Marshal.AllocHGlobal(lenOfT);
+            Marshal.StructureToPtr(input, dataPtr, true);
+            Marshal.Copy(dataPtr, output, pos, lenOfT);
+            Marshal.FreeHGlobal(dataPtr);
+            pos += lenOfT;
+            return true;
+        }
+
+        public static bool TryDeserializeStruct<T>(byte[] data, int count, out T[] output)
+            where T : struct
+        {
+            int lenOfArrayT = Marshal.SizeOf(typeof(T)) * count;
+            output = default;
+            if (data.Length < lenOfArrayT) return false;
+
+            output = new T[count];
+            for (int i = 0, pos = 0; i < count; i++)
+            {
+                if (!TryDeserializeStruct(data, ref pos, out output[i])) return false;
+            }
+            return true;
+        }
+
+        public static bool TryDeserializeStruct<T>(byte[] data, ref int pos, out T output)
+            where T : struct
+        {
+            output = default;
+            int lenOfT = Marshal.SizeOf(typeof(T));
+            if (data.Length < lenOfT || data.Length - lenOfT < pos) return false;
+
+            IntPtr bufferPtr = Marshal.AllocHGlobal(lenOfT);
+            Marshal.Copy(data, pos, bufferPtr, lenOfT);
+
+            output = (T)Marshal.PtrToStructure(bufferPtr, typeof(T));
+            Marshal.FreeHGlobal(bufferPtr);
+            pos += lenOfT;
+            return true;
         }
 
         public static int BytesToCRC32Int(string str)
