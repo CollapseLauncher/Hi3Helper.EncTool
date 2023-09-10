@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
 		<Platforms>x64</Platforms>
 		<Configurations>Debug;Release;Publish</Configurations>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -27,7 +27,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Google.Protobuf" Version="3.24.2" />
+		<PackageReference Include="Google.Protobuf" Version="3.24.3" />
 		<PackageReference Include="System.IO.Hashing" Version="7.0.0" />
 	</ItemGroup>
 
