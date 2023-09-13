@@ -1,8 +1,8 @@
 ﻿using Hi3Helper.Data;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -54,17 +54,34 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
             return await TryParseDispatch(_httpClient, _dispatchUrl, token);
         }
 
-        public static async Task<KianaDispatch> GetGameserver(KianaDispatch dispatch, string regionName, CancellationToken token)
+#nullable enable
+        public static async ValueTask<KianaDispatch> GetGameserver(KianaDispatch dispatch, string regionName, CancellationToken token)
         {
             // Find the correct region as per key from codename and select the first entry. If none, then return null (because .FirstOrDefault())
-            KianaDispatch? region = dispatch.Regions.Where(x => x.DispatchCodename == regionName)?.FirstOrDefault();
-            // If null, then throw that the region is not available
-            if (region == null) throw new KeyNotFoundException($"Region {regionName} is not exist in the dispatch! (Available region: {string.Join(',', dispatch.Regions.Select(x => x.DispatchCodename))})");
+            // If the region results a null, then find a possible dispatch to read.
+            KianaDispatch region = dispatch.Regions.Where(x => x.DispatchCodename == regionName)?.FirstOrDefault()
+                ?? await TryGetPossibleMatchingRegion(dispatch, token);
 
             // Format the gameserver URL and set it to this instance, then try parsing the gateway (gameserver)
             string gameServerUrl = region.DispatchUrl + _dispatchQuery;
             return await TryParseDispatch(_httpClient, gameServerUrl, token);
         }
+
+        private static async ValueTask<KianaDispatch> TryGetPossibleMatchingRegion(KianaDispatch dispatch, CancellationToken token)
+        {
+            // Do loop and find a possible valid region/dispatch
+            for (int i = 0; i < dispatch.Regions.Length; i++)
+            {
+                var region = dispatch.Regions[i];
+                HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, new Uri(region.DispatchUrl));
+                HttpResponseMessage responseMessage = await _httpClient.GetHttpClient().SendAsync(requestMessage, token);
+                if (responseMessage.IsSuccessStatusCode) return region;
+            }
+
+            // If not, then :terikms:
+            throw new NullReferenceException("The valid dispatch/region isn't exist!");
+        }
+#nullable disable
 
         private static async Task<KianaDispatch> TryParseDispatch(Http.Http http, string dispatchUrl, CancellationToken token)
         {
@@ -81,7 +98,17 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
                     using (Stream responseStream = GetTransformBase64Stream(memStream))
                     using (Stream cryptStream = GetCryptStream(responseStream))
                     {
+#if DEBUG
+                        string line;
+                        using (StreamReader ln = new StreamReader(cryptStream))
+                        {
+                            line = ln.ReadLine();
+                            Console.WriteLine($"Response {dispatchUrl}:\r\n{line}");
+                            return (KianaDispatch)JsonSerializer.Deserialize(line, typeof(KianaDispatch), KianaDispatchContext.Default);
+                        }
+#else
                         return (KianaDispatch)JsonSerializer.Deserialize(cryptStream, typeof(KianaDispatch), KianaDispatchContext.Default);
+#endif
                     }
                 }
 
