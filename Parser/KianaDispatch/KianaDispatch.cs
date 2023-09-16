@@ -39,6 +39,10 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
         [JsonPropertyName("asset_bundle_url_list")] public string[] AssetBundleUrls { get; set; }
         [JsonPropertyName("ex_resource_url_list")] public string[] ExternalAssetUrls { get; set; }
         [JsonPropertyName("region_list")] public KianaDispatch[] Regions { get; set; }
+
+        // Added since v6.9 (nice) changes
+        // :teri_copium:
+        [JsonPropertyName("manifest")] public ManifestBase Manifest { get; set; }
         #endregion
 
         public static async Task<KianaDispatch> GetDispatch(string dispatchUrl, string dispatchFormat, string dispatchChannelName, string baseKey, int[] ver, CancellationToken token)

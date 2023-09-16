@@ -106,7 +106,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             };
 
             // Check if the game version and manifest version is match. If not, then throw
-            if (!ManifestVersion.SequenceEqual(_gameVersion))
+            if (!ManifestVersion.AsSpan().Slice(0, 2).SequenceEqual(_gameVersion.AsSpan().Slice(0, 2)))
             {
                 throw new FormatException($"Manifest version is not the same as game version! Game Version: {string.Join('.', _gameVersion)} <--> Manifest Version: {string.Join('.', ManifestVersion)}");
             }
