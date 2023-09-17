@@ -65,6 +65,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         public string PrintSummary() => $"File [T: {AssetType}]: {LocalName}\t{ConverterTool.SummarizeSizeSimple(Size)} ({Size} bytes)";
         public long GetAssetSize() => Size;
+        public string GetRemoteURL() => RemoteURL;
+        public void SetRemoteURL(string url) => RemoteURL = url;
     }
 
     public enum SRAssetType

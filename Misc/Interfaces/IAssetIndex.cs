@@ -4,5 +4,7 @@
     {
         string PrintSummary();
         long GetAssetSize();
+        string GetRemoteURL();
+        void SetRemoteURL(string url);
     }
 }
