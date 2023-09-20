@@ -12,6 +12,45 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         /// </summary>
         public static int XMFVersionLength { get => XMFParser._versioningLength; }
 
+#nullable enable
+        /// <summary>
+        /// Get the version from XMF file
+        /// </summary>
+        /// <param name="xmfPath">The path of the XMF file</param>
+        /// <returns>
+        /// If the path doesn't exist or the file is not a valid XMF, then it will return a <c>null</c>.
+        /// Otherwise, return the version provided by the XMF file
+        /// </returns>
+        public static int[]? GetXMFVersion(Stream xmfFS)
+        {
+            try
+            {
+                using (EndianBinaryReader reader = new EndianBinaryReader(xmfFS, EndianType.LittleEndian, true))
+                {
+                    reader.Position = XMFParser._signatureLength + 4;
+                    int[] versionXMF = XMFParser.ReadVersion(reader);
+                    return versionXMF;
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"error while reading XMF file!\r\n{e}");
+                return null;
+            }
+        }
+
+        private static int[]? GetXMFVersion(string xmfPath)
+        {
+            FileInfo xmf = new FileInfo(xmfPath);
+            if (!xmf.Exists || (xmf.Exists && xmf.Length < 0xFF)) return null;
+
+            using (FileStream xmfFS = xmf.OpenRead())
+            {
+                return GetXMFVersion(xmfFS);
+            }
+        }
+#nullable disable
+
         /// <summary>
         /// Compares the version given from <c>versionBytes</c> with the one from xmfPath.
         /// </summary>
@@ -24,28 +63,13 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         /// </returns>
         public static (bool, int[]) CheckIfXMFVersionMatches(string xmfPath, ReadOnlySpan<int> versionBytes, bool use4LengthArrayCompare = false)
         {
-            FileInfo xmf = new FileInfo(xmfPath);
-
-            if (!xmf.Exists || (xmf.Exists && xmf.Length < 0xFF)) return (false, new int[] { });
             if (versionBytes.Length != XMFParser._versioningLength) return (false, new int[] { });
+            ReadOnlySpan<int> versionXMF = GetXMFVersion(xmfPath);
 
-            try
-            {
-                using (FileStream xmfFS = xmf.OpenRead())
-                using (EndianBinaryReader reader = new EndianBinaryReader(xmfFS, EndianType.LittleEndian))
-                {
-                    reader.Position = XMFParser._signatureLength + 4;
-                    ReadOnlySpan<int> versionXMF = XMFParser.ReadVersion(reader);
+            if (versionXMF == null) return (false, new int[] { });
 
-                    return (versionXMF[0] == versionBytes[0] && versionXMF[1] == versionBytes[1] && versionXMF[2] == versionBytes[2] && (use4LengthArrayCompare ? versionXMF[3] == versionBytes[3] : true),
-                            versionXMF.ToArray());
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"error while reading XMF file!\r\n{e}");
-                return (false, new int[] { });
-            }
+            return (versionXMF[0] == versionBytes[0] && versionXMF[1] == versionBytes[1] && versionXMF[2] == versionBytes[2] && (use4LengthArrayCompare ? versionXMF[3] == versionBytes[3] : true),
+                    versionXMF.ToArray());
         }
     }
 }
