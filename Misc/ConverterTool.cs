@@ -43,10 +43,9 @@ namespace Hi3Helper.Data
         }
 
         public static bool TrySerializeStruct<T>(T[] input, byte[] output, out int read)
-            where T : struct
         {
             read = 0;
-            int lenOfArrayT = Marshal.SizeOf(typeof(T)) * input.Length;
+            int lenOfArrayT = Marshal.SizeOf<T>() * input.Length;
             if (output.Length < lenOfArrayT) return false;
 
             for (int i = 0; i < input.Length; i++)
@@ -57,9 +56,8 @@ namespace Hi3Helper.Data
         }
 
         public static bool TrySerializeStruct<T>(T input, ref int pos, byte[] output)
-            where T : struct
         {
-            int lenOfT = Marshal.SizeOf(typeof(T));
+            int lenOfT = Marshal.SizeOf<T>();
             if (pos + lenOfT > output.Length) return false;
 
             IntPtr dataPtr = Marshal.AllocHGlobal(lenOfT);
@@ -71,10 +69,9 @@ namespace Hi3Helper.Data
         }
 
         public static bool TryDeserializeStruct<T>(byte[] data, int count, out T[] output)
-            where T : struct
         {
-            int lenOfArrayT = Marshal.SizeOf(typeof(T)) * count;
-            output = default;
+            int lenOfArrayT = Marshal.SizeOf<T>() * count;
+            output = default!;
             if (data.Length < lenOfArrayT) return false;
 
             output = new T[count];
@@ -86,16 +83,17 @@ namespace Hi3Helper.Data
         }
 
         public static bool TryDeserializeStruct<T>(byte[] data, ref int pos, out T output)
-            where T : struct
         {
             output = default;
-            int lenOfT = Marshal.SizeOf(typeof(T));
+            int lenOfT = Marshal.SizeOf<T>();
             if (data.Length < lenOfT || data.Length - lenOfT < pos) return false;
 
             IntPtr bufferPtr = Marshal.AllocHGlobal(lenOfT);
             Marshal.Copy(data, pos, bufferPtr, lenOfT);
 
-            output = (T)Marshal.PtrToStructure(bufferPtr, typeof(T));
+#pragma warning disable IL2091 // Target generic argument does not satisfy 'DynamicallyAccessedMembersAttribute' in target method or type. The generic parameter of the source method or type does not have matching annotations.
+            output = Marshal.PtrToStructure<T>(bufferPtr);
+#pragma warning restore IL2091 // Target generic argument does not satisfy 'DynamicallyAccessedMembersAttribute' in target method or type. The generic parameter of the source method or type does not have matching annotations.
             Marshal.FreeHGlobal(bufferPtr);
             pos += lenOfT;
             return true;
