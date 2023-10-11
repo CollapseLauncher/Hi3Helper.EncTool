@@ -24,25 +24,25 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             {
                 uint toSeekPos = 20;
                 uint count = reader.ReadUInt32();
-                uint bufferLen = 0;
+                uint childAssetsCount = 0;
                 uint ver = 0;
 
                 if (count == 255)
                 {
                     ver = reader.ReadUInt32();
                     count = reader.ReadUInt32();
-                    bufferLen = reader.ReadUInt32();
+                    childAssetsCount = reader.ReadUInt32();
                     toSeekPos = 12;
 #if DEBUG
-                    Console.WriteLine($"Switching to read new metadata format!");
+                    Console.WriteLine($"Switching to read new {InheritedAssetType} metadata format! -> parentAsset: {count} childAsset: {childAssetsCount}");
 #endif
                 }
 
-                ReadOnlySpan<byte> empty = new byte[4];
 #if DEBUG
                 Console.WriteLine($"{InheritedAssetType} Assets Parsed Info: ({reader.BaseStream.Length} bytes) ({count} assets)");
 #endif
 
+                uint sanityChildAssetsCount = 0;
                 for (int i = 0; i < count; i++)
                 {
                     long lastPos = reader.Position;
@@ -51,6 +51,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                     uint type = reader.ReadUInt32();
                     uint size = reader.ReadUInt32();
                     uint insideCount = reader.ReadUInt32();
+                    sanityChildAssetsCount += insideCount;
 
                     // toSeekPos        = Number of bytes to read the asset's content
                     // insideCount      = Number of content count inside the asset
@@ -74,10 +75,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 }
 
 #if DEBUG
-                if (reader.Position < reader.BaseStream.Length)
-                {
-                    throw new IndexOutOfRangeException("SANITY CHECK: reader.Position is not the same as reader.BaseStream.Length. There might be some additional data here");
-                }
+                if (count == 255 && sanityChildAssetsCount != childAssetsCount) throw new IndexOutOfRangeException("SANITY CHECK: childAssetsCount is not equal as sanityChildAssetsCount. There might be another additional data here");
+#endif
+#if DEBUG
+                if (reader.Position < reader.BaseStream.Length) throw new IndexOutOfRangeException("SANITY CHECK: reader.Position is not equal as reader.BaseStream.Length. There might be another additional data here");
 #endif
             }
         }
