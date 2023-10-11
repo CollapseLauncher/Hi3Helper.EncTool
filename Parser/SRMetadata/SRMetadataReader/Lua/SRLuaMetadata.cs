@@ -22,7 +22,22 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         {
             using (EndianBinaryReader reader = new EndianBinaryReader(AssetProperty.MetadataStream, UABT.EndianType.BigEndian, false))
             {
+                uint toSeekPos = 20;
                 uint count = reader.ReadUInt32();
+                uint bufferLen = 0;
+                uint ver = 0;
+
+                if (count == 255)
+                {
+                    ver = reader.ReadUInt32();
+                    count = reader.ReadUInt32();
+                    bufferLen = reader.ReadUInt32();
+                    toSeekPos = 12;
+#if DEBUG
+                    Console.WriteLine($"Switching to read new metadata format!");
+#endif
+                }
+
                 ReadOnlySpan<byte> empty = new byte[4];
 #if DEBUG
                 Console.WriteLine($"{InheritedAssetType} Assets Parsed Info: ({reader.BaseStream.Length} bytes) ({count} assets)");
@@ -31,16 +46,16 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 for (int i = 0; i < count; i++)
                 {
                     long lastPos = reader.Position;
-                    ReadOnlySpan<byte> assetID = reader.ReadBytes(4);
-                    ReadOnlySpan<byte> hash = reader.ReadBytes(16);
+                    byte[] assetID = reader.ReadBytes(4);
+                    byte[] hash = reader.ReadBytes(16);
                     uint type = reader.ReadUInt32();
                     uint size = reader.ReadUInt32();
                     uint insideCount = reader.ReadUInt32();
 
-                    // 20               = Number of bytes to read the asset's content
+                    // toSeekPos        = Number of bytes to read the asset's content
                     // insideCount      = Number of content count inside the asset
                     // 1                = Unknown offset, seek +1
-                    uint toSeek = (insideCount * 20) + 1;
+                    uint toSeek = (insideCount * toSeekPos) + 1;
                     reader.Position += toSeek;
 
                     string hashName = HexTool.BytesToHexUnsafe(hash);
@@ -48,7 +63,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                     AssetProperty.AssetList.Add(new SRAsset
                     {
                         AssetType = InheritedAssetType,
-                        Hash = hash.ToArray(),
+                        Hash = hash,
                         LocalName = assetName,
                         RemoteURL = BaseURL + ParentRemotePath + '/' + assetName,
                         Size = size
