@@ -55,7 +55,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             _isInitialized = false;
         }
 
-        public async Task Initialize(CancellationToken threadToken, string regionName, string persistentDirectory, bool forceInitialize = false)
+        public async Task<bool> Initialize(CancellationToken threadToken, string regionName, string persistentDirectory, bool forceInitialize = false)
         {
             if (!_isInitialized || forceInitialize)
             {
@@ -67,12 +67,20 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
                     _isInitialized = true;
                 }
-                catch { throw; }
+                catch
+                {
+#if DEBUG
+                    throw;
+#else
+                    return false;
+#endif
+                }
                 finally
                 {
                     _httpClient.DownloadProgress -= HttpProgressAdapter;
                 }
             }
+            return true;
         }
 
         public async Task ReadIFixMetadataInformation(CancellationToken threadToken)
