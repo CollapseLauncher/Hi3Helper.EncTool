@@ -22,8 +22,9 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
      * 
      * Compression flag remarks:
      *  0       -> No compression
-     *  1       -> Brotli
-     *  2       -> Deflate
+     *  1       -> Deflate,
+     *  2       -> GZip,
+     *  3       -> Brotli
      * 
      * Note:
      *  The additional header information size may vary depending on the case so if you need to seek into the position pf
