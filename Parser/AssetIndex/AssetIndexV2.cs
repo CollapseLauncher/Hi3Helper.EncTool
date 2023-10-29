@@ -188,10 +188,24 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             timestampUTC = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp).DateTime;
 
             // Run override method to read potential additional header information
-            ReadAdditionalHeaderInfo(fileStream);
+            int readHeadInfo = ReadAdditionalHeaderInfo(fileStream);
 
             // Seek the position of the fileStream and try get the data
-            fileStream.Position = dataPos;
+            if (fileStream.CanSeek)
+                fileStream.Position = dataPos;
+            else
+            {
+                // 22 is the total of length from the first initial read
+                int toSkip = dataPos - (22 + readHeadInfo);
+                // If the skip length is more than 0, then seek by reading the rest of the data into dummy buffer
+                if (toSkip > 0)
+                {
+                    // Read the data into dummy buffer
+                    byte[] dummy = new byte[toSkip];
+                    fileStream.ReadExactly(dummy, 0, toSkip);
+                }
+            }
+
             using Stream streamInput = compressionType switch
             {
                 CompressionFlag.Deflate => new DeflateStream(fileStream, CompressionMode.Decompress),
@@ -244,7 +258,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             return pkgReturn;
         }
 
-        protected virtual void ReadAdditionalHeaderInfo(Stream inputStream) { }
-        protected virtual void ReadAdditionalData(Stream inputStream) { }
+        protected virtual int ReadAdditionalHeaderInfo(Stream inputStream) { return 0; }
+        protected virtual int ReadAdditionalData(Stream inputStream) { return 0; }
     }
 }
