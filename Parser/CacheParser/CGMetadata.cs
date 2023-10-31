@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace Hi3Helper.EncTool.Parser.Cache
 {
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumConverter<CGPCKType>))]
     public enum CGPCKType : byte // TypeDefIndex: 34029
     {
         MustHave = 0,

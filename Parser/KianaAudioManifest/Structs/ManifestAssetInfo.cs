@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumConverter<AudioLanguageType>))]
     public enum AudioLanguageType : int // TypeDefIndex: 33475
     {
         Common = 0,
@@ -11,7 +11,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         Japanese = 2
     }
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumConverter<AudioPCKType>))]
     public enum AudioPCKType : int // TypeDefIndex: 33474
     {
         MustHave = 0,
