@@ -99,6 +99,24 @@ namespace Hi3Helper.Data
             return true;
         }
 
+        public static unsafe void GetListOfPaths(ReadOnlySpan<byte> input, out string[] outlist, long count)
+        {
+            outlist = new string[count];
+            int inLen = input.Length;
+
+            int idx = 0, strIdx = 0;
+            fixed (byte* inputPtr = input)
+            {
+                sbyte* inputSignedPtr = (sbyte*)inputPtr;
+                do
+                {
+                    ReadOnlySpan<byte> inputSpanned = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(inputPtr + idx);
+                    idx += inputSpanned.Length + 1;
+                    outlist[strIdx++] = Encoding.UTF8.GetString(inputSpanned);
+                } while (idx < inLen);
+            }
+        }
+
         public static int BytesToCRC32Int(string str)
         {
             byte[] strBytes = Encoding.UTF8.GetBytes(str);
