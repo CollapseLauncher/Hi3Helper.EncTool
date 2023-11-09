@@ -61,13 +61,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             MetadataPath = metadataPath;
         }
 
-        struct UnkHeadAsset
-        {
-            public byte[] hash;
-            public uint uuid;
-            public uint size;
-        }
-
         internal override void Deserialize()
         {
             using (EndianBinaryReader reader = new EndianBinaryReader(AssetProperty.MetadataStream, UABT.EndianType.BigEndian, true))
