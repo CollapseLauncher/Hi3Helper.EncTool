@@ -1,5 +1,4 @@
 ﻿using Hi3Helper.Data;
-using Hi3Helper.EncTool.Misc;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -1,6 +1,5 @@
 ﻿using Hi3Helper.Data;
 using Hi3Helper.UABT.Binary;
-using System;
 using System.Collections.Generic;
 using System.IO;
 
