@@ -27,7 +27,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Google.Protobuf" Version="3.25.0" />
+		<PackageReference Include="Google.Protobuf" Version="3.25.1" />
 		<PackageReference Include="System.IO.Hashing" Version="8.0.0" />
 	</ItemGroup>
 
