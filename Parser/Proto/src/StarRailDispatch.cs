@@ -42,6 +42,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
 
   }
   #region Messages
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class StarRailDispatch : pb::IMessage<StarRailDispatch>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
@@ -220,6 +221,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
 
   }
 
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class RegionInfo : pb::IMessage<RegionInfo>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage

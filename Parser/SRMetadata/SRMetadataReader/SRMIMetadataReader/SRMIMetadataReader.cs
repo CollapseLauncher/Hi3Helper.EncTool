@@ -55,20 +55,30 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         private unsafe void ReadAssets(EndianBinaryReader reader)
         {
             Span<byte> fullHash = stackalloc byte[16];
-            for (
-                int i = 0, k = 0;
-                i < 4;
-                i++)
+            Int128 hashInt128 = reader.ReadInt128();
+
+            byte* chunk = (byte*)&hashInt128;
+            fixed (byte* hashReturn = fullHash)
             {
-                int hashC = reader.ReadInt32();
-                byte* chunk = (byte*)&hashC;
-                for (
-                    int j = 3;
-                    j >= 0;
-                    j--, k++)
-                {
-                    fullHash[k] = chunk[j];
-                }
+                *hashReturn = *(chunk + 3);
+                *(hashReturn + 1) = *(chunk + 2);
+                *(hashReturn + 2) = *(chunk + 1);
+                *(hashReturn + 3) = *chunk;
+
+                *(hashReturn + 4) = *(chunk + 7);
+                *(hashReturn + 5) = *(chunk + 6);
+                *(hashReturn + 6) = *(chunk + 5);
+                *(hashReturn + 7) = *(chunk + 4);
+
+                *(hashReturn + 8) = *(chunk + 11);
+                *(hashReturn + 9) = *(chunk + 10);
+                *(hashReturn + 10) = *(chunk + 9);
+                *(hashReturn + 11) = *(chunk + 8);
+
+                *(hashReturn + 12) = *(chunk + 15);
+                *(hashReturn + 13) = *(chunk + 14);
+                *(hashReturn + 14) = *(chunk + 13);
+                *(hashReturn + 15) = *(chunk + 12);
             }
 
             AssetListFilesize = reader.ReadUInt32();
