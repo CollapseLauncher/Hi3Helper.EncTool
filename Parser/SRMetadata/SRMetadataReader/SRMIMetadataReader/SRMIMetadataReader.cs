@@ -1,4 +1,6 @@
-﻿using Hi3Helper.Data;
+﻿using System;
+using System.IO;
+using Hi3Helper.Data;
 using Hi3Helper.UABT.Binary;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
