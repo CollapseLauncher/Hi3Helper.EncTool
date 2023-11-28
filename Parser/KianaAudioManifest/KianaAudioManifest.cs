@@ -148,7 +148,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             // Read data
             string name = reader.ReadString();
             string path = reader.ReadString();
-            byte[] hash = reader.ReadBytes(16);
+
+            byte[] hash = new byte[16];
+            reader.BaseStream.ReadExactly(hash);
+
             int size = reader.ReadInt32();
             AudioLanguageType language = (AudioLanguageType)reader.ReadInt32();
             AudioPCKType pcktype = (AudioPCKType)reader.ReadInt32();
