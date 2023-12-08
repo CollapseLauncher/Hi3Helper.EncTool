@@ -22,11 +22,23 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #endif
     public enum AudioPCKType : int // TypeDefIndex: 33474
     {
-        MustHave = 0,
-        MapBtn = 1,
-        DLC = 2,
-        DLC2 = 3,
-        All = 100
+        MustHave = 0,       // 0
+        MapBtn,             // 1
+        DLC,                // 2
+        DLC2,               // 3
+        MainLine10_12,      // 4
+        MainLine13_14,      // 5
+        MainLine15_17,      // 6
+        MainLine18_19,      // 7
+        MainLine20_22,      // 8
+        MainLine23_25,      // 9
+        GodWar1,            // 10
+        GodWar2,            // 11
+        GodWar3,            // 12
+        MainLine29_31,      // 13
+        MainLine32_35,      // 14
+        MainLine36_39,      // 15
+        All = 100           // 100
     }
 
     public class ManifestAssetInfo

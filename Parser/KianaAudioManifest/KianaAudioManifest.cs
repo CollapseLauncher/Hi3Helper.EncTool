@@ -153,13 +153,15 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             reader.BaseStream.ReadExactly(hash);
 
             int size = reader.ReadInt32();
-            AudioLanguageType language = (AudioLanguageType)reader.ReadInt32();
-            AudioPCKType pcktype = (AudioPCKType)reader.ReadInt32();
+            int language_Int = reader.ReadInt32();
+            int pcktype_Int = reader.ReadInt32();
+            AudioLanguageType language = (AudioLanguageType)language_Int;
+            AudioPCKType pcktype = (AudioPCKType)pcktype_Int;
             bool needmap = reader.ReadBoolean();
 
 #if DEBUG
             // Print the asset info
-            Console.WriteLine($"    Asset: {path} -> [S: {size}] [L: {language}] [T: {pcktype}] [NeedMap?: {needmap}]");
+            Console.WriteLine($"    Asset: {path} -> [S: {size}] [L: {language} ({language_Int})] [T: {pcktype} ({pcktype_Int})] [NeedMap?: {needmap}]");
 #endif
 
             // Return the value
