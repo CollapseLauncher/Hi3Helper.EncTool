@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -52,8 +53,10 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public CGPCKType PckType { get; set; }
         public string DownloadLimitTime { get; set; }
         public uint AppointmentDownloadScheduleID { get; set; }
+        public int Unk1 { get; set; }
+        public byte Unk2 { get; set; }
 
-        public static CGMetadata[] GetArray(CacheStream stream, Encoding encoding)
+        public static CGMetadata[] GetArray(Stream stream, Encoding encoding)
         {
             // Set the encoding
             _encoding = encoding;
@@ -71,7 +74,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             return entries;
         }
 
-        public static List<CGMetadata> GetList(CacheStream stream, Encoding encoding)
+        public static List<CGMetadata> GetList(Stream stream, Encoding encoding)
         {
             // Set the encoding
             _encoding = encoding;
@@ -89,7 +92,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             return entries;
         }
 
-        public static IEnumerable<CGMetadata> Enumerate(CacheStream stream, Encoding encoding)
+        public static IEnumerable<CGMetadata> Enumerate(Stream stream, Encoding encoding)
         {
             // Set the encoding
             _encoding = encoding;
@@ -138,13 +141,13 @@ namespace Hi3Helper.EncTool.Parser.Cache
             }
         }
 
-        private static CGMetadata Deserialize(CacheStream stream, int groupIDIndex)
+        private static CGMetadata Deserialize(Stream stream, int groupIDIndex)
         {
             CGMetadata entry = new CGMetadata();
 
             stream.Position = _groupID[groupIDIndex].FileOffset;
             entry.CgID = _groupID[groupIDIndex].FileOffset;
-            stream.Position += 4;
+            entry.Unk1 = ReadInt32(stream);
 
             entry.UnlockType = ReadByte(stream);
             entry.UnlockCondition = ReadUInt32(stream);
@@ -183,7 +186,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.CgPath = ReadString(stream);
             entry.CgIconSpritePath = ReadString(stream);
 
-            stream.Position++;
+            entry.Unk2 = (byte)stream.ReadByte();
             entry.CgLockHint = new TextID { hash = ReadInt32(stream) };
 
             stream.Position = ptrToCgExtraKey;
@@ -193,7 +196,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.DownloadLimitTime = ReadString(stream);
 
 #if DEBUG
-            Console.WriteLine($"CG [T: {entry.PckType}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} b] [ID: {entry.CgID}]");
+            Console.WriteLine($"CG [T: {entry.PckType}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} b] [ID: {entry.CgID}] [Category: {entry.CgSubCategory}]");
 #endif
 
             return entry;
@@ -205,26 +208,30 @@ namespace Hi3Helper.EncTool.Parser.Cache
 
         private static int ReadInt32(Stream stream)
         {
-            stream.Read(buf4);
-            return BitConverter.ToInt32(buf4);
+            Span<byte> buffer = stackalloc byte[4];
+            stream.Read(buffer);
+            return BinaryPrimitives.ReadInt32LittleEndian(buffer);
         }
 
         private static uint ReadUInt32(Stream stream)
         {
-            stream.Read(buf4);
-            return BitConverter.ToUInt32(buf4);
+            Span<byte> buffer = stackalloc byte[4];
+            stream.Read(buffer);
+            return BinaryPrimitives.ReadUInt32LittleEndian(buffer);
         }
 
         private static short ReadInt16(Stream stream)
         {
-            stream.Read(buf2);
-            return BitConverter.ToInt16(buf2);
+            Span<byte> buffer = stackalloc byte[2];
+            stream.Read(buffer);
+            return BinaryPrimitives.ReadInt16LittleEndian(buffer);
         }
 
         private static ushort ReadUInt16(Stream stream)
         {
-            stream.Read(buf2);
-            return BitConverter.ToUInt16(buf2);
+            Span<byte> buffer = stackalloc byte[2];
+            stream.Read(buffer);
+            return BinaryPrimitives.ReadUInt16LittleEndian(buffer);
         }
 
         private static string ReadString(Stream stream)
