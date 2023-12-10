@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
@@ -54,7 +55,10 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public string DownloadLimitTime { get; set; }
         public uint AppointmentDownloadScheduleID { get; set; }
         public int Unk1 { get; set; }
-        public byte Unk2 { get; set; }
+        public short Unk2 { get; set; }
+        public short Unk3 { get; set; }
+        public byte Unk4 { get; set; }
+        public int Unk5 { get; set; }
 
         public static CGMetadata[] GetArray(Stream stream, Encoding encoding)
         {
@@ -111,33 +115,42 @@ namespace Hi3Helper.EncTool.Parser.Cache
             int entryCount = ReadInt32(stream);
 
             // Read GroupID and Offsets
-            ReadGroupID(stream, entryCount);
-            ReadOffset(stream, entryCount);
+            ReadGroupIDAndOffsets(stream, entryCount);
 
             return entryCount;
         }
 
-        private static void ReadGroupID(Stream stream, int readCount)
+        private static void ReadGroupIDAndOffsets(Stream stream, int readCount)
         {
             // Clear the _groupID cache
             _groupID.Clear();
-            for (int i = 0; i < readCount; i++)
-            {
-                // Read the GroupID number
-                CgGroupID groupID = new CgGroupID
-                {
-                    ID = ReadInt32(stream),
-                };
-                _groupID.Add(groupID);
-            }
-        }
+            int toRead = readCount * 4;
+            int readOffset = 0;
 
-        private static void ReadOffset(Stream stream, int readCount)
-        {
-            for (int i = 0; i < readCount; i++)
+            byte[] buffer1 = ArrayPool<byte>.Shared.Rent(toRead);
+            byte[] buffer2 = ArrayPool<byte>.Shared.Rent(toRead);
+            stream.ReadExactly(buffer1, 0, toRead);
+            stream.ReadExactly(buffer2, 0, toRead);
+            Span<byte> bufferGroupID = buffer1;
+            Span<byte> bufferOffset = buffer2;
+
+            try
             {
-                // Update GroupID and add the Offset number
-                _groupID[i] = _groupID[i].SetFileOffset(ReadInt32(stream));
+            ReadGroupIDAndOffset_Label:
+                // Read the GroupID and offsets number
+                int groupID = BinaryPrimitives.ReadInt32LittleEndian(bufferGroupID.Slice(readOffset));
+                int offsets = BinaryPrimitives.ReadInt32LittleEndian(bufferOffset.Slice(readOffset));
+                readOffset += 4;
+                CgGroupID groupIDstruct = new CgGroupID { ID = groupID, FileOffset = offsets };
+                _groupID.Add(groupIDstruct);
+                if (readOffset < toRead)
+                    goto ReadGroupIDAndOffset_Label;
+            }
+            catch { throw; }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer1);
+                ArrayPool<byte>.Shared.Return(buffer2);
             }
         }
 
@@ -147,7 +160,11 @@ namespace Hi3Helper.EncTool.Parser.Cache
 
             stream.Position = _groupID[groupIDIndex].FileOffset;
             entry.CgID = _groupID[groupIDIndex].FileOffset;
-            entry.Unk1 = ReadInt32(stream);
+            Span<byte> unk1_2 = stackalloc byte[4];
+            _ = stream.Read(unk1_2);
+            entry.Unk1 = BinaryPrimitives.ReadInt32LittleEndian(unk1_2);
+            entry.Unk2 = BinaryPrimitives.ReadInt16LittleEndian(unk1_2);
+            entry.Unk3 = BinaryPrimitives.ReadInt16LittleEndian(unk1_2.Slice(2));
 
             entry.UnlockType = ReadByte(stream);
             entry.UnlockCondition = ReadUInt32(stream);
@@ -182,11 +199,13 @@ namespace Hi3Helper.EncTool.Parser.Cache
                 entry.CgGroupID[i] = ReadInt32(stream);
             }
 
+            _ = stream.ReadByte();
+            int partSizeToRead = ReadInt32(stream);
             stream.Position = ptrToCgPath;
             entry.CgPath = ReadString(stream);
             entry.CgIconSpritePath = ReadString(stream);
 
-            entry.Unk2 = (byte)stream.ReadByte();
+            entry.Unk4 = (byte)stream.ReadByte();
             entry.CgLockHint = new TextID { hash = ReadInt32(stream) };
 
             stream.Position = ptrToCgExtraKey;
@@ -194,9 +213,10 @@ namespace Hi3Helper.EncTool.Parser.Cache
 
             stream.Position = ptrToDownloadLimitTime;
             entry.DownloadLimitTime = ReadString(stream);
+            entry.Unk5 = ReadInt32(stream);
 
 #if DEBUG
-            Console.WriteLine($"CG [T: {entry.PckType}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} b] [ID: {entry.CgID}] [Category: {entry.CgSubCategory}]");
+            Console.WriteLine($"CG [T: {entry.PckType}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} b] [ID: {entry.CgID}] [Category: {entry.CgSubCategory}] [Unk5: {entry.Unk5}]");
 #endif
 
             return entry;
