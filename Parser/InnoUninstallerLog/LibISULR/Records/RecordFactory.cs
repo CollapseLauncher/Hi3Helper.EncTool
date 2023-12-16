@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-
-namespace LibISULR.Records
+﻿namespace LibISULR.Records
 {
     static class RecordFactory
     {

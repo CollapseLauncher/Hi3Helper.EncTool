@@ -14,11 +14,11 @@ namespace LibISULR.Records
         private RegistryView view;
 
         public RegistryKeyRecord(RecordType type, int flags, byte[] data)
-            :base(flags)
+            : base(flags)
         {
             this.type = type;
 
-            StringSplitter spliiter = new StringSplitter(data);
+            BufferTools spliiter = new BufferTools(data);
             Init(ref spliiter);
 
             RegFlags f = (RegFlags)flags;
@@ -28,12 +28,12 @@ namespace LibISULR.Records
 
         public override int UpdateContent(Span<byte> buffer)
         {
-            int offset = new StringSplitter(buffer).WriteString(buffer, Encoding.Unicode, path);
+            int offset = new BufferTools(buffer).WriteString(buffer, Encoding.Unicode, path);
             buffer[offset++] = 0xFF;
             return offset;
         }
 
-        protected virtual void Init(ref StringSplitter splitter)
+        protected virtual void Init(ref BufferTools splitter)
         {
             path = splitter.ReadString();
         }

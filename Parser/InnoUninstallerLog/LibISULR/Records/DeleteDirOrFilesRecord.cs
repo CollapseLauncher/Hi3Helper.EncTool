@@ -1,9 +1,7 @@
 ﻿using LibISULR.Flags;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LibISULR.Records
 {
@@ -12,12 +10,12 @@ namespace LibISULR.Records
         public DeleteDirOrFilesRecord(int flags, byte[] data)
           : base(flags)
         {
-            Paths = new StringSplitter(data).GetStringList();
+            Paths = new BufferTools(data).GetStringList();
         }
 
         public override int UpdateContent(Span<byte> buffer)
         {
-            StringSplitter writter = new StringSplitter(buffer);
+            BufferTools writter = new BufferTools(buffer);
             int offset = writter.WriteStringList(buffer, Encoding.Unicode, Paths);
             return offset;
         }

@@ -8,7 +8,7 @@ namespace LibISULR.Records
         public CompiledCodeRecord(int flags, byte[] data)
             : base(flags)
         {
-            StringSplitter splitter = new StringSplitter(data);
+            BufferTools splitter = new BufferTools(data);
             Code = splitter.ReadBytes();
             LeadBytes = splitter.ReadBytes();
             ExpandedApp = splitter.ReadString();
@@ -20,7 +20,7 @@ namespace LibISULR.Records
 
         public override int UpdateContent(Span<byte> buffer)
         {
-            StringSplitter writter = new StringSplitter(buffer);
+            BufferTools writter = new BufferTools(buffer);
             int offset = writter.WriteBytes(buffer, Code);
             offset += writter.WriteBytes(buffer.Slice(offset), LeadBytes);
             offset += writter.WriteString(buffer.Slice(offset), Encoding.Unicode, ExpandedApp);

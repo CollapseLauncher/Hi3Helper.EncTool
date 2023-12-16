@@ -23,7 +23,7 @@ namespace LibISULR.Records
     }
 
     public abstract class BaseRecord<TFlags> : BaseRecord
-        where TFlags : Enum 
+        where TFlags : Enum
     {
         protected BaseRecord(int flags)
             : base(flags)

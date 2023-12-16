@@ -1,6 +1,5 @@
 ﻿using LibISULR.Flags;
 using System;
-using System.IO;
 using System.Text;
 
 namespace LibISULR.Records
@@ -16,7 +15,7 @@ namespace LibISULR.Records
         public RunRecord(int flags, byte[] data)
           : base(flags)
         {
-            StringSplitter spliiter = new StringSplitter(data);
+            BufferTools spliiter = new BufferTools(data);
             filename = spliiter.ReadString();
             args = spliiter.ReadString();
             workingDir = spliiter.ReadString();
@@ -26,7 +25,7 @@ namespace LibISULR.Records
 
         public override int UpdateContent(Span<byte> buffer)
         {
-            StringSplitter stringWriter = new StringSplitter(buffer);
+            BufferTools stringWriter = new BufferTools(buffer);
             int offset = stringWriter.WriteString(buffer, Encoding.Unicode, filename);
             offset += stringWriter.WriteString(buffer.Slice(offset), Encoding.Unicode, args);
             offset += stringWriter.WriteString(buffer.Slice(offset), Encoding.Unicode, workingDir);

@@ -8,18 +8,19 @@ using System.Data;
 using System.IO;
 using System.IO.Hashing;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Hi3Helper.EncTool.Parser.InnoUninstallerLog
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Size = 0x1C0)]
     public struct TUninstallLogHeader
     {
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 0x40)]
-        public string ID;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 0x80)]
-        public string AppId;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 0x80)]
-        public string AppName;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x40)]
+        private byte[] ID;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x80)]
+        private byte[] AppId;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x80)]
+        private byte[] AppName;
         public int Version;
         public int RecordsCount;
         public int FileEndOffset;
@@ -27,6 +28,42 @@ namespace Hi3Helper.EncTool.Parser.InnoUninstallerLog
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x6C)]
         public byte[] ReservedHeaderBytes;
         public uint Crc;
+
+        public bool IsLog64bit
+        {
+            get => ReadStringFromByte(ID).Equals(InnoUninstLog.x64IdSignature);
+            set
+            {
+                string signatureToWrite = value ? InnoUninstLog.x64IdSignature : InnoUninstLog.x86IdSignature;
+                WriteStringToByte(ref signatureToWrite, ID);
+            }
+        }
+
+        public string AppIdStr
+        {
+            get => ReadStringFromByte(AppId);
+            set => WriteStringToByte(ref value, AppId);
+        }
+
+        public string AppNameStr
+        {
+            get => ReadStringFromByte(AppName);
+            set => WriteStringToByte(ref value, AppName);
+        }
+
+        private string ReadStringFromByte(byte[] target)
+        {
+            int offset = Array.IndexOf<byte>(target, 0);
+            string result = Encoding.UTF8.GetString(target.AsSpan(0, offset));
+            return result;
+        }
+
+        private void WriteStringToByte(ref string input, byte[] target)
+        {
+            if (input.Length > target.Length) throw new ArgumentOutOfRangeException($"The input string cannot be more than {target.Length} characters!");
+            int writtenOffset = Encoding.UTF8.GetBytes(input, target);
+            target.AsSpan(writtenOffset).Fill(0);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential, Size = 0xC)]
@@ -45,12 +82,13 @@ namespace Hi3Helper.EncTool.Parser.InnoUninstallerLog
 
     public class InnoUninstLog : IDisposable
     {
-        public TUninstallLogHeader? Header { get; set; }
-        public List<BaseRecord> Records { get; set; }
+        internal const string x86IdSignature = "Inno Setup Uninstall Log (b)";
+        internal const string x64IdSignature = "Inno Setup Uninstall Log (b) 64-bit";
+        public TUninstallLogHeader Header;
+        public List<BaseRecord> Records;
 
         public void Dispose()
         {
-            Header = null;
             Records.Clear();
         }
 
@@ -107,16 +145,30 @@ namespace Hi3Helper.EncTool.Parser.InnoUninstallerLog
 
         public void Save(Stream stream)
         {
-            // SANITY CHECK: Check the stream if it's writable
-            if (!stream.CanWrite) throw new ArgumentException("Stream must be writable!", "stream");
-
-            // Write the header
-            WriteTUninstallLogHeader(stream, Header.Value);
-
             // Borrowing the write buffer with size (at least) 128 KB from ArrayPool<T>
             byte[] writeBuffer = ArrayPool<byte>.Shared.Rent(128 << 10);
+            long lastStreamPosition = 0;
             try
             {
+                // Write the TUninstallLogHeader struct.
+                // If the stream isn't seekable, then set the size of the stream in header to 0xFFFFFFFF (or -1)
+                // and write the TUninstallLogHeader first. If seekable, then the struct will be written once all
+                // the records have been written into the stream.
+                // ROUTINE A (if not Seekable):
+                //     Set the size to 0xFFFFFFFF (-1) -> Write the TUninstallLogHeader struct -> Write the records
+                // 
+                // ROUTINE B (if Seekable):
+                //     Seek the stream based on the struct size -> Write the records -> Back to the last stream position
+                //     -> Set the size based on Stream size -> Write the TUninstallLogHeader struct
+                if (!stream.CanSeek)
+                    WriteTUninstallLogHeader(stream, -1, Header);
+                else
+                {
+                    int tHeadStructSize = Marshal.SizeOf<TUninstallLogHeader>();
+                    lastStreamPosition = stream.Position;
+                    stream.Seek(tHeadStructSize, SeekOrigin.Current);
+                }
+
                 // Initialize the CrcBridgeStream in write mode
                 using (CrcBridgeStream crcStream = new CrcBridgeStream(stream, true, false, true))
                 {
@@ -146,6 +198,14 @@ namespace Hi3Helper.EncTool.Parser.InnoUninstallerLog
                     // Finalize the crc block inside of CrcBridgeStream
                     crcStream.FinalizeBlock();
                 }
+
+                // As per described detail about the header, if the stream is seekable, then
+                // do the ROUTINE B
+                if (stream.CanSeek)
+                {
+                    stream.Seek(lastStreamPosition, SeekOrigin.Begin);
+                    WriteTUninstallLogHeader(stream, (int)stream.Length, Header);
+                }
             }
             catch { throw; }
             finally
@@ -155,7 +215,7 @@ namespace Hi3Helper.EncTool.Parser.InnoUninstallerLog
             }
         }
 
-        private static void WriteTUninstallLogHeader(Stream stream, TUninstallLogHeader header)
+        private static void WriteTUninstallLogHeader(Stream stream, int lengthOfStream, TUninstallLogHeader header)
         {
             int i = 0; // Dummy
             int sizeOf = Marshal.SizeOf<TUninstallLogHeader>(); // Get the size of the struct
@@ -164,6 +224,9 @@ namespace Hi3Helper.EncTool.Parser.InnoUninstallerLog
             byte[] structBuffer = ArrayPool<byte>.Shared.Rent(sizeOf);
             try
             {
+                // Reset the fileEndOffset
+                header.FileEndOffset = lengthOfStream;
+
                 // Serialize the struct into bytes
                 ConverterTool.TrySerializeStruct(header, ref i, structBuffer);
 

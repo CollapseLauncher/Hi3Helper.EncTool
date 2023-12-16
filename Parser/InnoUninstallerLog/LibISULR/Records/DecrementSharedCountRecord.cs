@@ -8,7 +8,7 @@ namespace LibISULR.Records
         public DecrementSharedCountRecord(int extra, byte[] data)
           : base(extra)
         {
-            Path = new StringSplitter(data).ReadString();
+            Path = new BufferTools(data).ReadString();
         }
 
         public override int UpdateContent(Span<byte> buffer)

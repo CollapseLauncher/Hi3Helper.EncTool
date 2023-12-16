@@ -8,7 +8,7 @@ namespace LibISULR.Records
         public StartInstallRecord(int flags, byte[] data)
             : base(flags)
         {
-            StringSplitter splitter = new StringSplitter(data);
+            BufferTools splitter = new BufferTools(data);
             ComputerName = splitter.ReadString();
             UserName = splitter.ReadString();
             ApplicationDir = splitter.ReadString();
@@ -17,7 +17,7 @@ namespace LibISULR.Records
 
         public override int UpdateContent(Span<byte> buffer)
         {
-            StringSplitter stringWriter = new StringSplitter(buffer);
+            BufferTools stringWriter = new BufferTools(buffer);
             int offset = stringWriter.WriteString(buffer, Encoding.Unicode, ComputerName);
             offset += stringWriter.WriteString(buffer.Slice(offset), Encoding.Unicode, UserName);
             offset += stringWriter.WriteString(buffer.Slice(offset), Encoding.Unicode, ApplicationDir);

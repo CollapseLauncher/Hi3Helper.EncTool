@@ -7,12 +7,12 @@ namespace LibISULR.Records
         public EndInstallRecord(int flags, byte[] data)
             : base(flags)
         {
-            Time = new StringSplitter(data).ReadDateTime();
+            Time = new BufferTools(data).ReadDateTime();
         }
 
         public override int UpdateContent(Span<byte> buffer)
         {
-            int offset = new StringSplitter(buffer).WriteDateTime(buffer, Time);
+            int offset = new BufferTools(buffer).WriteDateTime(buffer, Time);
             buffer[offset++] = 0xFF;
             return offset;
         }

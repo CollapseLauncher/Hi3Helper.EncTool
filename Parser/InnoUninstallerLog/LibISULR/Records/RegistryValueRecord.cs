@@ -7,7 +7,7 @@
         public RegistryValueRecord(RecordType type, int flags, byte[] data)
           : base(type, flags, data) { }
 
-        protected override void Init(ref StringSplitter splitter)
+        protected override void Init(ref BufferTools splitter)
         {
             base.Init(ref splitter);
             value = splitter.ReadString();

@@ -10,7 +10,7 @@
 
         }
 
-        protected override void Init(ref StringSplitter splitter)
+        protected override void Init(ref BufferTools splitter)
         {
             base.Init(ref splitter);
             entry = splitter.ReadString();

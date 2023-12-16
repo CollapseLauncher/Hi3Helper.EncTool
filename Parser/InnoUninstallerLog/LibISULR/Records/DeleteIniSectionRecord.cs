@@ -11,11 +11,11 @@ namespace LibISULR.Records
         public DeleteIniSectionRecord(int flags, byte[] data)
           : base(flags)
         {
-            StringSplitter splitter = new StringSplitter(data);
+            BufferTools splitter = new BufferTools(data);
             Init(ref splitter);
         }
 
-        protected virtual void Init(ref StringSplitter splitter)
+        protected virtual void Init(ref BufferTools splitter)
         {
             filename = splitter.ReadString();
             section = splitter.ReadString();

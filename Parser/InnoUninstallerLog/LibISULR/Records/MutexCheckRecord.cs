@@ -6,14 +6,14 @@ namespace LibISULR.Records
     public class MutexCheckRecord : BaseRecord
     {
         public MutexCheckRecord(int flags, byte[] data)
-            :base(flags)
+            : base(flags)
         {
-            MutexName = new StringSplitter(data).ReadString();
+            MutexName = new BufferTools(data).ReadString();
         }
 
         public override int UpdateContent(Span<byte> buffer)
         {
-            StringSplitter writter = new StringSplitter(buffer);
+            BufferTools writter = new BufferTools(buffer);
             int offset = writter.WriteString(buffer, Encoding.Unicode, MutexName);
             buffer[offset++] = 0xFF;
             return offset;

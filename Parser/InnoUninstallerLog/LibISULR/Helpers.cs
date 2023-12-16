@@ -1,25 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace LibISULR
 {
-    public ref struct StringSplitter
+    public ref struct BufferTools
     {
         private ReadOnlySpan<byte> data;
         private unsafe byte* dataPtr;
         private int index;
 
-        public unsafe StringSplitter(byte[] data)
+        public unsafe BufferTools(byte[] data)
             : this(data, 0) { }
 
-        public unsafe StringSplitter(byte[] data, int offset)
+        public unsafe BufferTools(byte[] data, int offset)
             : this(data.AsSpan(offset)) { }
 
-        public unsafe StringSplitter(Span<byte> data)
+        public unsafe BufferTools(Span<byte> data)
         {
             this.data = data;
             fixed (byte* dataPtr = this.data)
@@ -35,8 +34,8 @@ namespace LibISULR
 
             return type switch
             {
-                0xFD => data.ReadUShort(ref index), // UTF-8 string length Type
-                0xFE => data.ReadInt(ref index), // Unicode/UTF-16 string length Type
+                0xFD => ReadUShort(data, ref index), // UTF-8 string length Type
+                0xFE => ReadInt(data, ref index), // Unicode/UTF-16 string length Type
                 _ => type // Type as the length
             };
         }
@@ -124,31 +123,18 @@ namespace LibISULR
 
             DateTime result;
 
-            /*
-            type TSystemTime = record
-              Year: Word;	      // Year part
-              Month: Word;	    // Month part
-              DayOfWeek: Word;	
-              Day: Word;        // Day of month part
-              Hour: Word;	      // Hour of the day
-              Minute: Word;     // Minute of the hour
-              Second: Word;	    // Second of the minute
-              MilliSecond: Word;// Milliseconds in the second
-            end;
-            */
-
             if (length >= 16)
             {
                 int i = index;
 
-                ushort year = data.ReadUShort(ref i);
-                ushort month = data.ReadUShort(ref i);
-                i += 2; //ushort dow = data.ReadUShort(ref i);
-                ushort day = data.ReadUShort(ref i);
-                ushort hour = data.ReadUShort(ref i);
-                ushort minute = data.ReadUShort(ref i);
-                ushort second = data.ReadUShort(ref i);
-                ushort ms = data.ReadUShort(ref i);
+                ushort year = ReadUShort(data, ref i);
+                ushort month = ReadUShort(data, ref i);
+                i += 2; //ushort dow = ReadUShort(data,ref i);
+                ushort day = ReadUShort(data, ref i);
+                ushort hour = ReadUShort(data, ref i);
+                ushort minute = ReadUShort(data, ref i);
+                ushort second = ReadUShort(data, ref i);
+                ushort ms = ReadUShort(data, ref i);
 
                 result = new DateTime(year, month, day, hour, minute, second, ms, DateTimeKind.Local);
             }
@@ -220,8 +206,8 @@ namespace LibISULR
 
             int byteLength = type switch
             {
-                0xFD => data.ReadUShort(ref index), // UTF-8 string length Type
-                0xFE => data.ReadInt(ref index), // Unicode/UTF-16 string length Type
+                0xFD => ReadUShort(data, ref index), // UTF-8 string length Type
+                0xFE => ReadInt(data, ref index), // Unicode/UTF-16 string length Type
                 _ => type // Type as the length
             };
 
@@ -289,52 +275,19 @@ namespace LibISULR
             offset += encoding.GetBytes(inputString[stringArrayIndex++], buffer.Slice(offset));
             if (stringArrayIndex < inputString.Length) goto WriteStringArray;
 
-        WriteStringArrayEOF:
+            WriteStringArrayEOF:
             buffer[offset++] = 0xFF;
             return offset;
         }
-    }
 
-    public static class Helpers
-    {
-        public static string ReadString(this Stream stream, byte[] buffer, int size)
-        {
-            stream.Read(buffer, 0, size);
-
-            int stringLength = 0;
-            // clean out 0s
-            while (buffer[stringLength] != 0)
-                stringLength++;
-
-            return Encoding.ASCII.GetString(buffer, 0, stringLength);
-        }
-
-        public static int ReadInt(this Stream stream, byte[] buffer)
-        {
-            stream.Read(buffer, 0, 4);
-            return BitConverter.ToInt32(buffer, 0);
-        }
-
-        public static uint ReadUInt(this Stream stream, byte[] buffer)
-        {
-            stream.Read(buffer, 0, 4);
-            return BitConverter.ToUInt32(buffer, 0);
-        }
-
-        public static uint ReadUShort(this Stream stream, byte[] buffer)
-        {
-            stream.Read(buffer, 0, 2);
-            return BitConverter.ToUInt16(buffer, 0);
-        }
-
-        public static ushort ReadUShort(this ReadOnlySpan<byte> data, ref int index)
+        private ushort ReadUShort(ReadOnlySpan<byte> data, ref int index)
         {
             ushort result = MemoryMarshal.Read<ushort>(data.Slice(index));
             index += 2;
             return result;
         }
 
-        public static int ReadInt(this ReadOnlySpan<byte> data, ref int index)
+        private int ReadInt(ReadOnlySpan<byte> data, ref int index)
         {
             int result = MemoryMarshal.Read<int>(data.Slice(index));
             index += 4;
