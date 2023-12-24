@@ -136,7 +136,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
                 if (a > 0)
                 {
+                    #if DEBUG
                     Console.WriteLine($"    Skipping struct index: {a} info");
+                    #endif
                     continue;
                 }
 
