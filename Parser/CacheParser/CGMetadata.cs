@@ -208,8 +208,6 @@ namespace Hi3Helper.EncTool.Parser.Cache
             int ptrToDownloadLimitTime = ReadInt32(stream);
 
             entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
-            if (entry.AppointmentDownloadScheduleID > 0)
-                Console.WriteLine();
 
             int CgGroupIDCount = ReadInt32(stream);
             entry.CgGroupID = new int[CgGroupIDCount];
