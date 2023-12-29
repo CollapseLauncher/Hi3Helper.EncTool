@@ -50,7 +50,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public bool InStreamingAssets { get; set; }
         public int CgPlayMode { get; set; }
         public string CgExtraKey { get; set; }
-        public int FileSize { get; set; }
+        public long FileSize { get; set; }
         public CGPCKType PckType { get; set; }
         public string DownloadLimitTime { get; set; }
         public uint AppointmentDownloadScheduleID { get; set; }
@@ -160,7 +160,11 @@ namespace Hi3Helper.EncTool.Parser.Cache
 
             stream.Position = _groupID[groupIDIndex].FileOffset;
             entry.CgID = _groupID[groupIDIndex].FileOffset;
+#if !DEBUG
             Span<byte> unk1_2 = stackalloc byte[4];
+#else
+            Span<byte> unk1_2 = new byte[4];
+#endif
             _ = stream.Read(unk1_2);
             entry.Unk1 = BinaryPrimitives.ReadInt32LittleEndian(unk1_2);
             entry.Unk2 = BinaryPrimitives.ReadInt16LittleEndian(unk1_2);
@@ -179,18 +183,33 @@ namespace Hi3Helper.EncTool.Parser.Cache
             int ptrToCgPath = ReadInt32(stream);
             int ptrToCgIconSpritePath = ReadInt32(stream);
             int ptrToPckType = ReadInt32(stream);
+            int ptrToUnk1 = ReadInt32(stream);
 
-            entry.InStreamingAssets = ReadInt32(stream) == 1;
+            entry.InStreamingAssets = (ptrToUnk1 > 8 ? ReadInt32(stream) : ptrToUnk1) == 1;
             entry.CgPlayMode = ReadInt32(stream);
 
             int ptrToCgExtraKey = ReadInt32(stream);
 
-            entry.FileSize = ReadInt32(stream);
+            // Starting from 7.2, we have another unknown value to ptrToCgExtraKey, which is actually being used
+            // for getting the status of FileSize type whether it's an int or a long.
+            // If the ptrToUnk1 >= _groupID[groupIDIndex].FileOffset, then determine there's an additional
+            // data (which is a Low bit for the FileSize) and re-read the actual value for ptrToUnk1.
+            // Otherwise, set isSizeALong = false and skip from reading the additional data.
+            bool isSizeALong = !(ptrToUnk1 < _groupID[groupIDIndex].FileOffset);
+            if (ptrToCgExtraKey < _groupID[groupIDIndex].FileOffset)
+                ptrToCgExtraKey = ReadInt32(stream);
+
+            // For the sake of compatibility with both 7.2 and 7.1 metadata, we need to check the
+            // size type because starting from 7.2, the FileSize is actually a long while <= 7.1, it's an int.
+            // We still unsure since the function provided in the UserAssembly is kinda fucced up.
+            entry.FileSize = isSizeALong ? ReadInt64(stream) : ReadInt32(stream);
 
             entry.PckType = (CGPCKType)ReadByte(stream);
             int ptrToDownloadLimitTime = ReadInt32(stream);
 
             entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
+            if (entry.AppointmentDownloadScheduleID > 0)
+                Console.WriteLine();
 
             int CgGroupIDCount = ReadInt32(stream);
             entry.CgGroupID = new int[CgGroupIDCount];
@@ -222,9 +241,19 @@ namespace Hi3Helper.EncTool.Parser.Cache
             return entry;
         }
 
-        private static byte[] buf2 = new byte[2];
-        private static byte[] buf4 = new byte[4];
-        private static byte[] buf8 = new byte[8];
+        private static long ReadInt64(Stream stream)
+        {
+            Span<byte> buffer = stackalloc byte[8];
+            stream.Read(buffer);
+            return BinaryPrimitives.ReadInt64LittleEndian(buffer);
+        }
+
+        private static ulong ReadUInt64(Stream stream)
+        {
+            Span<byte> buffer = stackalloc byte[8];
+            stream.Read(buffer);
+            return BinaryPrimitives.ReadUInt64LittleEndian(buffer);
+        }
 
         private static int ReadInt32(Stream stream)
         {
