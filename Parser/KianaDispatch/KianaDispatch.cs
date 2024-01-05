@@ -14,7 +14,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
 {
     [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true)]
     [JsonSerializable(typeof(KianaDispatch))]
-    public sealed partial class KianaDispatchContext : JsonSerializerContext { }
+    internal sealed partial class KianaDispatchContext : JsonSerializerContext { }
 
     public class KianaDispatch
     {

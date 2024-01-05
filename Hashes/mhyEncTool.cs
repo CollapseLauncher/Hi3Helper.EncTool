@@ -48,7 +48,6 @@ namespace Hi3Helper.EncTool
             this._MasterKey = MasterKey;
         }
 
-        public RSA GetMasterKeyRSA() => this._MasterKeyRSA;
         public string GetMasterKey() => this._MasterKey;
 
         public void InitMasterKey(string Key, int KeyBitLength, RSAEncryptionPadding KeyPadding)
@@ -135,13 +134,13 @@ namespace Hi3Helper.EncTool
             }
         }
 
-        public void FromXmlStringA(in RSA rsa, string xmlString = null)
+        internal void FromXmlStringA(in RSA rsa, string xmlString = null)
         {
             if (string.IsNullOrEmpty(xmlString)) xmlString = this._778;
             rsa.FromXmlString(xmlString);
         }
 
-        public byte[] DecryptRSAContent(in RSA rsa, string ContentBase64, int EncBitLength, RSAEncryptionPadding Padding)
+        internal byte[] DecryptRSAContent(in RSA rsa, string ContentBase64, int EncBitLength, RSAEncryptionPadding Padding)
         {
             byte[] EncContent = Convert.FromBase64String(ContentBase64);
             MemoryStream DecContent = new MemoryStream();
@@ -226,7 +225,7 @@ namespace Hi3Helper.EncTool
             }
         }
 
-        public byte[] _f8j51(string c)
+        internal byte[] _f8j51(string c)
         {
             byte[] ar_84 = new byte[c.Length / 2];
             int _445 = default(int);

@@ -17,16 +17,15 @@ namespace Hi3Helper.EncTool.Parser.Cache
         All = 100
     }
 
-    public struct CgGroupID
+    internal struct CgGroupID
     {
-        public int ID;
+        internal int ID;
         internal int FileOffset;
-        internal CgGroupID SetFileOffset(int offset) => new CgGroupID { ID = ID, FileOffset = offset };
     }
 
-    public struct TextID
+    internal struct TextID
     {
-        public int hash;
+        internal int hash;
     }
 
     public class CGMetadata
@@ -46,7 +45,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public bool InitialUnlock { get; set; }
         public string CgPath { get; set; }
         public string CgIconSpritePath { get; set; }
-        public TextID CgLockHint { get; set; }
+        internal TextID CgLockHint { get; set; }
         public bool InStreamingAssets { get; set; }
         public int CgPlayMode { get; set; }
         public string CgExtraKey { get; set; }

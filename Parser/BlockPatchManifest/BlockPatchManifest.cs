@@ -42,7 +42,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
     public class BlockPatchManifest
     {
-        private int[] _localGameVersion { get; set; }
 
         public Dictionary<string, int> NewBlockCatalog = new Dictionary<string, int>();
         public List<BlockPatchInfo> PatchAsset { get; private set; }
@@ -67,9 +66,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         private void Initialize(Stream stream, int[] gameVersion)
         {
-            // Assign the game version
-            _localGameVersion = gameVersion;
-
             // Initialize the stream into the endian reader
             EndianBinaryReader reader = new EndianBinaryReader(stream);
 
