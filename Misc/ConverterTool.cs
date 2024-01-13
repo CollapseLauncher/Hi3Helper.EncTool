@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Buffers;
+using System.Data;
 using System.IO;
 using System.IO.Hashing;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Security.AccessControl;
 using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Text;
 
 namespace Hi3Helper.Data
@@ -199,21 +203,67 @@ namespace Hi3Helper.Data
 
         public static int GetUnixTimestamp(bool isUTC = false) => (int)Math.Truncate(isUTC ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
 
+        private static WindowsIdentity CurrentWindowsIdentity = WindowsIdentity.GetCurrent();
         public static bool IsUserHasPermission(string input)
         {
-            try
-            {
-                if (!Directory.Exists(input))
-                    Directory.CreateDirectory(input);
+            // Assign the type
+            bool isFileExist = File.Exists(input);
+            bool isDirectoryExist = Directory.Exists(input);
 
-                File.Create(Path.Combine(input, "write_test"), 1, FileOptions.DeleteOnClose).Close();
-            }
-            catch (UnauthorizedAccessException)
+            // If both types do not exist, then return false
+            if (!isFileExist && !isDirectoryExist) return false;
+
+            // Check the path type
+            bool isFileType = isFileExist && !isDirectoryExist;
+
+            // Check for directory access
+            AuthorizationRuleCollection pathAcl;
+            FileSystemSecurity pathSecurity;
+            if (!isFileType)
             {
-                return false;
+                // Get directory ACL
+                DirectoryInfo directoryInfo = new DirectoryInfo(input);
+                pathSecurity = directoryInfo.GetAccessControl();
             }
-            return true;
+            else
+            {
+                // Get file ACL
+                FileInfo fileInfo = new FileInfo(input);
+                pathSecurity = fileInfo.GetAccessControl();
+            }
+
+            // If the path security is null, then return false (as not permitted)
+            if (pathSecurity == null) return false;
+
+            // If the path ACL is null, then return false (as not permitted)
+            pathAcl = pathSecurity.GetAccessRules(true, true, typeof(NTAccount));
+            if (pathAcl == null) return false;
+
+            // Get current Windows User Identity principal
+            WindowsPrincipal principal = new WindowsPrincipal(CurrentWindowsIdentity);
+
+            // Do LINQ to check across available ACLs and ensure that the exact user has the rights to
+            // access the file
+            bool isHasAccess = pathAcl
+                .Cast<FileSystemAccessRule>()
+                .Where(x => IsPrincipalHasFileSystemAccess(principal, x) ?? false)
+                .FirstOrDefault() != null;
+
+            return isHasAccess;
         }
+
+        private static bool? IsPrincipalHasFileSystemAccess(this WindowsPrincipal user, FileSystemAccessRule rule) => rule switch
+        {
+            { FileSystemRights: FileSystemRights FileSystemRights }
+                when (FileSystemRights & (FileSystemRights.WriteData | FileSystemRights.Write)) == 0 => null,
+            { IdentityReference: { Value: string value } }
+                when value.StartsWith("S-1-") && !user.IsInRole(new SecurityIdentifier(rule.IdentityReference.Value)) => null,
+            { IdentityReference: { Value: string value } }
+                when value.StartsWith("S-1-") == false && !user.IsInRole(rule.IdentityReference.Value) => null,
+            { AccessControlType: AccessControlType.Deny } => false,
+            { AccessControlType: AccessControlType.Allow } => true,
+            _ => null
+        };
 
         public static float ConvertRangeValue(float sMin, float sMax, float sValue, float tMin, float tMax) => ((sValue - sMin) * (tMax - tMin) / (sMax - sMin)) + tMin;
 
