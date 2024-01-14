@@ -26,6 +26,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Google.Protobuf" Version="3.25.2" />
+		<PackageReference Include="Google.Protobuf.Tools" Version="3.25.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 		<PackageReference Include="System.IO.Hashing" Version="8.0.0" />
 	</ItemGroup>
 
@@ -33,4 +37,28 @@
 	  <ProjectReference Include="..\Hi3Helper.Http\Hi3Helper.Http.csproj" />
 	</ItemGroup>
 
+	<!-- 
+	Generate C# code from proto when it changed 
+	https://stackoverflow.com/questions/58385978/invoking-tool-in-a-nuget-package-with-generator-getting-unexpected-was-not-f
+	-->
+	<Target Name="GenerateProto-Genshin" BeforeTargets="PreBuildEvent">
+		<ItemGroup>
+			<Content Include="Parser\Proto\GenshinGateway.proto" />
+		</ItemGroup>
+		<Exec Command="$(NugetPackageRoot)\google.protobuf.tools\3.25.2\tools\windows_x64\protoc.exe --proto_path=$(ProjectDir)Parser\Proto --csharp_out=$(ProjectDir)Parser\Proto\src $(ProjectDir)Parser\Proto\GenshinGateway.proto" />
+	</Target>
+
+	<Target Name="GenerateProto-StarRail-Dispatch" BeforeTargets="PreBuildEvent">
+		<ItemGroup>
+			<Content Include="Parser\Proto\StarRailDispatch.proto" />
+		</ItemGroup>
+		<Exec Command="$(NugetPackageRoot)\google.protobuf.tools\3.25.2\tools\windows_x64\protoc.exe --proto_path=$(ProjectDir)Parser\Proto --csharp_out=$(ProjectDir)Parser\Proto\src $(ProjectDir)Parser\Proto\StarRailDispatch.proto" />
+	</Target>
+
+	<Target Name="GenerateProto-StarRail-Gateway" BeforeTargets="PreBuildEvent">
+		<ItemGroup>
+			<Content Include="Parser\Proto\StarRailGateway.proto" />
+		</ItemGroup>
+		<Exec Command="$(NugetPackageRoot)\google.protobuf.tools\3.25.2\tools\windows_x64\protoc.exe --proto_path=$(ProjectDir)Parser\Proto --csharp_out=$(ProjectDir)Parser\Proto\src $(ProjectDir)Parser\Proto\StarRailGateway.proto" />
+	</Target>
 </Project>
