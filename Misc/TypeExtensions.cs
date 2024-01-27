@@ -23,7 +23,7 @@ namespace Hi3Helper.EncTool
             int sizeOfTTo = Marshal.SizeOf<TTo>();
 
             // Allocate the HGlobal buffer pointer
-            IntPtr bufferPtr = Marshal.AllocHGlobal(sizeOfTFrom + sizeOfTTo); // Allocate size for from and to
+            nint bufferPtr = Marshal.AllocHGlobal(sizeOfTFrom + sizeOfTTo); // Allocate size for from and to
             // Marshal struct into the pointer
             Marshal.StructureToPtr(self, bufferPtr, true);
             Marshal.StructureToPtr(to, bufferPtr + sizeOfTFrom, true);

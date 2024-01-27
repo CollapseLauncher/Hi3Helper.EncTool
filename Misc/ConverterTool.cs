@@ -64,7 +64,7 @@ namespace Hi3Helper.Data
             int lenOfT = Marshal.SizeOf<T>();
             if (pos + lenOfT > output.Length) return false;
 
-            IntPtr dataPtr = Marshal.AllocHGlobal(lenOfT);
+            nint dataPtr = Marshal.AllocHGlobal(lenOfT);
             Marshal.StructureToPtr(input, dataPtr, true);
             Marshal.Copy(dataPtr, output, pos, lenOfT);
             Marshal.FreeHGlobal(dataPtr);
@@ -92,7 +92,7 @@ namespace Hi3Helper.Data
             int lenOfT = Marshal.SizeOf<T>();
             if (data.Length < lenOfT || data.Length - lenOfT < pos) return false;
 
-            IntPtr bufferPtr = Marshal.AllocHGlobal(lenOfT);
+            nint bufferPtr = Marshal.AllocHGlobal(lenOfT);
             Marshal.Copy(data, pos, bufferPtr, lenOfT);
 
 #pragma warning disable IL2091 // Target generic argument does not satisfy 'DynamicallyAccessedMembersAttribute' in target method or type. The generic parameter of the source method or type does not have matching annotations.
@@ -141,18 +141,18 @@ namespace Hi3Helper.Data
 
         public static double GetPercentageNumber(double cur, double max, int round = 2) => Math.Round((100 * cur) / max, round);
 
-        private static readonly SpanAction<char, IntPtr> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
+        private static readonly SpanAction<char, nint> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
         public static unsafe string NormalizePath(ReadOnlySpan<char> source)
         {
             ReadOnlySpan<char> sourceTrimmed = source.TrimStart('/');
             fixed (char* ptr = sourceTrimmed)
             {
-                return string.Create(sourceTrimmed.Length, (IntPtr)ptr, s_normalizePathReplaceCore);
+                return string.Create(sourceTrimmed.Length, (nint)ptr, s_normalizePathReplaceCore);
             }
         }
 
         // Reference: https://github.com/dotnet/aspnetcore/blob/c65dac77cf6540c81860a42fff41eb11b9804367/src/Shared/QueryStringEnumerable.cs#L169
-        private static unsafe void NormalizePathUnsafeCore(Span<char> buffer, IntPtr state)
+        private static unsafe void NormalizePathUnsafeCore(Span<char> buffer, nint state)
         {
             fixed (char* ptr = buffer)
             {
@@ -284,6 +284,27 @@ namespace Hi3Helper.Data
             }
 
             return builder.ToString();
+        }
+
+        // Reference:
+        // https://stackoverflow.com/questions/3702216/how-to-convert-integer-to-binary-string-in-c#:~:text=Simple%20.NET%208%2B%20Version
+        public static string ToBinaryString(uint u)
+        {
+            Span<byte> ascii = stackalloc byte[32];
+            for (int i = 0; i < 32; i += 4)
+            {
+                // we want the MSB to be on the left, so we need to reverse everything
+                // other than that we simply grab the ith bit (from the LSB) 
+                // and simply OR that to the ASCII character '0' (0x30).
+                // if the bit was 0 the result is '0' itself, otherwise
+                // if the bit was 1 then the result is '0' | 1 (0x30 | 1) which 
+                // yields 0x31 which is also conveniently the ASCII code for '1'.
+                ascii[31 - (i + 3)] = (byte)((u & (1u << (i + 3))) >> (i + 3) | 0x30);
+                ascii[31 - (i + 2)] = (byte)((u & (1u << (i + 2))) >> (i + 2) | 0x30);
+                ascii[31 - (i + 1)] = (byte)((u & (1u << (i + 1))) >> (i + 1) | 0x30);
+                ascii[31 - i] = (byte)((u & (1u << i)) >> i | 0x30);
+            }
+            return Encoding.ASCII.GetString(ascii);
         }
     }
 }
