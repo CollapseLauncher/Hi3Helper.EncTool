@@ -86,11 +86,11 @@ namespace Hi3Helper.EncTool.WindowTool
                 }
             }
             catch (Exception e)
-            when (!targetWindow.isEmpty)
             {
+                Type exceptionType = e.GetType();
                 // If the exception is not a cancellation exception, then skip
-                if (e.GetType() == typeof(OperationCanceledException)
-                 || e.GetType() == typeof(TaskCanceledException))
+                if (exceptionType == typeof(OperationCanceledException)
+                 || exceptionType == typeof(TaskCanceledException))
                     return;
 
                 // Otherwise, YEET!
