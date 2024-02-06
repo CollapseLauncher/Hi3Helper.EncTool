@@ -52,6 +52,11 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 while (!reader.EndOfStream)
                 {
                     string[] tuple = reader.ReadLine().Split(',');
+                    if (tuple[0] == "empty")
+                    {
+                        System.Console.Write("SRIFix Cache returning empty! Skipping...\r\n");
+                        return;
+                    }
                     AssetProperty.AssetList.Add(new SRAsset
                     {
                         AssetType = SRAssetType.IFix,
