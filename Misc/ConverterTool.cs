@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Hashing;
 using System.Linq;
@@ -72,7 +73,10 @@ namespace Hi3Helper.Data
             return true;
         }
 
-        public static bool TryDeserializeStruct<T>(byte[] data, int count, out T[] output)
+        public static bool TryDeserializeStruct<[DynamicallyAccessedMembers(
+              DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.NonPublicConstructors
+            )] T>(byte[] data, int count, out T[] output)
         {
             int lenOfArrayT = Marshal.SizeOf<T>() * count;
             output = default!;
@@ -86,7 +90,10 @@ namespace Hi3Helper.Data
             return true;
         }
 
-        public static bool TryDeserializeStruct<T>(byte[] data, ref int pos, out T output)
+        public static bool TryDeserializeStruct<[DynamicallyAccessedMembers(
+              DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.NonPublicConstructors
+            )]T>(byte[] data, ref int pos, out T output)
         {
             output = default;
             int lenOfT = Marshal.SizeOf<T>();
@@ -95,9 +102,7 @@ namespace Hi3Helper.Data
             nint bufferPtr = Marshal.AllocHGlobal(lenOfT);
             Marshal.Copy(data, pos, bufferPtr, lenOfT);
 
-#pragma warning disable IL2091 // Target generic argument does not satisfy 'DynamicallyAccessedMembersAttribute' in target method or type. The generic parameter of the source method or type does not have matching annotations.
             output = Marshal.PtrToStructure<T>(bufferPtr);
-#pragma warning restore IL2091 // Target generic argument does not satisfy 'DynamicallyAccessedMembersAttribute' in target method or type. The generic parameter of the source method or type does not have matching annotations.
             Marshal.FreeHGlobal(bufferPtr);
             pos += lenOfT;
             return true;

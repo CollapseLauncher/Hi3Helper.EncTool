@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -40,7 +41,7 @@ namespace Hi3Helper.EncTool
             return isRawDataEqual;
         }
 
-        public static bool IsInstancePropertyEqual<T>(T self, T to)
+        public static bool IsInstancePropertyEqual<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]T>(T self, T to)
         {
             // Check if the one of the value is null, if true check the other value if it's null
             if (self == null)
@@ -57,7 +58,7 @@ namespace Hi3Helper.EncTool
             // Get the type of the instance
             Type type = typeof(T);
             // Enumerate the PropertyInfo out of instance
-            foreach (PropertyInfo pi in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (PropertyInfo pi in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
             {
                 // Get the property name and value from both self and to
                 object selfValue = type.GetProperty(pi.Name).GetValue(self, null);
