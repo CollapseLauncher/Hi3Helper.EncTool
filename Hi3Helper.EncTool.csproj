@@ -52,13 +52,13 @@
 		<ItemGroup>
 			<Content Include="Parser\Proto\StarRailDispatch.proto" />
 		</ItemGroup>
-		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.25.2\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(Pr ojectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailDispatch.proto&quot;" />
+		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.25.3\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(Pr ojectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailDispatch.proto&quot;" />
 	</Target>
 
 	<Target Name="GenerateProto-StarRail-Gateway" BeforeTargets="PreBuildEvent">
 		<ItemGroup>
 			<Content Include="Parser\Proto\StarRailGateway.proto" />
 		</ItemGroup>
-		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.25.2\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailGateway.proto&quot;" />
+		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.25.3\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailGateway.proto&quot;" />
 	</Target>
 </Project>
