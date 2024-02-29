@@ -43,13 +43,15 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public int[] CgGroupID { get; set; }
         public int WikiCgScore { get; set; }
         public bool InitialUnlock { get; set; }
-        public string CgPath { get; set; }
+        public string CgPathLowBitrate { get; set; }
+        public string CgPathHighBitrate { get; set; }
         public string CgIconSpritePath { get; set; }
         internal TextID CgLockHint { get; set; }
         public bool InStreamingAssets { get; set; }
         public int CgPlayMode { get; set; }
         public string CgExtraKey { get; set; }
-        public long FileSize { get; set; }
+        public long FileSizeLowBitrate { get; set; }
+        public long FileSizeHighBitrate { get; set; }
         public CGPCKType PckType { get; set; }
         public string DownloadLimitTime { get; set; }
         public uint AppointmentDownloadScheduleID { get; set; }
@@ -164,34 +166,35 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.CgPlayMode = ReadInt32(stream);
 
             int ptrToCgExtraKey = ReadInt32(stream);
-            bool isSizeALong = !(ptrToUnk1 < _groupID[groupIDIndex].FileOffset);
             if (ptrToCgExtraKey < _groupID[groupIDIndex].FileOffset) ptrToCgExtraKey = ReadInt32(stream);
             else
             {
                 _ = ReadInt64(stream);
-                _ = ReadInt64(stream);
+                // _ = ReadInt64(stream);
             }
 
-            entry.FileSize = isSizeALong ? ReadInt64(stream) : ReadInt32(stream);
-            entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
-
-            short CgGroupIDCount = ReadInt16(stream);
-            entry.CgGroupID = new int[CgGroupIDCount];
-            for (int i = 0; i < CgGroupIDCount; i++)
-            {
-                entry.CgGroupID[i] = ReadInt32(stream);
-            }
-
-            int ptrToDownloadLimitTime = ReadInt32(stream);
+            entry.FileSizeLowBitrate = ReadInt32(stream);
+            entry.FileSizeHighBitrate = ReadInt32(stream);
 #if DEBUG
             byte enumPckTypeNum = ReadByte(stream);
             entry.PckType = (CGPCKType)enumPckTypeNum;
 #else
             entry.PckType = (CGPCKType)ReadByte(stream);
 #endif
+            int ptrToDownloadLimitTime = ReadInt32(stream);
+            entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
+
+            int CgGroupIDCount = ReadInt32(stream);
+            entry.CgGroupID = new int[CgGroupIDCount];
+            for (int i = 0; i < CgGroupIDCount; i++)
+            {
+                entry.CgGroupID[i] = ReadInt32(stream);
+            }
 
             stream.Position = ptrToCgPath1;
-            entry.CgPath = ReadString(stream);
+            entry.CgPathLowBitrate = ReadString(stream);
+            stream.Position = ptrToCgPath2;
+            entry.CgPathHighBitrate = ReadString(stream);
             stream.Position = ptrToCgIconSpritePath;
             entry.CgIconSpritePath = ReadString(stream);
 
@@ -206,7 +209,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.Unk5 = ReadInt32(stream);
 
 #if DEBUG
-            Console.WriteLine($"CG [T: {entry.PckType} | {enumPckTypeNum}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} b] [ID: {entry.CgID}] [Category: {entry.CgSubCategory}] [Unk5: {entry.Unk5}]");
+            Console.WriteLine($"CG [T: {entry.PckType} | {enumPckTypeNum}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPathHighBitrate} [{entry.FileSizeHighBitrate} b] [ID: {entry.CgID}] [Category: {entry.CgSubCategory}] [Unk5: {entry.Unk5}]");
 #endif
 
             return entry;
