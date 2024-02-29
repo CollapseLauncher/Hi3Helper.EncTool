@@ -43,15 +43,19 @@ namespace Hi3Helper.EncTool.Parser.Cache
         public int[] CgGroupID { get; set; }
         public int WikiCgScore { get; set; }
         public bool InitialUnlock { get; set; }
-        public string CgPathLowBitrate { get; set; }
-        public string CgPathHighBitrate { get; set; }
+        public string CgPathLowBitrateCN { get; set; }
+        public string CgPathHighBitrateCN { get; set; }
+        public string CgPathLowBitrateJP { get; set; }
+        public string CgPathHighBitrateJP { get; set; }
         public string CgIconSpritePath { get; set; }
         internal TextID CgLockHint { get; set; }
         public bool InStreamingAssets { get; set; }
         public int CgPlayMode { get; set; }
         public string CgExtraKey { get; set; }
-        public long FileSizeLowBitrate { get; set; }
-        public long FileSizeHighBitrate { get; set; }
+        public long FileSizeLowBitrateCN { get; set; }
+        public long FileSizeHighBitrateCN { get; set; }
+        public long FileSizeLowBitrateJP { get; set; }
+        public long FileSizeHighBitrateJP { get; set; }
         public CGPCKType PckType { get; set; }
         public string DownloadLimitTime { get; set; }
         public uint AppointmentDownloadScheduleID { get; set; }
@@ -158,23 +162,22 @@ namespace Hi3Helper.EncTool.Parser.Cache
             int ptrToCgPath1 = ReadInt32(stream);
             int ptrToCgPath2 = ReadInt32(stream);
             int ptrToCgPath3 = ReadInt32(stream);
+            int ptrToCgPath4 = ReadInt32(stream);
             int ptrToCgIconSpritePath = ReadInt32(stream);
             int ptrToPckType = ReadInt32(stream);
-            int ptrToUnk1 = ReadInt32(stream);
 
-            entry.InStreamingAssets = (ptrToUnk1 > 8 ? ReadInt32(stream) : ptrToUnk1) == 1;
+            entry.InStreamingAssets = ReadInt32(stream) == 1;
             entry.CgPlayMode = ReadInt32(stream);
 
             int ptrToCgExtraKey = ReadInt32(stream);
-            if (ptrToCgExtraKey < _groupID[groupIDIndex].FileOffset) ptrToCgExtraKey = ReadInt32(stream);
-            else
-            {
-                _ = ReadInt64(stream);
-                // _ = ReadInt64(stream);
-            }
+            if (ptrToCgExtraKey < _groupID[groupIDIndex].FileOffset)
+                ptrToCgExtraKey = ReadInt32(stream);
 
-            entry.FileSizeLowBitrate = ReadInt32(stream);
-            entry.FileSizeHighBitrate = ReadInt32(stream);
+            entry.FileSizeLowBitrateCN = ReadInt32(stream);
+            entry.FileSizeHighBitrateCN = ReadInt32(stream);
+
+            entry.FileSizeLowBitrateJP = ReadInt32(stream);
+            entry.FileSizeHighBitrateJP = ReadInt32(stream);
 #if DEBUG
             byte enumPckTypeNum = ReadByte(stream);
             entry.PckType = (CGPCKType)enumPckTypeNum;
@@ -192,9 +195,13 @@ namespace Hi3Helper.EncTool.Parser.Cache
             }
 
             stream.Position = ptrToCgPath1;
-            entry.CgPathLowBitrate = ReadString(stream);
+            entry.CgPathLowBitrateCN = ReadString(stream);
             stream.Position = ptrToCgPath2;
-            entry.CgPathHighBitrate = ReadString(stream);
+            entry.CgPathHighBitrateCN = ReadString(stream);
+            stream.Position = ptrToCgPath3;
+            entry.CgPathLowBitrateJP = ReadString(stream);
+            stream.Position = ptrToCgPath4;
+            entry.CgPathHighBitrateJP = ReadString(stream);
             stream.Position = ptrToCgIconSpritePath;
             entry.CgIconSpritePath = ReadString(stream);
 
@@ -209,7 +216,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.Unk5 = ReadInt32(stream);
 
 #if DEBUG
-            Console.WriteLine($"CG [T: {entry.PckType} | {enumPckTypeNum}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPathHighBitrate} [{entry.FileSizeHighBitrate} b] [ID: {entry.CgID}] [Category: {entry.CgSubCategory}] [Unk5: {entry.Unk5}]");
+            Console.WriteLine($"CG [T: {entry.PckType} | {enumPckTypeNum}][BuiltIn: {entry.InStreamingAssets}]: JP: {entry.CgPathHighBitrateJP} | CN: {entry.CgPathHighBitrateCN} [JP: {entry.FileSizeHighBitrateJP} b | CN: {entry.FileSizeHighBitrateCN} b] [ID: {entry.CgID}] [Category: {entry.CgSubCategory}] [Unk5: {entry.Unk5}]");
 #endif
 
             return entry;
