@@ -83,12 +83,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
         {
             _encoding = encoding;
 
-            FileStream streamCopy = File.Create(@"C:\myGit\test");
-            stream.CopyTo(streamCopy);
-            streamCopy.Dispose();
-            streamCopy = new FileStream(@"C:\myGit\test", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-            int entryCount = GetEntryCount(streamCopy);
+            int entryCount = GetEntryCount(stream);
             for (int i = 0; i < entryCount; i++) yield return Deserialize(stream, i);
         }
 

@@ -27,7 +27,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             {
                 using (EndianBinaryReader reader = new EndianBinaryReader(xmfFS, EndianType.LittleEndian, true))
                 {
-                    reader.Position = XMFParser._signatureLength + 4;
+                    reader.BaseStream.Read(new byte[XMFParser._signatureLength + 4]);
                     int[] versionXMF = XMFParser.ReadVersion(reader);
                     return versionXMF;
                 }

@@ -17,6 +17,7 @@ namespace Hi3Helper.EncTool.Parser.Senadina
     public enum SenadinaKind { bricksBase, bricksCurrent, wandCurrent, chiptunesCurrent, chiptunesPreload }
     public class SenadinaFileIdentifier : IDisposable
     {
+        public string? relativePath { get; set; }
         public string? lastIdentifier { get; set; }
         public long fileTime { get; set; }
         public Stream? fileStream { get; set; }
@@ -131,6 +132,8 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             byte[] returnIv = sha.ComputeHash(ivByte);
             return returnIv[..16];
         }
+
+        public Stream CreateKangBakso() => CreateKangBakso(fileStream!, lastIdentifier!, relativePath!, (int)fileTime);
 
         public static Stream CreateKangBakso(Stream bihun, string koentji, string alamatKangBakso, int jadwal)
         {

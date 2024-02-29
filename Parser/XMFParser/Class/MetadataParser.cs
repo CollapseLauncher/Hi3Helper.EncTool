@@ -35,21 +35,18 @@ namespace Hi3Helper.EncTool.Parser
             throw new FileNotFoundException($"XMF file in this path: \"{_xmfPath}\" doesn't exist or the directory with the path given has no XMF file inside it.");
         }
 
-        private void ParseMetadata()
+        private void ParseMetadata(Stream xmfStream)
         {
-            using (Stream stream = new FileStream(_xmfPath, FileMode.Open, FileAccess.Read))
+            // Read XMF with Endianess-aware BinaryReader
+            using (EndianBinaryReader reader = new EndianBinaryReader(xmfStream))
             {
-                // Read XMF with Endianess-aware BinaryReader
-                using (EndianBinaryReader reader = new EndianBinaryReader(stream))
-                {
-                    // Start read the header of the XMF file.
-                    ReadHeader(reader);
-                    // Start read the metadata including block info and asset indexes.
-                    ReadMetadata(reader);
-                    // Finalize by creating catalog for block lookup as hash name and index.
-                    // This will make searching process for the block easier.
-                    CreateBlockIndexCatalog(BlockCount);
-                }
+                // Start read the header of the XMF file.
+                ReadHeader(reader);
+                // Start read the metadata including block info and asset indexes.
+                ReadMetadata(reader);
+                // Finalize by creating catalog for block lookup as hash name and index.
+                // This will make searching process for the block easier.
+                CreateBlockIndexCatalog(BlockCount);
             }
         }
 

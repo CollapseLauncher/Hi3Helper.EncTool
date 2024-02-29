@@ -38,6 +38,26 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             }
         }
 
+        public KianaAudioManifest(Stream stream, int[] gameVersion, bool disposeStream = false)
+        {
+            _gameVersion = gameVersion;
+            Initialize(stream);
+
+            if (disposeStream)
+            {
+                stream.Dispose();
+            }
+        }
+
+        private void Initialize(Stream stream)
+        {
+            // Initialize the Raw Stream and reader
+            EndianBinaryReader reader = new EndianBinaryReader(stream);
+
+            // Start deserializing
+            DeserializeManifest(reader);
+        }
+
         private void Initialize(Stream stream, string key)
         {
             // Initialize the CryptoStream and reader
