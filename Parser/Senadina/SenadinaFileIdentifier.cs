@@ -1,17 +1,36 @@
-﻿using System;
+﻿using Hi3Helper.Data;
+using Hi3Helper.Http;
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 #nullable enable
 namespace Hi3Helper.EncTool.Parser.Senadina
 {
-    public class SenadinaFileIdentifier
+    public enum SenadinaKind { bricksBase, bricksCurrent, wandCurrent, chiptunesCurrent, chiptunesPreload }
+    public class SenadinaFileIdentifier : IDisposable
     {
         public string? lastIdentifier { get; set; }
         public long fileTime { get; set; }
+        public Stream? fileStream { get; set; }
         public Dictionary<string, byte[]>? stringStore { get; set; }
+
+        ~SenadinaFileIdentifier() => Dispose();
+
+        public void Dispose()
+        {
+            stringStore?.Clear();
+            fileStream?.Dispose();
+
+            GC.SuppressFinalize(this);
+        }
 
         public bool IsKeyStoreExist(string key) => stringStore?.ContainsKey(key) ?? false;
         public bool TryReadStringStoreArrayAs<T>(string key, out T[]? result)
@@ -73,7 +92,21 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             return value;
         }
 
-        public static byte[] GenerateMothKey(string inputKey)
+        public static string GetHashedString(string input)
+        {
+            Span<byte> data = stackalloc byte[32];
+            Span<byte> nameBuffer = stackalloc byte[4 << 10];
+            if (input.Length > nameBuffer.Length)
+                throw new IndexOutOfRangeException($"Input length is more than allowed size: {nameBuffer.Length} bytes!");
+
+            if (!Encoding.UTF8.TryGetBytes(input, nameBuffer, out int written))
+                throw new InvalidDataException($"Failed while getting hash name for input: {input}");
+
+            SHA256.HashData(nameBuffer.Slice(0, written), data);
+            return HexTool.BytesToHexUnsafe(data);
+        }
+
+        private static byte[] GenerateMothKoentji(string inputKey)
         {
             SHA256 sha256 = SHA256.Create();
             byte[] keyRaw = Encoding.UTF8.GetBytes(inputKey);
@@ -81,7 +114,7 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             return returnKey;
         }
 
-        public static byte[] GenerateMothIV(int seed)
+        private static byte[] GenerateMothAngkaDadoe(int seed)
         {
             Random random = new Random(seed);
             long randomLong1 = random.NextInt64();
@@ -97,6 +130,35 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             SHA1 sha = SHA1.Create();
             byte[] returnIv = sha.ComputeHash(ivByte);
             return returnIv[..16];
+        }
+
+        public static Stream CreateKangBakso(Stream bihun, string koentji, string alamatKangBakso, int jadwal)
+        {
+            Aes aesInstance = Aes.Create();
+            aesInstance.Mode = CipherMode.CFB;
+            aesInstance.Key = GenerateMothKoentji(koentji + alamatKangBakso);
+            aesInstance.IV = GenerateMothAngkaDadoe(jadwal);
+            aesInstance.Padding = PaddingMode.ISO10126;
+
+            Stream superSemar = new CryptoStream(bihun, aesInstance.CreateDecryptor(), CryptoStreamMode.Read);
+            Stream petrus = new BrotliStream(superSemar, CompressionMode.Decompress);
+
+            return petrus;
+        }
+
+        public async Task<Stream> GetOriginalFileStream(HttpClient client, CancellationToken token = default)
+        {
+            const string dictKey = "origUrl";
+            if (this.TryReadStringStoreAs(dictKey, out string? result))
+            {
+                if (string.IsNullOrEmpty(result))
+                    throw new NullReferenceException($"origUrl from pustaka's store is null or just an empty string. Please report this issue to our Discord Server!");
+
+                Stream networkStream = await HttpResponseInputStream.CreateStreamAsync(client, result, 0, null, token);
+                return networkStream;
+            }
+
+            throw new KeyNotFoundException($"origUrl from pustaka's store is not exist. Please report this issue to our Discord Server!");
         }
     }
 }

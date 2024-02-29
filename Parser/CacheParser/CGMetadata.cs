@@ -61,67 +61,47 @@ namespace Hi3Helper.EncTool.Parser.Cache
 
         public static CGMetadata[] GetArray(Stream stream, Encoding encoding)
         {
-            // Set the encoding
             _encoding = encoding;
-
-            // Get the entry count
             int entryCount = GetEntryCount(stream);
-
-            // Initialize the return value of the instance
             CGMetadata[] entries = new CGMetadata[entryCount];
 
-            // Assign the data to the return value
             for (int i = 0; i < entryCount; i++) entries[i] = Deserialize(stream, i);
-
-            // Return the value
             return entries;
         }
 
         public static List<CGMetadata> GetList(Stream stream, Encoding encoding)
         {
-            // Set the encoding
             _encoding = encoding;
-
-            // Get the entry count
             int entryCount = GetEntryCount(stream);
-
-            // Initialize the return value of the instance
             List<CGMetadata> entries = new List<CGMetadata>();
 
-            // Assign the data to the return value
             for (int i = 0; i < entryCount; i++) entries.Add(Deserialize(stream, i));
-
-            // Return the value
             return entries;
         }
 
         public static IEnumerable<CGMetadata> Enumerate(Stream stream, Encoding encoding)
         {
-            // Set the encoding
             _encoding = encoding;
 
-            // Get the entry count
-            int entryCount = GetEntryCount(stream);
+            FileStream streamCopy = File.Create(@"C:\myGit\test");
+            stream.CopyTo(streamCopy);
+            streamCopy.Dispose();
+            streamCopy = new FileStream(@"C:\myGit\test", FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-            // Assign the data to the return value and yield it
+            int entryCount = GetEntryCount(streamCopy);
             for (int i = 0; i < entryCount; i++) yield return Deserialize(stream, i);
         }
 
         private static int GetEntryCount(Stream stream)
         {
-            // Skip the file size information and skip to the entry count
             stream.Position += 4;
             int entryCount = ReadInt32(stream);
-
-            // Read GroupID and Offsets
             ReadGroupIDAndOffsets(stream, entryCount);
-
             return entryCount;
         }
 
         private static void ReadGroupIDAndOffsets(Stream stream, int readCount)
         {
-            // Clear the _groupID cache
             _groupID.Clear();
             int toRead = readCount * 4;
             int readOffset = 0;
@@ -136,7 +116,6 @@ namespace Hi3Helper.EncTool.Parser.Cache
             try
             {
             ReadGroupIDAndOffset_Label:
-                // Read the GroupID and offsets number
                 int groupID = BinaryPrimitives.ReadInt32LittleEndian(bufferGroupID.Slice(readOffset));
                 int offsets = BinaryPrimitives.ReadInt32LittleEndian(bufferOffset.Slice(readOffset));
                 readOffset += 4;
@@ -179,7 +158,9 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.WikiCgScore = ReadInt32(stream);
             entry.InitialUnlock = ReadBoolean(stream);
 
-            int ptrToCgPath = ReadInt32(stream);
+            int ptrToCgPath1 = ReadInt32(stream);
+            int ptrToCgPath2 = ReadInt32(stream);
+            int ptrToCgPath3 = ReadInt32(stream);
             int ptrToCgIconSpritePath = ReadInt32(stream);
             int ptrToPckType = ReadInt32(stream);
             int ptrToUnk1 = ReadInt32(stream);
@@ -188,37 +169,35 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.CgPlayMode = ReadInt32(stream);
 
             int ptrToCgExtraKey = ReadInt32(stream);
-
-            // Starting from 7.2, we have another unknown value to ptrToCgExtraKey, which is actually being used
-            // for getting the status of FileSize type whether it's an int or a long.
-            // If the ptrToUnk1 >= _groupID[groupIDIndex].FileOffset, then determine there's an additional
-            // data (which is a Low bit for the FileSize) and re-read the actual value for ptrToUnk1.
-            // Otherwise, set isSizeALong = false and skip from reading the additional data.
             bool isSizeALong = !(ptrToUnk1 < _groupID[groupIDIndex].FileOffset);
-            if (ptrToCgExtraKey < _groupID[groupIDIndex].FileOffset)
-                ptrToCgExtraKey = ReadInt32(stream);
+            if (ptrToCgExtraKey < _groupID[groupIDIndex].FileOffset) ptrToCgExtraKey = ReadInt32(stream);
+            else
+            {
+                _ = ReadInt64(stream);
+                _ = ReadInt64(stream);
+            }
 
-            // For the sake of compatibility with both 7.2 and 7.1 metadata, we need to check the
-            // size type because starting from 7.2, the FileSize is actually a long while <= 7.1, it's an int.
-            // We still unsure since the function provided in the UserAssembly is kinda fucced up.
             entry.FileSize = isSizeALong ? ReadInt64(stream) : ReadInt32(stream);
-
-            entry.PckType = (CGPCKType)ReadByte(stream);
-            int ptrToDownloadLimitTime = ReadInt32(stream);
-
             entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
 
-            int CgGroupIDCount = ReadInt32(stream);
+            short CgGroupIDCount = ReadInt16(stream);
             entry.CgGroupID = new int[CgGroupIDCount];
             for (int i = 0; i < CgGroupIDCount; i++)
             {
                 entry.CgGroupID[i] = ReadInt32(stream);
             }
 
-            _ = stream.ReadByte();
-            int partSizeToRead = ReadInt32(stream);
-            stream.Position = ptrToCgPath;
+            int ptrToDownloadLimitTime = ReadInt32(stream);
+#if DEBUG
+            byte enumPckTypeNum = ReadByte(stream);
+            entry.PckType = (CGPCKType)enumPckTypeNum;
+#else
+            entry.PckType = (CGPCKType)ReadByte(stream);
+#endif
+
+            stream.Position = ptrToCgPath1;
             entry.CgPath = ReadString(stream);
+            stream.Position = ptrToCgIconSpritePath;
             entry.CgIconSpritePath = ReadString(stream);
 
             entry.Unk4 = (byte)stream.ReadByte();
@@ -232,7 +211,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.Unk5 = ReadInt32(stream);
 
 #if DEBUG
-            Console.WriteLine($"CG [T: {entry.PckType}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} b] [ID: {entry.CgID}] [Category: {entry.CgSubCategory}] [Unk5: {entry.Unk5}]");
+            Console.WriteLine($"CG [T: {entry.PckType} | {enumPckTypeNum}][BuiltIn: {entry.InStreamingAssets}]: {entry.CgPath} [{entry.FileSize} b] [ID: {entry.CgID}] [Category: {entry.CgSubCategory}] [Unk5: {entry.Unk5}]");
 #endif
 
             return entry;
