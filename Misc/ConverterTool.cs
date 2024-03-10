@@ -19,7 +19,8 @@ namespace Hi3Helper.Data
     {
         private static readonly MD5 MD5Hash = MD5.Create();
         private static readonly Crc32 crc32 = new Crc32();
-        private static readonly string[] SizeSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
+        public static string[] SizeSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
+
         public static string BytesToCRC32Simple(Stream buffer)
         {
             crc32.Append(buffer);
