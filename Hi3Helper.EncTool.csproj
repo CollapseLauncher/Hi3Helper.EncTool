@@ -26,7 +26,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Google.Protobuf" Version="3.26.0" />
-		<PackageReference Include="Google.Protobuf.Tools" Version="3.25.3">
+		<PackageReference Include="Google.Protobuf.Tools" Version="3.26.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
@@ -37,28 +37,34 @@
 	  <ProjectReference Include="..\Hi3Helper.Http\Hi3Helper.Http.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Parser\Proto\src\" />
+	</ItemGroup>
+
 	<!-- 
 	Generate C# code from proto when it changed 
 	https://stackoverflow.com/questions/58385978/invoking-tool-in-a-nuget-package-with-generator-getting-unexpected-was-not-f
 	-->
-	<Target Name="GenerateProto-Genshin" BeforeTargets="PreBuildEvent">
-		<ItemGroup>
-			<Content Include="Parser\Proto\GenshinGateway.proto" />
-		</ItemGroup>
-		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.25.3\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\GenshinGateway.proto&quot;" />
+
+	<Target Name="GenerateProto-Genshin-Gateway" Inputs="$(ProjectDir)Parser\Proto\GenshinGateway.proto" Outputs="$(ProjectDir)Parser\Proto\src\GenshinGateway.cs" BeforeTargets="BeforeBuild">
+		<Message Text="Generating Genshin gateway proto code..." Importance="high" />
+		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.26.0\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\GenshinGateway.proto&quot;" />
 	</Target>
 
-	<Target Name="GenerateProto-StarRail-Dispatch" BeforeTargets="PreBuildEvent">
-		<ItemGroup>
-			<Content Include="Parser\Proto\StarRailDispatch.proto" />
-		</ItemGroup>
-		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.25.3\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(Pr ojectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailDispatch.proto&quot;" />
+	<Target Name="GenerateProto-StarRail-Gateway" Inputs="$(ProjectDir)Parser\Proto\StarRailGateway.proto" Outputs="$(ProjectDir)Parser\Proto\src\StarRailGateway.cs" BeforeTargets="BeforeBuild">
+		<Message Text="Generating StarRail gateway proto code..." Importance="high" />
+		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.26.0\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailGateway.proto&quot;" />
 	</Target>
 
-	<Target Name="GenerateProto-StarRail-Gateway" BeforeTargets="PreBuildEvent">
-		<ItemGroup>
-			<Content Include="Parser\Proto\StarRailGateway.proto" />
-		</ItemGroup>
-		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.25.3\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailGateway.proto&quot;" />
+	<Target Name="GenerateProto-StarRail-Dispatch" Inputs="$(ProjectDir)Parser\Proto\StarRailDispatch.proto" Outputs="$(ProjectDir)Parser\Proto\src\StarRailDispatch.cs" BeforeTargets="BeforeBuild">
+		<Message Text="Generating StarRail dispatch proto code..." Importance="high" />
+		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.26.0\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailDispatch.proto&quot;" />
+	</Target>
+
+	<Target Name="PreCompile" BeforeTargets="Compile">
+		<CallTarget Targets="GenerateProto-Genshin-Gateway" />
+		<CallTarget Targets="GenerateProto-StarRail-Gateway" />
+		<CallTarget Targets="GenerateProto-StarRail-Dispatch" />
+		<Message Text="PreCompile target has finished running." Importance="high" />
 	</Target>
 </Project>

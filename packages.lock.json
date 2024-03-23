@@ -10,9 +10,9 @@
       },
       "Google.Protobuf.Tools": {
         "type": "Direct",
-        "requested": "[3.25.3, )",
-        "resolved": "3.25.3",
-        "contentHash": "U+j2m7aIeTRaws4OLsCwKv+wx7kR/+m1F4jt14e1fqrOj2dW8y/mghcU++CxYo6eTx3InS7Zg3VOxpjIaVcRiw=="
+        "requested": "[3.26.0, )",
+        "resolved": "3.26.0",
+        "contentHash": "n1scvS3j9vVM0kephxinz2pgkFYqAvteOMbzUGFHTQYiGENAdruWtskDX9LV1JKZwCybp6GtY0dNSHm8ydgkWw=="
       },
       "Microsoft.NET.ILLink.Tasks": {
         "type": "Direct",
