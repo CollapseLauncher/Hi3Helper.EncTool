@@ -127,6 +127,23 @@ namespace Hi3Helper.Data
             }
         }
 
+        public static T[] EnsureLengthCopyLast<T>(T[] array, int toLength)
+        {
+            if (array.Length == 0) throw new IndexOutOfRangeException("Array has no content in it");
+            if (array.Length >= toLength) return array;
+
+            T lastArray = array[array.Length - 1];
+            T[] newArray = new T[toLength];
+            Array.Copy(array, newArray, array.Length);
+
+            for (int i = array.Length; i < newArray.Length; i++)
+            {
+                newArray[i] = lastArray;
+            }
+
+            return newArray;
+        }
+
         public static int BytesToCRC32Int(string str)
         {
             byte[] strBytes = Encoding.UTF8.GetBytes(str);
