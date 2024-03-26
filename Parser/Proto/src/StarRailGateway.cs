@@ -26,11 +26,11 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
           string.Concat(
             "ChVTdGFyUmFpbEdhdGV3YXkucHJvdG8SIEhpM0hlbHBlci5FbmNUb29sLlBy",
             "b3RvLlN0YXJSYWlsItsBCg9TdGFyUmFpbEdhdGV3YXkSIwobQXNzZXRCdW5k",
-            "bGVWZXJzaW9uVXBkYXRlVXJsGAEgASgJEiEKGUx1YUJ1bmRsZVZlcnNpb25V",
-            "cGRhdGVVcmwYCyABKAkSFwoPTHVhUGF0Y2hWZXJzaW9uGAYgASgJEigKIERl",
-            "c2lnbkRhdGFCdW5kbGVWZXJzaW9uVXBkYXRlVXJsGAkgASgJEiIKGUlGaXhQ",
-            "YXRjaFZlcnNpb25VcGRhdGVVcmwYjAEgASgJEhkKEUlGaXhQYXRjaFJldmlz",
-            "aW9uGAogASgJYgZwcm90bzM="));
+            "bGVWZXJzaW9uVXBkYXRlVXJsGAwgASgJEiEKGUx1YUJ1bmRsZVZlcnNpb25V",
+            "cGRhdGVVcmwYAyABKAkSFwoPTHVhUGF0Y2hWZXJzaW9uGAQgASgJEigKIERl",
+            "c2lnbkRhdGFCdW5kbGVWZXJzaW9uVXBkYXRlVXJsGAYgASgJEiIKGUlGaXhQ",
+            "YXRjaFZlcnNpb25VcGRhdGVVcmwYlgEgASgJEhkKEUlGaXhQYXRjaFJldmlz",
+            "aW9uGA0gASgJYgZwcm90bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -92,7 +92,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     }
 
     /// <summary>Field number for the "AssetBundleVersionUpdateUrl" field.</summary>
-    public const int AssetBundleVersionUpdateUrlFieldNumber = 1;
+    public const int AssetBundleVersionUpdateUrlFieldNumber = 12;
     private string assetBundleVersionUpdateUrl_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -104,7 +104,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     }
 
     /// <summary>Field number for the "LuaBundleVersionUpdateUrl" field.</summary>
-    public const int LuaBundleVersionUpdateUrlFieldNumber = 11;
+    public const int LuaBundleVersionUpdateUrlFieldNumber = 3;
     private string luaBundleVersionUpdateUrl_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -116,7 +116,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     }
 
     /// <summary>Field number for the "LuaPatchVersion" field.</summary>
-    public const int LuaPatchVersionFieldNumber = 6;
+    public const int LuaPatchVersionFieldNumber = 4;
     private string luaPatchVersion_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -128,7 +128,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     }
 
     /// <summary>Field number for the "DesignDataBundleVersionUpdateUrl" field.</summary>
-    public const int DesignDataBundleVersionUpdateUrlFieldNumber = 9;
+    public const int DesignDataBundleVersionUpdateUrlFieldNumber = 6;
     private string designDataBundleVersionUpdateUrl_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -140,7 +140,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     }
 
     /// <summary>Field number for the "IFixPatchVersionUpdateUrl" field.</summary>
-    public const int IFixPatchVersionUpdateUrlFieldNumber = 140;
+    public const int IFixPatchVersionUpdateUrlFieldNumber = 150;
     private string iFixPatchVersionUpdateUrl_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -152,7 +152,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     }
 
     /// <summary>Field number for the "IFixPatchRevision" field.</summary>
-    public const int IFixPatchRevisionFieldNumber = 10;
+    public const int IFixPatchRevisionFieldNumber = 13;
     private string iFixPatchRevision_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -215,28 +215,28 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       output.WriteRawMessage(this);
     #else
-      if (AssetBundleVersionUpdateUrl.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(AssetBundleVersionUpdateUrl);
+      if (LuaBundleVersionUpdateUrl.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(LuaBundleVersionUpdateUrl);
       }
       if (LuaPatchVersion.Length != 0) {
-        output.WriteRawTag(50);
+        output.WriteRawTag(34);
         output.WriteString(LuaPatchVersion);
       }
       if (DesignDataBundleVersionUpdateUrl.Length != 0) {
-        output.WriteRawTag(74);
+        output.WriteRawTag(50);
         output.WriteString(DesignDataBundleVersionUpdateUrl);
       }
+      if (AssetBundleVersionUpdateUrl.Length != 0) {
+        output.WriteRawTag(98);
+        output.WriteString(AssetBundleVersionUpdateUrl);
+      }
       if (IFixPatchRevision.Length != 0) {
-        output.WriteRawTag(82);
+        output.WriteRawTag(106);
         output.WriteString(IFixPatchRevision);
       }
-      if (LuaBundleVersionUpdateUrl.Length != 0) {
-        output.WriteRawTag(90);
-        output.WriteString(LuaBundleVersionUpdateUrl);
-      }
       if (IFixPatchVersionUpdateUrl.Length != 0) {
-        output.WriteRawTag(226, 8);
+        output.WriteRawTag(178, 9);
         output.WriteString(IFixPatchVersionUpdateUrl);
       }
       if (_unknownFields != null) {
@@ -249,28 +249,28 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
-      if (AssetBundleVersionUpdateUrl.Length != 0) {
-        output.WriteRawTag(10);
-        output.WriteString(AssetBundleVersionUpdateUrl);
+      if (LuaBundleVersionUpdateUrl.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(LuaBundleVersionUpdateUrl);
       }
       if (LuaPatchVersion.Length != 0) {
-        output.WriteRawTag(50);
+        output.WriteRawTag(34);
         output.WriteString(LuaPatchVersion);
       }
       if (DesignDataBundleVersionUpdateUrl.Length != 0) {
-        output.WriteRawTag(74);
+        output.WriteRawTag(50);
         output.WriteString(DesignDataBundleVersionUpdateUrl);
       }
+      if (AssetBundleVersionUpdateUrl.Length != 0) {
+        output.WriteRawTag(98);
+        output.WriteString(AssetBundleVersionUpdateUrl);
+      }
       if (IFixPatchRevision.Length != 0) {
-        output.WriteRawTag(82);
+        output.WriteRawTag(106);
         output.WriteString(IFixPatchRevision);
       }
-      if (LuaBundleVersionUpdateUrl.Length != 0) {
-        output.WriteRawTag(90);
-        output.WriteString(LuaBundleVersionUpdateUrl);
-      }
       if (IFixPatchVersionUpdateUrl.Length != 0) {
-        output.WriteRawTag(226, 8);
+        output.WriteRawTag(178, 9);
         output.WriteString(IFixPatchVersionUpdateUrl);
       }
       if (_unknownFields != null) {
@@ -346,27 +346,27 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
             break;
-          case 10: {
-            AssetBundleVersionUpdateUrl = input.ReadString();
-            break;
-          }
-          case 50: {
-            LuaPatchVersion = input.ReadString();
-            break;
-          }
-          case 74: {
-            DesignDataBundleVersionUpdateUrl = input.ReadString();
-            break;
-          }
-          case 82: {
-            IFixPatchRevision = input.ReadString();
-            break;
-          }
-          case 90: {
+          case 26: {
             LuaBundleVersionUpdateUrl = input.ReadString();
             break;
           }
-          case 1122: {
+          case 34: {
+            LuaPatchVersion = input.ReadString();
+            break;
+          }
+          case 50: {
+            DesignDataBundleVersionUpdateUrl = input.ReadString();
+            break;
+          }
+          case 98: {
+            AssetBundleVersionUpdateUrl = input.ReadString();
+            break;
+          }
+          case 106: {
+            IFixPatchRevision = input.ReadString();
+            break;
+          }
+          case 1202: {
             IFixPatchVersionUpdateUrl = input.ReadString();
             break;
           }
@@ -385,27 +385,27 @@ namespace Hi3Helper.EncTool.Proto.StarRail {
           default:
             _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             break;
-          case 10: {
-            AssetBundleVersionUpdateUrl = input.ReadString();
-            break;
-          }
-          case 50: {
-            LuaPatchVersion = input.ReadString();
-            break;
-          }
-          case 74: {
-            DesignDataBundleVersionUpdateUrl = input.ReadString();
-            break;
-          }
-          case 82: {
-            IFixPatchRevision = input.ReadString();
-            break;
-          }
-          case 90: {
+          case 26: {
             LuaBundleVersionUpdateUrl = input.ReadString();
             break;
           }
-          case 1122: {
+          case 34: {
+            LuaPatchVersion = input.ReadString();
+            break;
+          }
+          case 50: {
+            DesignDataBundleVersionUpdateUrl = input.ReadString();
+            break;
+          }
+          case 98: {
+            AssetBundleVersionUpdateUrl = input.ReadString();
+            break;
+          }
+          case 106: {
+            IFixPatchRevision = input.ReadString();
+            break;
+          }
+          case 1202: {
             IFixPatchVersionUpdateUrl = input.ReadString();
             break;
           }
