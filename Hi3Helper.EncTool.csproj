@@ -37,10 +37,6 @@
 	  <ProjectReference Include="..\Hi3Helper.Http\Hi3Helper.Http.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Parser\Proto\src\" />
-	</ItemGroup>
-
 	<!-- 
 	Generate C# code from proto when it changed 
 	https://stackoverflow.com/questions/58385978/invoking-tool-in-a-nuget-package-with-generator-getting-unexpected-was-not-f

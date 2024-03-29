@@ -89,7 +89,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             {
                 _httpClient.DownloadProgress += HttpProgressAdapter;
 
-                MetadataIFix = SRIFixMetadata.CreateInstance(_dispatcherInfo._regionGateway.IFixPatchVersionUpdateUrl, _httpClient);
+                MetadataIFix = SRIFixMetadata.CreateInstance(_dispatcherInfo._isUseLegacy ? _dispatcherInfo._regionGatewayLegacy.IFixPatchVersionUpdateUrl : _dispatcherInfo._regionGateway.ValuePairs["IFixPatchVersionUpdateUrl"], _httpClient);
                 await MetadataIFix.GetRemoteMetadata(_persistentPath, threadToken, "IFix\\Windows");
                 MetadataIFix.Deserialize();
             }
@@ -106,7 +106,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             {
                 _httpClient.DownloadProgress += HttpProgressAdapter;
 
-                MetadataDesign = SRDesignMetadata.CreateInstance(_dispatcherInfo._regionGateway.DesignDataBundleVersionUpdateUrl, _httpClient);
+                MetadataDesign = SRDesignMetadata.CreateInstance(_dispatcherInfo._isUseLegacy ? _dispatcherInfo._regionGatewayLegacy.DesignDataBundleVersionUpdateUrl : _dispatcherInfo._regionGateway.ValuePairs["DesignDataBundleVersionUpdateUrl"], _httpClient);
                 await MetadataDesign.GetRemoteMetadata(_persistentPath, threadToken, "DesignData\\Windows");
                 MetadataDesign.Deserialize();
             }
@@ -123,7 +123,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             {
                 _httpClient.DownloadProgress += HttpProgressAdapter;
 
-                MetadataLua = SRLuaMetadata.CreateInstance(_dispatcherInfo._regionGateway.LuaBundleVersionUpdateUrl, _httpClient);
+                MetadataLua = SRLuaMetadata.CreateInstance(_dispatcherInfo._isUseLegacy ? _dispatcherInfo._regionGatewayLegacy.LuaBundleVersionUpdateUrl : _dispatcherInfo._regionGateway.ValuePairs["LuaBundleVersionUpdateUrl"], _httpClient);
                 await MetadataLua.GetRemoteMetadata(_persistentPath, threadToken, "Lua\\Windows");
                 MetadataLua.Deserialize();
             }
@@ -140,7 +140,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             {
                 _httpClient.DownloadProgress += HttpProgressAdapter;
 
-                MetadataAsb = SRAsbMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._regionGateway.AssetBundleVersionUpdateUrl, _httpClient);
+                MetadataAsb = SRAsbMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._isUseLegacy ? _dispatcherInfo._regionGatewayLegacy.AssetBundleVersionUpdateUrl : _dispatcherInfo._regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"], _httpClient);
                 await MetadataAsb.GetRemoteMetadata(_persistentPath, threadToken, "Asb\\Windows");
                 MetadataAsb.Deserialize();
             }
@@ -157,7 +157,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             {
                 _httpClient.DownloadProgress += HttpProgressAdapter;
 
-                MetadataBlock = SRBlockMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._regionGateway.AssetBundleVersionUpdateUrl, _httpClient);
+                MetadataBlock = SRBlockMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._isUseLegacy ? _dispatcherInfo._regionGatewayLegacy.AssetBundleVersionUpdateUrl : _dispatcherInfo._regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"], _httpClient);
                 await MetadataBlock.GetRemoteMetadata(_persistentPath, threadToken, "Asb\\Windows");
                 MetadataBlock.Deserialize();
             }
@@ -174,7 +174,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             {
                 _httpClient.DownloadProgress += HttpProgressAdapter;
 
-                MetadataAudio = SRAudioMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._regionGateway.AssetBundleVersionUpdateUrl, _httpClient);
+                MetadataAudio = SRAudioMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._isUseLegacy ? _dispatcherInfo._regionGatewayLegacy.AssetBundleVersionUpdateUrl : _dispatcherInfo._regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"], _httpClient);
                 await MetadataAudio.GetRemoteMetadata(_persistentPath, threadToken, "Audio\\AudioPackage\\Windows");
                 MetadataAudio.Deserialize();
             }
@@ -191,7 +191,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             {
                 _httpClient.DownloadProgress += HttpProgressAdapter;
 
-                MetadataVideo = SRVideoMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._regionGateway.AssetBundleVersionUpdateUrl, _httpClient);
+                MetadataVideo = SRVideoMetadata.CreateInstance(_dispatcherInfo.ArchiveInfo, _dispatcherInfo._isUseLegacy ? _dispatcherInfo._regionGatewayLegacy.AssetBundleVersionUpdateUrl : _dispatcherInfo._regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"], _httpClient);
                 await MetadataVideo.GetRemoteMetadata(_persistentPath, threadToken, "Video\\Windows");
                 MetadataVideo.Deserialize();
             }

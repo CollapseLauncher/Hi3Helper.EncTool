@@ -42,7 +42,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         internal string _regionName { get; set; }
         internal RegionInfo _regionInfo { get; set; }
-        internal StarRailGateway _regionGateway { get; set; }
+        internal StarRailGateway _regionGatewayLegacy { get; set; }
+        internal StarRailGatewayStatic _regionGateway { get; set; }
+        internal bool _isUseLegacy { get => StarRailDispatchGatewayProps.ProtoIDs == null; }
 
         internal Dictionary<string, SRDispatchArchiveInfo> ArchiveInfo { get; set; }
 
@@ -134,14 +136,17 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 byte[] content = Convert.FromBase64String(response);
 
                 // Deserialize gateway
-                _regionGateway = StarRailGateway.Parser.ParseFrom(content);
+                if (_isUseLegacy)
+                    _regionGatewayLegacy = StarRailGateway.Parser.ParseFrom(content);
+                else
+                    _regionGateway = StarRailGatewayStatic.Parser.ParseFrom(content);
             }
         }
 
         private async Task ParseArchive()
         {
             ArchiveInfo = new Dictionary<string, SRDispatchArchiveInfo>();
-            string archiveURL = _regionGateway.AssetBundleVersionUpdateUrl + "/client/Windows/Archive/M_ArchiveV.bytes";
+            string archiveURL = _isUseLegacy ? _regionGatewayLegacy.AssetBundleVersionUpdateUrl : _regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"] + "/client/Windows/Archive/M_ArchiveV.bytes";
             string localPath = Path.Combine(_persistentDirectory, "Archive\\Windows\\M_ArchiveV_cache.bytes");
             string localDir = Path.GetDirectoryName(localPath);
 
@@ -168,7 +173,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                     {
                         string line = reader.ReadLine();
                         SRDispatchArchiveInfo archiveInfo = (SRDispatchArchiveInfo)JsonSerializer.Deserialize(line, typeof(SRDispatchArchiveInfo), SRDispatchArchiveInfoContext.Default);
-                        archiveInfo.FullAssetsDownloadUrl = TrimLastURLRelativePath(_regionGateway.AssetBundleVersionUpdateUrl)
+                        archiveInfo.FullAssetsDownloadUrl = TrimLastURLRelativePath(_isUseLegacy ? _regionGatewayLegacy.AssetBundleVersionUpdateUrl : _regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"])
                             + '/' + archiveInfo.BaseAssetsDownloadUrl + (archiveInfo.FileName switch
                             {
                                 "M_AudioV" => "/client/Windows/AudioBlock",
