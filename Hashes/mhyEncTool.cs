@@ -48,6 +48,13 @@ namespace Hi3Helper.EncTool
             this._MasterKey = MasterKey;
         }
 
+        public mhyEncTool(string _i, byte[] MasterKey)
+        {
+            this._778 = _i;
+            this._ooh = RSA.Create();
+            this._ooh.ImportRSAPrivateKey(MasterKey, out int _);
+        }
+
         public string GetMasterKey() => this._MasterKey;
 
         public void InitMasterKey(string Key, int KeyBitLength, RSAEncryptionPadding KeyPadding)
@@ -57,6 +64,14 @@ namespace Hi3Helper.EncTool
             this._MasterKeyBitLength = KeyBitLength;
             this._MasterKeyPadding = KeyPadding;
             this.FromXmlStringA(this._MasterKeyRSA, _MasterKey);
+        }
+
+        public void InitMasterKey(byte[] Key, int KeyBitLength, RSAEncryptionPadding KeyPadding)
+        {
+            this._MasterKeyRSA = RSA.Create();
+            this._MasterKeyBitLength = KeyBitLength;
+            this._MasterKeyPadding = KeyPadding;
+            this._MasterKeyRSA.ImportRSAPrivateKey(Key, out int _);
         }
 
         public void DecryptStringWithMasterKey(ref string a)
@@ -114,7 +129,7 @@ namespace Hi3Helper.EncTool
                             num = ((int)num2 * -1066675674) ^ 0xD7A97C;
                             continue;
                         case 6u:
-                            FromXmlStringA(in _ooh, Encoding.UTF8.GetString(_0041));
+                            // FromXmlStringA(in _ooh, Encoding.UTF8.GetString(_0041));
                             num = (int)(num2 * 1342003605) ^ -355963254;
                             continue;
                         case 4u:
@@ -122,7 +137,7 @@ namespace Hi3Helper.EncTool
                             num = ((int)num2 * -1711149688) ^ -181350819;
                             continue;
                         case 7u:
-                            _0041 = _f8j51(this._MasterKey);
+                            // _0041 = _f8j51(this._MasterKey);
                             at = HTb(_778);
                             num = ((int)num2 * -1995578406) ^ 0x57CB1D8;
                             continue;
