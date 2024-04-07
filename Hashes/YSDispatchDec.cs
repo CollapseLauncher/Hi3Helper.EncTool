@@ -1,48 +1,36 @@
 ﻿using System;
+using System.Buffers.Text;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Hi3Helper.EncTool
 {
     public class YSDispatchDec : mhyEncTool
     {
-        private protected RSAEncryptionPadding Padding;
-        private protected int EncBitlength;
-
-        public void InitYSDecoder(string PrivKey, RSAEncryptionPadding Padding = null, int EncBitlength = 0x100)
+        public byte[] DecryptYSDispatch(string contentBase64, int encBitLength, string encKey)
         {
-            base._778 = PrivKey;
-            base._ooh = RSA.Create();
+            RSA rsa = RSA.Create();
+            rsa.FromXmlString(encKey);
 
-            this.EncBitlength = EncBitlength;
-            if (Padding == null)
+            byte[] encContent = Convert.FromBase64String(contentBase64);
+            byte[] decContent = new byte[encContent.Length];
+
+            if (encContent.Length % encBitLength != 0)
+                throw new InvalidDataException($"The data length does not respect the expected size of the bit length, which is {encBitLength} bit. "
+                                               + $"Size: {encContent.Length} % {encBitLength} = {encContent.Length % encBitLength}");
+
+            int offsetEnc = 0;
+            int offsetDec = 0;
+
+            while (offsetEnc < encContent.Length)
             {
-                this.Padding = RSAEncryptionPadding.Pkcs1;
-                return;
+                offsetDec += rsa.Decrypt(encContent.AsSpan(offsetEnc, encBitLength), decContent.AsSpan(offsetDec),
+                                         RSAEncryptionPadding.Pkcs1);
+                offsetEnc += encBitLength;
             }
 
-            this.Padding = Padding;
-        }
-
-        public void InitRSA() => base.FromXmlStringA(base._ooh);
-
-        public byte[] DecryptYSDispatch(string ContentBase64)
-        {
-            byte[] EncContent = Convert.FromBase64String(ContentBase64);
-            MemoryStream DecContent = new MemoryStream();
-
-            int j = 0;
-
-            while (j < EncContent.Length)
-            {
-                byte[] chunk = new byte[this.EncBitlength];
-                Array.Copy(EncContent, j, chunk, 0, this.EncBitlength);
-                byte[] chunkDec = base._ooh.Decrypt(chunk, this.Padding);
-                DecContent.Write(chunkDec, 0, chunkDec.Length);
-                j += this.EncBitlength;
-            }
-
-            return DecContent.ToArray();
+            return decContent[..offsetDec];
         }
     }
 }
