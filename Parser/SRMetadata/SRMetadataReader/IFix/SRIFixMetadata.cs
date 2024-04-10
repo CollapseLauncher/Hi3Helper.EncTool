@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Data;
+using System;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -54,7 +55,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                     string[] tuple = reader.ReadLine().Split(',');
                     if (tuple[0] == "empty")
                     {
-                        System.Console.Write("SRIFix Cache returning empty! Skipping...\r\n");
+                        Console.Write("SRIFix Cache returning empty! Skipping...\r\n");
                         return;
                     }
                     AssetProperty.AssetList.Add(new SRAsset

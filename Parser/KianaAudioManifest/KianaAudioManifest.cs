@@ -1,4 +1,5 @@
-﻿using Hi3Helper.UABT.Binary;
+﻿using Hi3Helper.UABT;
+using Hi3Helper.UABT.Binary;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -71,7 +72,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private Stream GetCryptoStream(Stream stream, string key)
         {
             // Initialize endian reader
-            EndianBinaryReader endianReader = new EndianBinaryReader(stream, UABT.EndianType.BigEndian);
+            EndianBinaryReader endianReader = new EndianBinaryReader(stream, EndianType.BigEndian);
 
             // Get ICryptoTransform instance
             ICryptoTransform transform = GetAesInstance(endianReader, key);

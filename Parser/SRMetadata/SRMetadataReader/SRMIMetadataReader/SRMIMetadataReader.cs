@@ -1,7 +1,8 @@
-﻿using System;
-using System.IO;
-using Hi3Helper.Data;
+﻿using Hi3Helper.Data;
+using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
+using System;
+using System.IO;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
@@ -28,12 +29,12 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Deserialize()
         {
-            using (EndianBinaryReader reader = new EndianBinaryReader(AssetProperty.MetadataStream, UABT.EndianType.BigEndian, true))
+            using (EndianBinaryReader reader = new EndianBinaryReader(AssetProperty.MetadataStream, EndianType.BigEndian, true))
             {
                 EnsureMagicIsValid(reader);
 
                 _ = reader.ReadUInt16();
-                reader.endian = UABT.EndianType.LittleEndian;
+                reader.endian = EndianType.LittleEndian;
                 MetadataInfoSize = reader.ReadUInt32();
                 reader.BaseStream.Seek(0xC, SeekOrigin.Current);
 

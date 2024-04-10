@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Hashing;

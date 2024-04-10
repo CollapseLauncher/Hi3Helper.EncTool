@@ -19,10 +19,10 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
     public class KianaDispatch
     {
         #region Private Fields
-        private const string _userAgent = "UnityPlayer/2017.4.18f1 (UnityWebRequest/1.0, libcurl/7.51.0-DEV)";
-        private static string _dispatchQuery;
-        private static string _dispatchUrl;
-        private static string _keyString;
+        private const           string _userAgent = "UnityPlayer/2017.4.18f1 (UnityWebRequest/1.0, libcurl/7.51.0-DEV)";
+        private static          string _dispatchQuery;
+        private static          string _dispatchUrl;
+        private static          string _keyString;
         private static readonly Http.Http _httpClient = new Http.Http(true, 5, 1000, _userAgent);
         #endregion
 

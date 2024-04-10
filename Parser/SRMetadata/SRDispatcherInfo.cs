@@ -30,15 +30,15 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
     internal class SRDispatcherInfo : IDisposable
     {
-        private string _persistentDirectory { get; set; }
-        private string _dispatchURLFormat { get; set; }
-        private string _gatewayURLFormat { get; set; }
-        private string _dispatchURL { get; init; }
-        private string _dispatchSeed { get; init; }
-        private string _productID { get; init; }
-        private string _productVer { get; init; }
-        private Http.Http _httpClient { get; set; }
-        private CancellationToken _threadToken { get; set; }
+        private string            _persistentDirectory { get; set; }
+        private string            _dispatchURLFormat   { get; set; }
+        private string            _gatewayURLFormat    { get; set; }
+        private string            _dispatchURL         { get; init; }
+        private string            _dispatchSeed        { get; init; }
+        private string            _productID           { get; init; }
+        private string            _productVer          { get; init; }
+        private Http.Http         _httpClient          { get; set; }
+        private CancellationToken _threadToken         { get; set; }
 
         internal string _regionName { get; set; }
         internal RegionInfo _regionInfo { get; set; }
@@ -50,14 +50,14 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         internal SRDispatcherInfo(Http.Http httpClient, string dispatchURL, string dispatchSeed, string dispatchFormatTemplate, string gatewayFormatTemplate, string productID, string productVer)
         {
-            _httpClient = httpClient;
-            _dispatchURL = dispatchURL;
-            _dispatchSeed = dispatchSeed;
-            _productID = productID;
-            _productVer = productVer;
+            _httpClient        = httpClient;
+            _dispatchURL       = dispatchURL;
+            _dispatchSeed      = dispatchSeed;
+            _productID         = productID;
+            _productVer        = productVer;
             _dispatchURLFormat = dispatchFormatTemplate;
-            _gatewayURLFormat = gatewayFormatTemplate;
-            _httpClient = new Http.Http(true, 5, 1000, SRMetadata._userAgent);
+            _gatewayURLFormat  = gatewayFormatTemplate;
+            _httpClient        = new Http.Http(true, 5, 1000, SRMetadata._userAgent);
         }
 
         ~SRDispatcherInfo() => Dispose();

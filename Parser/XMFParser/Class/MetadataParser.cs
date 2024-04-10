@@ -1,4 +1,5 @@
-﻿using Hi3Helper.UABT.Binary;
+﻿using Hi3Helper.UABT;
+using Hi3Helper.UABT.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -63,7 +64,7 @@ namespace Hi3Helper.EncTool.Parser
         internal static byte[] ReadSignature(EndianBinaryReader reader)
         {
             // Switch to Little-endian to read header.
-            reader.endian = UABT.EndianType.LittleEndian;
+            reader.endian = EndianType.LittleEndian;
             return reader.ReadBytes(_signatureLength);
         }
 
@@ -105,7 +106,7 @@ namespace Hi3Helper.EncTool.Parser
             Version = ReadVersion(reader);
 
             // Switch to Big-endian.
-            reader.endian = UABT.EndianType.BigEndian;
+            reader.endian = EndianType.BigEndian;
 
             // Allocate the size of Block array.
             BlockEntry = new XMFBlock[reader.ReadUInt32()];

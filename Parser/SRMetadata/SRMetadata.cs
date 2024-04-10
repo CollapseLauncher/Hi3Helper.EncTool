@@ -12,10 +12,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         public event EventHandler<DownloadEvent> HttpEvent;
 
-        private string _persistentPath { get; set; }
+        private string           _persistentPath { get; set; }
         private SRDispatcherInfo _dispatcherInfo { get; init; }
-        private Http.Http _httpClient { get; set; }
-        private bool _isInitialized { get; set; }
+        private Http.Http        _httpClient     { get; set; }
+        private bool             _isInitialized  { get; set; }
 
         public SRMetadataBase MetadataIFix { get; set; }
         public SRMetadataBase MetadataDesign { get; set; }

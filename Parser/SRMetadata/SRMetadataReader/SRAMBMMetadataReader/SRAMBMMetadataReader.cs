@@ -1,4 +1,5 @@
-﻿using Hi3Helper.UABT.Binary;
+﻿using Hi3Helper.UABT;
+using Hi3Helper.UABT.Binary;
 using System;
 using System.Collections.Generic;
 
@@ -63,14 +64,14 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Deserialize()
         {
-            using (EndianBinaryReader reader = new EndianBinaryReader(AssetProperty.MetadataStream, UABT.EndianType.BigEndian, true))
+            using (EndianBinaryReader reader = new EndianBinaryReader(AssetProperty.MetadataStream, EndianType.BigEndian, true))
             {
                 StructList = new List<SRAMBMMetadataStruct>();
                 EnsureMagicIsValid(reader);
 
                 _ = reader.ReadUInt16();
 
-                reader.endian = UABT.EndianType.LittleEndian;
+                reader.endian = EndianType.LittleEndian;
 
                 uint numA1 = reader.ReadUInt32();
                 ushort count = reader.ReadUInt16();

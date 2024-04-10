@@ -1,18 +1,18 @@
-﻿using Hi3Helper.Data;
-using Hi3Helper.Http;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
-using System.Net.Http;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿#nullable enable
+    using Hi3Helper.Data;
+    using Hi3Helper.Http;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.IO.Compression;
+    using System.Net.Http;
+    using System.Runtime.InteropServices;
+    using System.Security.Cryptography;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
 
-#nullable enable
-namespace Hi3Helper.EncTool.Parser.Senadina
+    namespace Hi3Helper.EncTool.Parser.Senadina
 {
     public enum SenadinaKind { bricksBase, bricksCurrent, wandCurrent, chiptunesCurrent, chiptunesPreload }
     public class SenadinaFileIdentifier : IDisposable

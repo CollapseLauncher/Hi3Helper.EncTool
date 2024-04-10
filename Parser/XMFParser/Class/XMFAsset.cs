@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Data;
+using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
 using System;
 using System.IO;
@@ -100,7 +101,7 @@ namespace Hi3Helper.EncTool.Parser
         {
             using (Stream fs = new FileStream(_parentHashFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
             using (Stream cs = new ChunkStream(fs, OffsetStart, OffsetEnd))
-            using (EndianBinaryReader s = new EndianBinaryReader(cs, UABT.EndianType.LittleEndian))
+            using (EndianBinaryReader s = new EndianBinaryReader(cs, EndianType.LittleEndian))
             {
                 long sig = s.ReadInt64();
                 if (sig != exSig)

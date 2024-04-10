@@ -8,13 +8,13 @@ namespace Hi3Helper.EncTool.WindowTool
 {
     internal struct WindowProperty
     {
-        public nint hwnd;
-        public int procId;
+        public nint             hwnd;
+        public int              procId;
         public PInvoke.WS_STYLE initialStyle;
         public PInvoke.WS_STYLE currentStyle;
-        public WindowRect initialPos;
-        public WindowRect currentPos;
-        public bool isEmpty;
+        public WindowRect       initialPos;
+        public WindowRect       currentPos;
+        public bool             isEmpty;
 
         public static WindowProperty Empty() => new WindowProperty { isEmpty = true };
 

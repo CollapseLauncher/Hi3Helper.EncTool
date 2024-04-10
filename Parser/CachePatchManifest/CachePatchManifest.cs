@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Data;
+using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
 using System.Collections.Generic;
 using System.IO;
@@ -45,7 +46,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             PatchAsset = new List<CachePatchInfo>();
 
             // Initialize the stream into the endian reader
-            EndianBinaryReader reader = new EndianBinaryReader(stream, UABT.EndianType.BigEndian, true);
+            EndianBinaryReader reader = new EndianBinaryReader(stream, EndianType.BigEndian, true);
 
             // Start deserializing
             DeserializeManifest(reader);
