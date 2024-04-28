@@ -14,12 +14,14 @@ namespace Hi3Helper.EncTool.Parser
         internal const byte _allowedMaxVersion = 0x40;  // 64
         internal string _xmfPath;
         internal static string _folderPath;
+        private bool _isMeta;
 
-        public XMFParser(string path, Stream xmfStream)
+        public XMFParser(string path, Stream xmfStream, bool isMeta)
         {
             _xmfPath = path;
+            _isMeta = isMeta;
 
-            ParseMetadata(xmfStream);
+            ParseMetadata(xmfStream, isMeta);
 
 #if DEBUG
             Console.WriteLine($"XMF File Loaded   : {_xmfPath}");

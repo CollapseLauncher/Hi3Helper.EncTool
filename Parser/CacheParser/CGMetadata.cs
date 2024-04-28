@@ -188,11 +188,13 @@ namespace Hi3Helper.EncTool.Parser.Cache
             entry.AppointmentDownloadScheduleID = ReadUInt32(stream);
 
             int CgGroupIDCount = ReadInt32(stream);
+            /* Removing it from Thelema version now since it has no use
             entry.CgGroupID = new int[CgGroupIDCount];
             for (int i = 0; i < CgGroupIDCount; i++)
             {
                 entry.CgGroupID[i] = ReadInt32(stream);
             }
+            */
 
             stream.Position = ptrToCgPath1;
             entry.CgPathLowBitrateCN = ReadString(stream);

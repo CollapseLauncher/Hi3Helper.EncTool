@@ -14,7 +14,7 @@
 
     namespace Hi3Helper.EncTool.Parser.Senadina
 {
-    public enum SenadinaKind { bricksBase, bricksCurrent, wandCurrent, chiptunesCurrent, chiptunesPreload }
+    public enum SenadinaKind { bricksBase, bricksCurrent, platformBase, wandCurrent, chiptunesCurrent, chiptunesPreload }
     public class SenadinaFileIdentifier : IDisposable
     {
         public string? relativePath { get; set; }
@@ -149,7 +149,7 @@
             return petrus;
         }
 
-        public async Task<Stream> GetOriginalFileStream(HttpClient client, CancellationToken token = default)
+        public async Task<Stream?> GetOriginalFileStream(HttpClient client, CancellationToken token = default)
         {
             const string dictKey = "origUrl";
             if (this.TryReadStringStoreAs(dictKey, out string? result))

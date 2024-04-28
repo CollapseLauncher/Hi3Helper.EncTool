@@ -9,6 +9,21 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
     public class ManifestBase
     {
         [JsonPropertyName("Audio")] public ManifestAudioBase ManifestAudio { get; set; }
+        [JsonPropertyName("Asb")] public ManifestAsbPlatform ManifestAsb { get; set; }
+    }
+
+    // field: manifest -> Asb
+    public class ManifestAsbBase
+    {
+        [JsonPropertyName("pc")] public ManifestAsbPlatform ManifestAsbWindows { get; set; }
+    }
+
+    // field: manifest -> Asb -> yada-yadi-yada
+    public class ManifestAsbPlatform
+    {
+        [JsonPropertyName("enable_time")] public double EnableTime { get; set; }
+        [JsonPropertyName("revision")] public string Revision { get; set; }
+        [JsonPropertyName("suffix")] public string Suffix { get; set; }
     }
 
     // field: manifest -> Audio

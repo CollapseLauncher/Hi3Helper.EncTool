@@ -36,15 +36,17 @@ namespace Hi3Helper.EncTool.Parser
             throw new FileNotFoundException($"XMF file in this path: \"{_xmfPath}\" doesn't exist or the directory with the path given has no XMF file inside it.");
         }
 
-        private void ParseMetadata(Stream xmfStream)
+        private void ParseMetadata(Stream xmfStream, bool isMeta)
         {
             // Read XMF with Endianess-aware BinaryReader
             using (EndianBinaryReader reader = new EndianBinaryReader(xmfStream))
             {
                 // Start read the header of the XMF file.
-                ReadHeader(reader);
+                ReadHeader(reader, isMeta);
+
                 // Start read the metadata including block info and asset indexes.
-                ReadMetadata(reader);
+                ReadMetadata(reader, isMeta);
+
                 // Finalize by creating catalog for block lookup as hash name and index.
                 // This will make searching process for the block easier.
                 CreateBlockIndexCatalog(BlockCount);
@@ -94,7 +96,7 @@ namespace Hi3Helper.EncTool.Parser
             return ver;
         }
 
-        private void ReadHeader(EndianBinaryReader reader)
+        private void ReadHeader(EndianBinaryReader reader, bool isMeta)
         {
             // Read signature (32 bytes).
             VersionSignature = ReadSignature(reader);
@@ -112,13 +114,13 @@ namespace Hi3Helper.EncTool.Parser
             BlockEntry = new XMFBlock[reader.ReadUInt32()];
         }
 
-        private void ReadMetadata(EndianBinaryReader reader)
+        private void ReadMetadata(EndianBinaryReader reader, bool isMeta)
         {
             // Initialize the XMFBlock instance to the BlockEntry array.
             // At the same time, the XMFBlock will read the metadata section of the block.
             for (int i = 0; i < BlockEntry.Length; i++)
             {
-                BlockEntry[i] = new XMFBlock(reader);
+                BlockEntry[i] = new XMFBlock(reader, isMeta);
             }
         }
 

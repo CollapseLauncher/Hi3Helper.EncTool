@@ -10,16 +10,18 @@ namespace Hi3Helper.EncTool.Parser
     {
         private const byte _uniqueIDLength = 3;
         private const byte _hashLength = 16;
+        private bool _isMeta;
 
         /// <summary>
         /// This initialize the read process of the block information
         /// inside of the XMF file.
         /// </summary>
         /// <param name="reader">The Endianess-aware BinaryReader of the XMF file.</param>
-        internal XMFBlock(EndianBinaryReader reader)
+        internal XMFBlock(EndianBinaryReader reader, bool isMeta)
         {
+            _isMeta = isMeta;
             LoadBlockInfoHeader(reader);
-            LoadBlockInfoMetadata(reader);
+            if (!isMeta) LoadBlockInfoMetadata(reader);
         }
 
         private void LoadBlockInfoHeader(EndianBinaryReader reader)
@@ -36,7 +38,7 @@ namespace Hi3Helper.EncTool.Parser
             // Read size of the block file and allocate the AssetEntry based on the
             // count in XMF metadata.
             Size = reader.ReadInt32();
-            AssetEntry = new XMFAsset[reader.ReadUInt32()];
+            if (!_isMeta) AssetEntry = new XMFAsset[reader.ReadUInt32()];
         }
 
         private void LoadBlockInfoMetadata(EndianBinaryReader reader)
