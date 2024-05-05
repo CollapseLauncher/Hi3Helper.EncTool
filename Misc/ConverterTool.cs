@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Hashing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -159,8 +160,19 @@ namespace Hi3Helper.Data
             return HexTool.BytesToHexUnsafe(res);
         }
 
-        public static double Unzeroed(double i) => Math.Max(i, 1);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Unzeroed(this double i) => Math.Max(i, double.Epsilon);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Unzeroed(this float i) => Math.Max(i, float.Epsilon);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double UnNaNInfinity(this float i) => float.IsNaN(i) || float.IsInfinity(i) ? 0 : i;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double UnNaNInfinity(this double i) => double.IsNaN(i) || double.IsInfinity(i) ? 0 : i;
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double GetPercentageNumber(double cur, double max, int round = 2) => Math.Round((100 * cur) / max, round);
 
         private static readonly SpanAction<char, nint> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
