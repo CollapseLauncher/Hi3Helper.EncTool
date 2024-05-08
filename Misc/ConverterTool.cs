@@ -167,6 +167,12 @@ namespace Hi3Helper.Data
         public static float Unzeroed(this float i) => Math.Max(i, float.Epsilon);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TimeSpan ToTimeSpanNormalized(this double i) => TimeSpan.FromSeconds(i.UnNaNInfinity() * 1);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static TimeSpan ToTimeSpanNormalized(this float i) => TimeSpan.FromSeconds(i.UnNaNInfinity() * 1);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double UnNaNInfinity(this float i) => float.IsNaN(i) || float.IsInfinity(i) ? 0 : i;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
