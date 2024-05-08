@@ -139,7 +139,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
         }
 
         public void MergeFrom(CodedInputStream input) => input.ReadRawMessage(this);
-
+        
         void IBufferMessage.InternalMergeFrom(ref ParseContext input)
         {
             StarRailDispatchGatewayProps.EnsureProtoIdInitialized();
@@ -148,7 +148,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
             {
                 // Get the raw value of the protoId and find the id from the dictionary
                 uint revIdTag = tag >> 3 | (int)WIRETYPE.VARINT;
-                KeyValuePair<string, uint> protoPairs = StarRailDispatchGatewayProps.ProtoIDs.gatewayInfo.Where(x => x.Value == revIdTag).FirstOrDefault();
+                KeyValuePair<string, uint> protoPairs = StarRailDispatchGatewayProps.ProtoIDs.gatewayInfo.FirstOrDefault(x => x.Value == revIdTag);
 
                 // If the pair is found, then set the ValuePairs
                 if (!string.IsNullOrEmpty(protoPairs.Key) && protoPairs.Value != 0)

@@ -44,7 +44,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         internal RegionInfo _regionInfo { get; set; }
         internal StarRailGateway _regionGatewayLegacy { get; set; }
         internal StarRailGatewayStatic _regionGateway { get; set; }
-        internal bool _isUseLegacy { get => StarRailDispatchGatewayProps.ProtoIDs == null; }
+        internal bool _isUseLegacy { get => true; }
 
         internal Dictionary<string, SRDispatchArchiveInfo> ArchiveInfo { get; set; }
 
@@ -146,7 +146,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private async Task ParseArchive()
         {
             ArchiveInfo = new Dictionary<string, SRDispatchArchiveInfo>();
-            string archiveURL = _isUseLegacy ? _regionGatewayLegacy.AssetBundleVersionUpdateUrl : _regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"] + "/client/Windows/Archive/M_ArchiveV.bytes";
+            string archiveURL = (_isUseLegacy ? _regionGatewayLegacy.AssetBundleVersionUpdateUrl : _regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"]) + "/client/Windows/Archive/M_ArchiveV.bytes";
             string localPath = Path.Combine(_persistentDirectory, "Archive\\Windows\\M_ArchiveV_cache.bytes");
             string localDir = Path.GetDirectoryName(localPath);
 
