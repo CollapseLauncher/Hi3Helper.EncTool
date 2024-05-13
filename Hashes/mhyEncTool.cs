@@ -105,7 +105,9 @@ namespace Hi3Helper.EncTool
         {
             byte[] cy_a = default(byte[]);
             byte[] hR = default(byte[]);
+        #pragma warning disable CS0219 // Variable is assigned but its value is never used
             byte[] _0041 = default(byte[]);
+        #pragma warning restore CS0219 // Variable is assigned but its value is never used
             byte[] at = default(byte[]);
             while (true)
             {
