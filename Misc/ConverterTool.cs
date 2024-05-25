@@ -240,6 +240,13 @@ namespace Hi3Helper.Data
 
             return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), SizeSuffixes[mag]);
         }
+        
+        public static double SummarizeSizeDouble(double value)
+        {
+            byte clamp = (byte)Math.Log(value, 1000);
+            
+            return value / (1L << (clamp * 10));
+        }
 
         public static int GetUnixTimestamp(bool isUTC = false) => (int)Math.Truncate(isUTC ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
 
