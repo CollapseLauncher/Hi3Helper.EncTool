@@ -244,7 +244,7 @@ namespace Hi3Helper.Data
         public static double SummarizeSizeDouble(double value, byte clampSize = byte.MaxValue)
         {
             byte maxClamp = (byte)Math.Log(value, 1000);
-            if (clampSize > maxClamp) clampSize = maxClamp;
+            if (clampSize == byte.MaxValue) clampSize = maxClamp;
             
             return value / (1L << (clampSize * 10));
         }
