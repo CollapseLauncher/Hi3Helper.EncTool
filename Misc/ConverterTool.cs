@@ -241,11 +241,12 @@ namespace Hi3Helper.Data
             return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), SizeSuffixes[mag]);
         }
         
-        public static double SummarizeSizeDouble(double value)
+        public static double SummarizeSizeDouble(double value, byte clampSize = byte.MaxValue)
         {
-            byte clamp = (byte)Math.Log(value, 1000);
+            byte maxClamp = (byte)Math.Log(value, 1000);
+            if (clampSize > maxClamp) clampSize = maxClamp;
             
-            return value / (1L << (clamp * 10));
+            return value / (1L << (clampSize * 10));
         }
 
         public static int GetUnixTimestamp(bool isUTC = false) => (int)Math.Truncate(isUTC ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
