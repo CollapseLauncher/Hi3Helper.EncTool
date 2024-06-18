@@ -109,7 +109,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 StarRailDispatch dispatch = StarRailDispatch.Parser.ParseFrom(content);
                 _regionInfo = dispatch.RegionList.Where(x => x.Name == _regionName).FirstOrDefault();
 
-                if (_regionInfo == null) throw new KeyNotFoundException($"Region: {_regionName} is not found in the dispatcher!");
+                if (_regionInfo == null) throw new KeyNotFoundException($"Region: {_regionName} is not found in the dispatcher! Ignore this error if the game is under maintenance.");
             }
         }
 
