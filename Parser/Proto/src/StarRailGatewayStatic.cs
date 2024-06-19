@@ -25,8 +25,6 @@ namespace Hi3Helper.EncTool.Proto.StarRail
         VARINT = 0b000,
         I64 = 0b001,
         LEN = 0b010,
-        SGROUP = 0b011,
-        EGROUP = 0b100,
         I32 = 0b101
     }
 
@@ -41,7 +39,10 @@ namespace Hi3Helper.EncTool.Proto.StarRail
 
         internal static void EnsureProtoIdInitialized()
         {
-            if (ProtoIDs == null) throw new NullReferenceException("Proto ID is not initialized! Please report this issue to our GitHub repository!");
+            if (ProtoIDs == null)
+            {
+                throw new NullReferenceException("Proto ID is not initialized! Please report this issue to our GitHub repository!");
+            }
         }
 
         internal static uint GetIdsInfo(string key, Dictionary<string, uint> protoIdDictionary, out uint inc)
@@ -117,13 +118,26 @@ namespace Hi3Helper.EncTool.Proto.StarRail
             foreach (KeyValuePair<string, string> keyValuePair in ValuePairs)
             {
                 if (keyValuePair.Value.Length == 0) continue;
-                _ = StarRailDispatchGatewayProps.GetIdsInfo(keyValuePair.Key, StarRailDispatchGatewayProps.ProtoIDs.gatewayInfo, out uint inc);
-                size += (int)inc + CodedOutputStream.ComputeStringSize(keyValuePair.Value);
+
+                // Ensure proto ID information is retrieved correctly
+                bool idExists = StarRailDispatchGatewayProps.GetIdsInfo(keyValuePair.Key, StarRailDispatchGatewayProps.ProtoIDs.gatewayInfo, out uint inc) != 0;
+                if (!idExists)
+                {
+                    Console.WriteLine($"Warning: No ID found for key: {keyValuePair.Key}");
+                    continue;
+                }
+
+                // Compute the size for the current key-value pair
+                size += CodedOutputStream.ComputeTagSize((int)inc); // Tag size
+                size += CodedOutputStream.ComputeStringSize(keyValuePair.Value); // Value size
             }
 
+            // Include size for unknown fields if any
             if (_unknownFields != null) size += _unknownFields.CalculateSize();
+    
             return size;
         }
+
 
         public void MergeFrom(StarRailGatewayStatic other)
         {
@@ -131,33 +145,99 @@ namespace Hi3Helper.EncTool.Proto.StarRail
 
             foreach (KeyValuePair<string, string> keyValuePair in other.ValuePairs)
             {
-                if (!ValuePairs.ContainsKey(keyValuePair.Key)) continue;
-                if (keyValuePair.Value.Length != 0) ValuePairs[keyValuePair.Key] = keyValuePair.Value;
+                // Add or update value in ValuePairs if it is not empty
+                if (!ValuePairs.ContainsKey(keyValuePair.Key))
+                {
+                    ValuePairs[keyValuePair.Key] = keyValuePair.Value;
+                }
+                else if (keyValuePair.Value.Length != 0)
+                {
+                    ValuePairs[keyValuePair.Key] = keyValuePair.Value;
+                }
             }
 
+            // Merge unknown fields
             _unknownFields = UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
         }
 
         public void MergeFrom(CodedInputStream input) => input.ReadRawMessage(this);
+
+        uint                       parserTag;
+        Dictionary<string, uint>   gatewayPairs = StarRailDispatchGatewayProps.ProtoIDs.gatewayInfo;
         
         void IBufferMessage.InternalMergeFrom(ref ParseContext input)
         {
             StarRailDispatchGatewayProps.EnsureProtoIdInitialized();
-            uint tag;
-            while ((tag = input.ReadTag()) != 0)
+            
+            while ((parserTag = input.ReadTag()) != 0)
             {
-                // Get the raw value of the protoId and find the id from the dictionary
-                uint revIdTag = tag >> 3 | (int)WIRETYPE.VARINT;
-                KeyValuePair<string, uint> protoPairs = StarRailDispatchGatewayProps.ProtoIDs.gatewayInfo.FirstOrDefault(x => x.Value == revIdTag);
-
-                // If the pair is found, then set the ValuePairs
-                if (!string.IsNullOrEmpty(protoPairs.Key) && protoPairs.Value != 0)
+                try
                 {
-                    ValuePairs[protoPairs.Key] = input.ReadString();
-                    continue;
+                    parseTag(parserTag, ref input);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error when trying to parse tag {parserTag}");
+                }
+            }
+        #if DEBUG
+            Console.WriteLine("SR Static Parser output:");
+            foreach (KeyValuePair<string, string> kvp in ValuePairs)
+            {
+                Console.WriteLine($"Key: {kvp.Key} - Val: {kvp.Value}");
+            }
+        #endif
+        }
+
+        void parseTag(uint tag, ref ParseContext input)
+        {
+            uint     fieldNumber = tag >> 3;
+            WIRETYPE wireType    = (WIRETYPE)(tag & 0x7);
+            uint     revIdTag    = tag >> 3 | (int)WIRETYPE.VARINT;
+            
+            KeyValuePair<string, uint> protoPairs   = gatewayPairs.FirstOrDefault(x => x.Value == revIdTag);
+
+        #if DEBUG
+            Console.WriteLine($"Reading tag {tag} - Field Num: {fieldNumber}");
+        #endif
+            if (!string.IsNullOrEmpty(protoPairs.Key))
+            {
+            #if DEBUG
+                Console.WriteLine($"Reading key {protoPairs.Key} as field num {protoPairs.Value}");
+            #endif
+
+                string valueAsString;
+
+                switch (wireType)
+                {
+                    case WIRETYPE.VARINT:
+                        // Trying various possible types for VARINT
+                        valueAsString = input.ReadInt32().ToString();
+                        break;
+                    case WIRETYPE.I64:
+                        valueAsString = input.ReadFixed64().ToString();
+                        break;
+                    case WIRETYPE.LEN:
+                        valueAsString = input.ReadString();
+                        break;
+                    case WIRETYPE.I32:
+                        valueAsString = input.ReadFixed32().ToString();
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Unsupported wire type: {wireType}");
                 }
 
-                // Otherwise, read unknown field
+                ValuePairs[protoPairs.Key] = valueAsString;
+
+            #if DEBUG
+                Console.WriteLine($"[{wireType.ToString()}]Got : {protoPairs.Key} - {valueAsString}");
+            #endif
+            }
+            else
+            {
+                #if DEBUG
+                    Console.WriteLine("Got unknown field!");
+                #endif
                 _unknownFields = UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
             }
         }

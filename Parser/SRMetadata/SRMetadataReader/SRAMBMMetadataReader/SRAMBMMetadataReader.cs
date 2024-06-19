@@ -51,7 +51,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             {
                 case SRAMBMMetadataType.SRAM:
                     Magic = "SRAM";
-                    TypeID = 3;
+                    TypeID = 4;
                     break;
                 case SRAMBMMetadataType.SRBM:
                     Magic = "SRBM";

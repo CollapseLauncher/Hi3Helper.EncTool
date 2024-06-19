@@ -95,6 +95,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected SRMetadataBase(string baseURL, Http.Http httpClient)
         {
             BaseURL = baseURL;
+            if (string.IsNullOrEmpty(BaseURL)) throw new NullReferenceException("BaseURL is empty!");
             _httpClient = httpClient;
         }
 
@@ -106,6 +107,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
             AssetProperty = new SRAssetProperty(metadataPath);
 
+            #if DEBUG
+            Console.WriteLine($"[SRMetadataBase:GetRemoteData] Fetching metadata from {metadataURL}");
+            #endif
             await _httpClient.Download(metadataURL, AssetProperty.MetadataStream, null, null, token);
             AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);
         }

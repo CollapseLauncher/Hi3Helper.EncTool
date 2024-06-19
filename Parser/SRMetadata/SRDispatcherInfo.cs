@@ -44,7 +44,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         internal RegionInfo _regionInfo { get; set; }
         internal StarRailGateway _regionGatewayLegacy { get; set; }
         internal StarRailGatewayStatic _regionGateway { get; set; }
-        internal bool _isUseLegacy { get => true; }
+        internal bool _isUseLegacy { get => false; }
 
         internal Dictionary<string, SRDispatchArchiveInfo> ArchiveInfo { get; set; }
 
@@ -135,6 +135,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
                 byte[] content = Convert.FromBase64String(response);
 
+                
+                
                 // Deserialize gateway
                 if (_isUseLegacy)
                     _regionGatewayLegacy = StarRailGateway.Parser.ParseFrom(content);

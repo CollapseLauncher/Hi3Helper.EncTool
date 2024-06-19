@@ -88,7 +88,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             try
             {
                 _httpClient.DownloadProgress += HttpProgressAdapter;
-
+                
                 MetadataIFix = SRIFixMetadata.CreateInstance(_dispatcherInfo._isUseLegacy ? _dispatcherInfo._regionGatewayLegacy.IFixPatchVersionUpdateUrl : _dispatcherInfo._regionGateway.ValuePairs["IFixPatchVersionUpdateUrl"], _httpClient);
                 await MetadataIFix.GetRemoteMetadata(_persistentPath, threadToken, "IFix\\Windows");
                 MetadataIFix.Deserialize();
