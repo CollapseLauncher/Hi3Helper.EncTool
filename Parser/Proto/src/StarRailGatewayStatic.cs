@@ -199,7 +199,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
                         Console.WriteLine($"The metadata does not have a correct KVP, a naive approach has found a correct value for field: {kvp.Key}!");
                 }
 
-                Console.WriteLine($"Key: {kvp.Key} - Val: {kvp.Value}");
+                Console.WriteLine($"Key: {kvp.Key} - Val: {ValuePairs[kvp.Key]}");
             }
         #endif
         }
