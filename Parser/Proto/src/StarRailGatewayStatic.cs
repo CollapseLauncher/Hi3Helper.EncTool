@@ -1,7 +1,6 @@
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -187,21 +186,27 @@ namespace Hi3Helper.EncTool.Proto.StarRail
 
         #if DEBUG
             Console.WriteLine("SR Static Parser output:");
+        #endif
             foreach (KeyValuePair<string, string> kvp in ValuePairs)
             {
                 // If the kvp value has $ (Macro sign), which means the data is empty,
-                // then try to naively lookup the value from the result list.
+                // then try to naively look up the value from the result list.
                 if (kvp.Value[0] == '$')
                 {
-                    if (!TryFindNaivePairsByMacro(ValuePairs, kvp, values))
-                        throw new NotSupportedException($"The KVP of field: {kvp.Key} has no valid values!");
-                    else
+                    if (TryFindNaivePairsByMacro(ValuePairs, kvp, values))
+                #if DEBUG
                         Console.WriteLine($"The metadata does not have a correct KVP, a naive approach has found a correct value for field: {kvp.Key}!");
+                #else
+                        return;
+                #endif
+                    else
+                        throw new NotSupportedException($"The KVP of field: {kvp.Key} has no valid values!");
                 }
 
+            #if DEBUG
                 Console.WriteLine($"Key: {kvp.Key} - Val: {ValuePairs[kvp.Key]}");
+            #endif
             }
-        #endif
         }
 
         bool TryFindNaivePairsByMacro(Dictionary<string, string> dict,
@@ -282,9 +287,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
 
         #if DEBUG
             Console.WriteLine($"Reading tag {tag} - Field Num: {fieldNumber}");
-        #endif
-        #if DEBUG
-            Console.WriteLine($"Reading key {protoPairs.Key} as field num {protoPairs.Value}");
+            if (protoPairs.Value != 0) Console.WriteLine($"Reading key {protoPairs.Key} as field num {protoPairs.Value}");
         #endif
 
             switch (wireType)
@@ -307,7 +310,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
                     Console.WriteLine("Got unknown field!");
 #               endif
                     _unknownFields = UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
-                    break;
+                    return;
             }
             if (!string.IsNullOrEmpty(valueAsString))
                 dataResults.Add(valueAsString);
