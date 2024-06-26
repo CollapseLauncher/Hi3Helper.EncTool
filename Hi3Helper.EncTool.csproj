@@ -7,6 +7,14 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<IsTrimmable>true</IsTrimmable>
 		<DebugType>portable</DebugType>
+        <!-- Assembly Info Properties -->
+        <AssemblyName>Hi3Helper.EncTool</AssemblyName>
+        <ProductName>Hi3Helper.EncTool</ProductName>
+        <Product>Hi3Helper.EncTool</Product>
+        <Description>Data parsing tools used in Collapse project</Description>
+        <Company>Collapse Launcher Team</Company>
+        <Authors>$(Company). neon-nyan, Cry0, bagusnl, shatyuka, gablm.</Authors>
+        <Copyright>Copyright 2022-2024 $(Company)</Copyright>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
