@@ -63,10 +63,10 @@ namespace Hi3Helper.Data
 
         public static unsafe string LongToHexUnsafe(long number)
         {
-            uint* lookupP = _lookup32UnsafeP;
+            uint* lookupP = &_lookup32UnsafeP[0];
             ReadOnlySpan<char> result = stackalloc char[8];
             byte* bytesP = (byte*)&number;
-            fixed (char* resultP = result)
+            fixed (char* resultP = &result[0])
             {
                 uint* resultP2 = (uint*)resultP;
                 for (int i = 0; i < 8; i++)
@@ -79,10 +79,10 @@ namespace Hi3Helper.Data
 
         public static unsafe string BytesToHexUnsafe(ReadOnlySpan<byte> bytes)
         {
-            uint* lookupP = _lookup32UnsafeP;
+            uint* lookupP = &_lookup32UnsafeP[0];
             ReadOnlySpan<char> result = stackalloc char[bytes.Length * 2];
-            fixed (byte* bytesP = bytes)
-            fixed (char* resultP = result)
+            fixed (byte* bytesP = &bytes[0])
+            fixed (char* resultP = &result[0])
             {
                 uint* resultP2 = (uint*)resultP;
                 for (int i = 0; i < bytes.Length; i++)
@@ -93,6 +93,21 @@ namespace Hi3Helper.Data
             return new string(result);
         }
 
+        public static unsafe bool TryBytesToHexUnsafe(ReadOnlySpan<byte> bytes, Span<char> result)
+        {
+            uint* lookupP = &_lookup32UnsafeP[0];
+            fixed (byte* bytesP = &bytes[0])
+            fixed (char* resultP = &result[0])
+            {
+                uint* resultP2 = (uint*)resultP;
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    resultP2[i] = lookupP[bytesP[i]];
+                }
+            }
+            return true;
+        }
+
         public static unsafe byte[] HexToBytesUnsafe(ReadOnlySpan<char> source)
         {
             if (source.IsEmpty) return new byte[0];
@@ -101,7 +116,7 @@ namespace Hi3Helper.Data
             int index = 0;
             int len = source.Length >> 1;
 
-            fixed (char* sourceRef = source)
+            fixed (char* sourceRef = &source[0])
             {
                 if (*(int*)sourceRef == 7864368)
                 {
@@ -117,12 +132,12 @@ namespace Hi3Helper.Data
                 byte add = 0;
                 byte[] result = new byte[len];
 
-                fixed (byte* hiRef = _lookupFromHexTable16)
-                fixed (byte* lowRef = _lookupFromHexTable)
-                fixed (byte* resultRef = result)
+                fixed (byte* hiRef = &_lookupFromHexTable16[0])
+                fixed (byte* lowRef = &_lookupFromHexTable[0])
+                fixed (byte* resultRef = &result[0])
                 {
                     char* s = &sourceRef[index];
-                    byte* r = resultRef;
+                    byte* r = &resultRef[0];
 
                     while (*s != 0)
                     {
@@ -133,6 +148,46 @@ namespace Hi3Helper.Data
                         *r++ += add;
                     }
                     return result;
+                }
+            }
+        }
+
+        public static unsafe bool TryHexToBytesUnsafe(ReadOnlySpan<char> source, Span<byte> buffer)
+        {
+            int index = 0;
+            int len = buffer.Length;
+
+            fixed (char* sourceRef = &source[0])
+            {
+                if (*(int*)sourceRef == 7864368)
+                {
+                    if (source.Length == 2)
+                    {
+                        return false;
+                    }
+
+                    index += 2;
+                    len -= 1;
+                }
+
+                byte add = 0;
+
+                fixed (byte* hiRef = &_lookupFromHexTable16[0])
+                fixed (byte* lowRef = &_lookupFromHexTable[0])
+                fixed (byte* resultRef = &buffer[0])
+                {
+                    char* s = &sourceRef[index];
+                    byte* r = &resultRef[0];
+
+                    while (*s != 0)
+                    {
+                        if (*s > 102 || (*r = hiRef[*s++]) == 255 || *s > 102 || (add = lowRef[*s++]) == 255)
+                        {
+                            return false;
+                        }
+                        *r++ += add;
+                    }
+                    return true;
                 }
             }
         }
