@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Hi3Helper.EncTool.WindowTool
 {
@@ -15,6 +16,9 @@ namespace Hi3Helper.EncTool.WindowTool
 
         [DllImport("user32.dll", ExactSpelling = true)]
         public static extern nint SetWindowPos(nint hWnd, int hWndInsertAfter, int x, int Y, int cx, int cy, SWP_FLAGS wFlags);
+        
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
 
         internal enum GWL_INDEX : int
         {

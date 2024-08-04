@@ -11,7 +11,9 @@ namespace Hi3Helper.EncTool.WindowTool
     {
         const int refreshRateMs = 250;  // Loop refresh rate = 250ms
 
-        public async Task StartHook(string processName, CancellationToken token = default, bool isNeedResetOnInit = false)
+        public async Task StartHook(string processName, int? height, int? width,
+                                    CancellationToken token = default,
+                                    bool   isNeedResetOnInit = false)
         {
             // Initialize the empty window property struct
             WindowProperty targetWindow = WindowProperty.Empty();
@@ -71,6 +73,12 @@ namespace Hi3Helper.EncTool.WindowTool
                             // Refresh the current style and pos + size of the window
                             targetWindow.RefreshCurrentStyle();
                             targetWindow.RefreshCurrentPosition();
+                            if (height != null && width != null)
+                            {
+                                Console
+                                   .WriteLine($"Moving window to posX: {oldPos.X} posY: {oldPos.Y} H: {height} W: {width}");
+                                targetWindow.MoveWindow(oldPos.X, oldPos.Y, (int)height, (int)width);
+                            }
 
                             curStyle = targetWindow.currentStyle;
                             curPos = targetWindow.currentPos;
