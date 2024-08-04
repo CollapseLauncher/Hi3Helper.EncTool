@@ -54,7 +54,9 @@ namespace Hi3Helper.EncTool.WindowTool
             height ??= currentPos.Height;
 
             // Assign the current value of the currentPos and call the SetWindowPos function
+            // ReSharper disable ConstantNullCoalescingCondition
             PInvoke.SetWindowPos(hwnd, 0, currentPos.X = x ?? 0, currentPos.Y = y ?? 0, currentPos.Width = width ?? 0, currentPos.Height = height ?? 0, PInvoke.SWP_FLAGS.SWP_NOZORDER);
+            // ReSharper restore ConstantNullCoalescingCondition
         }
 
         public bool IsWindowBorderlessFullscreen()
@@ -113,7 +115,7 @@ namespace Hi3Helper.EncTool.WindowTool
             return await Task.Run(() =>
             {
 #nullable enable
-                // Try get the process based on its matching ID
+                // Try to get the process based on its matching ID
                 Process? process = Process.GetProcesses().Where(x =>
                 {
                     // If it matches, then return true

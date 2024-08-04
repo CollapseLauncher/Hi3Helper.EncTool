@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Hi3Helper.EncTool.WindowTool
 {
@@ -26,6 +27,7 @@ namespace Hi3Helper.EncTool.WindowTool
             GWLP_USERDATA = -21
         }
 
+        [Flags]
         internal enum WS_STYLE : uint
         {
             WS_BORDER = 0x00800000,
