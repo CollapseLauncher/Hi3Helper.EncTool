@@ -77,7 +77,7 @@ namespace Hi3Helper.EncTool.WindowTool
                             {
                                 Console
                                    .WriteLine($"Moving window to posX: {oldPos.X} posY: {oldPos.Y} H: {height} W: {width}");
-                                targetWindow.MoveWindow(oldPos.X, oldPos.Y, (int)height, (int)width);
+                                targetWindow.ChangePosition(oldPos.X, oldPos.Y, oldPos.Width, oldPos.Height);
                             }
 
                             curStyle = targetWindow.currentStyle;
