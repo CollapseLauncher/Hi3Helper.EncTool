@@ -76,7 +76,7 @@ namespace Hi3Helper.EncTool.WindowTool
                             if (height != null && width != null)
                             {
                                 Console
-                                   .WriteLine($"Moving window to posX: {oldPos.X} posY: {oldPos.Y} H: {height} W: {width}");
+                                   .WriteLine($"Moving window to posX: {oldPos.X} posY: {oldPos.Y} W: {width} H: {height}");
                                 targetWindow.ChangePosition(oldPos.X, oldPos.Y, oldPos.Width, oldPos.Height);
                             }
 

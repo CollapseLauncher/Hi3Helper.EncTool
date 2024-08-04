@@ -57,9 +57,6 @@ namespace Hi3Helper.EncTool.WindowTool
             PInvoke.SetWindowPos(hwnd, 0, currentPos.X = x ?? 0, currentPos.Y = y ?? 0, currentPos.Width = width ?? 0, currentPos.Height = height ?? 0, PInvoke.SWP_FLAGS.SWP_NOZORDER);
         }
 
-        public void MoveWindow(int curX, int curY, int sizeH, int sizeW) =>
-            PInvoke.MoveWindow(hwnd, curX, curY, sizeW, sizeH, true);
-
         public bool IsWindowBorderlessFullscreen()
         {
             // Get the mask by using WS_SYSMENU Flag
