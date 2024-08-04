@@ -79,6 +79,9 @@ namespace Hi3Helper.Data
 
         public static unsafe string BytesToHexUnsafe(ReadOnlySpan<byte> bytes)
         {
+            if (bytes.Length == 0)
+                return null;
+
             uint* lookupP = &_lookup32UnsafeP[0];
             ReadOnlySpan<char> result = stackalloc char[bytes.Length * 2];
             fixed (byte* bytesP = &bytes[0])
