@@ -179,7 +179,7 @@ namespace Hi3Helper.Data
         public static double UnNaNInfinity(this double i) => double.IsNaN(i) || double.IsInfinity(i) ? 0 : i;
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double GetPercentageNumber(double cur, double max, int round = 2) => Math.Round((100 * cur) / max, round);
+        public static double GetPercentageNumber(double cur, double max, int round = 2) => Math.Round((100 * cur) / max.Unzeroed(), round);
 
         private static readonly SpanAction<char, nint> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
         public static unsafe string NormalizePath(ReadOnlySpan<char> source)
