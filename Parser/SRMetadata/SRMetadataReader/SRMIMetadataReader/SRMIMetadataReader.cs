@@ -19,7 +19,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal ulong AssetListUnixTimestamp { get; set; }
         internal string AssetListRootPath { get; set; }
 
-        internal SRMIMetadataReader(string baseURL, Http.Http httpClient, string parentRemotePath, string metadataPath, ushort typeID = 2) : base(baseURL, httpClient)
+        internal SRMIMetadataReader(string baseURL, string parentRemotePath, string metadataPath, ushort typeID = 2) : base(baseURL)
         {
             Magic = "SRMI";
             TypeID = typeID;

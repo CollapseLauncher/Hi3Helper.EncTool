@@ -2,7 +2,7 @@
 {
     internal class SRDesignMetadata : SRLuaMetadata
     {
-        protected SRDesignMetadata(string baseURL, Http.Http httpClient) : base(baseURL, httpClient)
+        protected SRDesignMetadata(string baseURL) : base(baseURL)
         {
             AssetProperty = new SRAssetProperty();
             ParentRemotePath = "/client/Windows";
@@ -10,6 +10,6 @@
             InheritedAssetType = SRAssetType.DesignData;
         }
 
-        internal static new SRMetadataBase CreateInstance(string baseURL, Http.Http httpClient) => new SRDesignMetadata(baseURL, httpClient);
+        internal static new SRMetadataBase CreateInstance(string baseURL) => new SRDesignMetadata(baseURL);
     }
 }

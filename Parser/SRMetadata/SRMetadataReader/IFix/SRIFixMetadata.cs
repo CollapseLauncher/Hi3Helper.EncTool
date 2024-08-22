@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Data;
+using Hi3Helper.Http;
 using System;
 using System.IO;
 using System.Text;
@@ -14,21 +15,21 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected override string ParentRemotePath { get; set; }
         protected override string MetadataPath { get; set; }
         protected override SRAssetProperty AssetProperty { get; set; }
-        protected SRIFixMetadata(string baseURL, Http.Http httpClient, ushort idSRMI = 2) : base(baseURL, httpClient)
+        protected SRIFixMetadata(string baseURL, ushort idSRMI = 2) : base(baseURL)
         {
             ParentRemotePath = "/client/Windows";
             MetadataPath = "/M_IFixV.bytes";
             SRMIID = idSRMI;
         }
 
-        internal static SRMetadataBase CreateInstance(string baseURL, Http.Http httpClient) => new SRIFixMetadata(baseURL, httpClient);
+        internal static SRMetadataBase CreateInstance(string baseURL) => new SRIFixMetadata(baseURL);
 
-        internal override async Task GetRemoteMetadata(string persistentPath, CancellationToken token, string localManifestPath)
+        internal override async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadClientProgress, string persistentPath, CancellationToken token, string localManifestPath)
         {
             PersistentPath = persistentPath;
-            using (SRMIMetadataReader _SRMIReader = new SRMIMetadataReader(BaseURL, _httpClient, ParentRemotePath, MetadataPath, SRMIID))
+            using (SRMIMetadataReader _SRMIReader = new SRMIMetadataReader(BaseURL, ParentRemotePath, MetadataPath, SRMIID))
             {
-                await _SRMIReader.GetRemoteMetadata(persistentPath, token, localManifestPath);
+                await _SRMIReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, token, localManifestPath);
                 _SRMIReader.Deserialize();
                 string metadataPath = Path.Combine(persistentPath, localManifestPath, _SRMIReader.AssetListFilename);
                 string metadataURL = BaseURL + ParentRemotePath + '/' + _SRMIReader.AssetListFilename;
@@ -41,7 +42,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 Magic = _SRMIReader.Magic;
                 TypeID = _SRMIReader.TypeID;
 
-                await _httpClient.Download(AssetProperty.MetadataRemoteURL, AssetProperty.MetadataStream, null, null, token);
+                await downloadClient.DownloadAsync(AssetProperty.MetadataRemoteURL, AssetProperty.MetadataStream, false, downloadClientProgress, cancelToken: token);
                 AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);
             }
         }

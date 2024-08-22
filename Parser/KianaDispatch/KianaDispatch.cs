@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Data;
+using Hi3Helper.Http;
 using System;
 using System.IO;
 using System.Linq;
@@ -19,11 +20,9 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
     public class KianaDispatch
     {
         #region Private Fields
-        private const           string _userAgent = "UnityPlayer/2017.4.18f1 (UnityWebRequest/1.0, libcurl/7.51.0-DEV)";
         private static          string _dispatchQuery;
         private static          string _dispatchUrl;
         private static          string _keyString;
-        private static readonly Http.Http _httpClient = new Http.Http(true, 5, 1000, _userAgent);
         #endregion
 
         #region Properties
@@ -45,7 +44,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
         [JsonPropertyName("manifest")] public ManifestBase Manifest { get; set; }
         #endregion
 
-        public static async Task<KianaDispatch> GetDispatch(string dispatchUrl, string dispatchFormat, string dispatchChannelName, string baseKey, int[] ver, CancellationToken token)
+        public static async Task<KianaDispatch> GetDispatch(DownloadClient downloadClient, string dispatchUrl, string dispatchFormat, string dispatchChannelName, string baseKey, int[] ver, CancellationToken token)
         {
             // Format the dispatch URL and set it to this instance
             _dispatchQuery = string.Format(dispatchFormat, $"{ver[0]}.{ver[1]}.{ver[2]}", dispatchChannelName, ConverterTool.GetUnixTimestamp(true));
@@ -55,30 +54,30 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
             _keyString = $"{ver[0]}.{ver[1]}{baseKey}";
 
             // Intialize HTTP client class and try start to parse the dispatch
-            return await TryParseDispatch(_httpClient, _dispatchUrl, token);
+            return await TryParseDispatch(downloadClient, _dispatchUrl, token);
         }
 
 #nullable enable
-        public static async ValueTask<KianaDispatch> GetGameserver(KianaDispatch dispatch, string regionName, CancellationToken token)
+        public static async ValueTask<KianaDispatch> GetGameserver(DownloadClient downloadClient, KianaDispatch dispatch, string regionName, CancellationToken token)
         {
             // Find the correct region as per key from codename and select the first entry. If none, then return null (because .FirstOrDefault())
             // If the region results a null, then find a possible dispatch to read.
             KianaDispatch region = dispatch.Regions.Where(x => x.DispatchCodename == regionName)?.FirstOrDefault()
-                ?? await TryGetPossibleMatchingRegion(dispatch, token);
+                ?? await TryGetPossibleMatchingRegion(downloadClient, dispatch, token);
 
             // Format the gameserver URL and set it to this instance, then try parsing the gateway (gameserver)
             string gameServerUrl = region.DispatchUrl + _dispatchQuery;
-            return await TryParseDispatch(_httpClient, gameServerUrl, token);
+            return await TryParseDispatch(downloadClient, gameServerUrl, token);
         }
 
-        private static async ValueTask<KianaDispatch> TryGetPossibleMatchingRegion(KianaDispatch dispatch, CancellationToken token)
+        private static async ValueTask<KianaDispatch> TryGetPossibleMatchingRegion(DownloadClient downloadClient, KianaDispatch dispatch, CancellationToken token)
         {
             // Do loop and find a possible valid region/dispatch
             for (int i = 0; i < dispatch.Regions.Length; i++)
             {
                 var region = dispatch.Regions[i];
                 HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, new Uri(region.DispatchUrl));
-                HttpResponseMessage responseMessage = await _httpClient.GetHttpClient().SendAsync(requestMessage, token);
+                HttpResponseMessage responseMessage = await downloadClient.GetHttpClient().SendAsync(requestMessage, token);
                 if (responseMessage.IsSuccessStatusCode) return region;
             }
 
@@ -87,13 +86,13 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
         }
 #nullable disable
 
-        private static async Task<KianaDispatch> TryParseDispatch(Http.Http http, string dispatchUrl, CancellationToken token)
+        private static async Task<KianaDispatch> TryParseDispatch(DownloadClient http, string dispatchUrl, CancellationToken token)
         {
             // Initialize memory stream
             using (Stream memStream = new MemoryStream())
             {
                 // Start download the content and set the output to memory stream
-                await http.Download(dispatchUrl, memStream, null, null, token);
+                await http.DownloadAsync(dispatchUrl, memStream, true, cancelToken: token);
 
                 // Check if the response is encrypted or not
                 if (IsResponseEncrypted(memStream))

@@ -44,7 +44,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal ulong AssetListUnixTimestamp { get; set; }
         internal string AssetListRootPath { get; set; }
 
-        internal SRAMBMMetadataReader(string baseURL, Http.Http httpClient, string parentRemotePath, string metadataPath, SRAMBMMetadataType type) : base(baseURL, httpClient)
+        internal SRAMBMMetadataReader(string baseURL, string parentRemotePath, string metadataPath, SRAMBMMetadataType type) : base(baseURL)
         {
             StructType = type;
             switch (type)

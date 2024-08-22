@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Data;
+using Hi3Helper.Http;
 using Hi3Helper.Preset;
 using Hi3Helper.UABT.Binary;
 using System;
@@ -90,16 +91,13 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected string BaseURL { get; init; }
         protected string PersistentPath { get; set; }
 
-        protected Http.Http _httpClient { get; init; }
-
-        protected SRMetadataBase(string baseURL, Http.Http httpClient)
+        protected SRMetadataBase(string baseURL)
         {
             BaseURL = baseURL;
             if (string.IsNullOrEmpty(BaseURL)) throw new NullReferenceException("BaseURL is empty!");
-            _httpClient = httpClient;
         }
 
-        internal virtual async Task GetRemoteMetadata(string persistentPath, CancellationToken token, string localManifestPath)
+        internal virtual async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string persistentPath, CancellationToken token, string localManifestPath)
         {
             PersistentPath = persistentPath;
             string metadataPath = Path.Combine(PersistentPath, localManifestPath, MetadataPath.TrimStart('/'));
@@ -110,7 +108,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             #if DEBUG
             Console.WriteLine($"[SRMetadataBase:GetRemoteData] Fetching metadata from {metadataURL}");
             #endif
-            await _httpClient.Download(metadataURL, AssetProperty.MetadataStream, null, null, token);
+            await downloadClient.DownloadAsync(metadataURL, AssetProperty.MetadataStream, false, downloadProgressDelegate);
             AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);
         }
 

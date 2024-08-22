@@ -23,7 +23,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
     internal class SRAudioMetadata : SRAsbMetadata
     {
-        protected SRAudioMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, Http.Http httpClient) : base(dictArchiveInfo, baseURL, httpClient)
+        protected SRAudioMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
         {
             ParentRemotePath = "/client/Windows/AudioBlock";
             MetadataRemoteName = "M_AudioV";
@@ -31,7 +31,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             AssetType = SRAssetType.Audio;
         }
 
-        internal static new SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, Http.Http httpClient) => new SRAudioMetadata(dictArchiveInfo, baseURL, httpClient);
+        internal static new SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) => new SRAudioMetadata(dictArchiveInfo, baseURL);
 
         internal override void Deserialize()
         {

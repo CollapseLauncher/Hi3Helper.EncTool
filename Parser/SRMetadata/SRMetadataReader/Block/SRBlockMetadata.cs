@@ -4,7 +4,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
     internal class SRBlockMetadata : SRAsbMetadata
     {
-        protected SRBlockMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, Http.Http httpClient) : base(dictArchiveInfo, baseURL, httpClient)
+        protected SRBlockMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
         {
             MetadataRemoteName = "M_BlockV";
             MetadataStartRemoteName = "M_Start_BlockV";
@@ -12,6 +12,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             AssetType = SRAssetType.Block;
         }
 
-        internal static new SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, Http.Http httpClient) => new SRBlockMetadata(dictArchiveInfo, baseURL, httpClient);
+        internal static new SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) => new SRBlockMetadata(dictArchiveInfo, baseURL);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.EncTool.Proto.StarRail;
+using Hi3Helper.Http;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,34 +31,31 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
     internal class SRDispatcherInfo : IDisposable
     {
-        private string            _persistentDirectory { get; set; }
-        private string            _dispatchURLFormat   { get; set; }
-        private string            _gatewayURLFormat    { get; set; }
-        private string            _dispatchURL         { get; init; }
-        private string            _dispatchSeed        { get; init; }
-        private string            _productID           { get; init; }
-        private string            _productVer          { get; init; }
-        private Http.Http         _httpClient          { get; set; }
-        private CancellationToken _threadToken         { get; set; }
+        private string                      _persistentDirectory    { get; set; }
+        private string                      _dispatchURLFormat      { get; set; }
+        private string                      _gatewayURLFormat       { get; set; }
+        private string                      _dispatchURL            { get; init; }
+        private string                      _dispatchSeed           { get; init; }
+        private string                      _productID              { get; init; }
+        private string                      _productVer             { get; init; }
+        private CancellationToken           _threadToken            { get; set; }
 
-        internal string _regionName { get; set; }
-        internal RegionInfo _regionInfo { get; set; }
-        internal StarRailGateway _regionGatewayLegacy { get; set; }
-        internal StarRailGatewayStatic _regionGateway { get; set; }
-        internal bool _isUseLegacy { get => false; }
+        internal string                 _regionName             { get; set; }
+        internal RegionInfo             _regionInfo             { get; set; }
+        internal StarRailGateway        _regionGatewayLegacy    { get; set; }
+        internal StarRailGatewayStatic  _regionGateway          { get; set; }
+        internal bool                   _isUseLegacy            { get => false; }
 
-        internal Dictionary<string, SRDispatchArchiveInfo> ArchiveInfo { get; set; }
+        internal Dictionary<string, SRDispatchArchiveInfo>  ArchiveInfo { get; set; }
 
-        internal SRDispatcherInfo(Http.Http httpClient, string dispatchURL, string dispatchSeed, string dispatchFormatTemplate, string gatewayFormatTemplate, string productID, string productVer)
+        internal SRDispatcherInfo(string dispatchURL, string dispatchSeed, string dispatchFormatTemplate, string gatewayFormatTemplate, string productID, string productVer)
         {
-            _httpClient        = httpClient;
-            _dispatchURL       = dispatchURL;
-            _dispatchSeed      = dispatchSeed;
-            _productID         = productID;
-            _productVer        = productVer;
-            _dispatchURLFormat = dispatchFormatTemplate;
-            _gatewayURLFormat  = gatewayFormatTemplate;
-            _httpClient        = new Http.Http(true, 5, 1000, SRMetadata._userAgent);
+            _dispatchURL            = dispatchURL;
+            _dispatchSeed           = dispatchSeed;
+            _productID              = productID;
+            _productVer             = productVer;
+            _dispatchURLFormat      = dispatchFormatTemplate;
+            _gatewayURLFormat       = gatewayFormatTemplate;
         }
 
         ~SRDispatcherInfo() => Dispose();
@@ -69,21 +67,20 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 ArchiveInfo.Clear();
             }
             _regionInfo = null;
-            _httpClient?.Dispose();
         }
 
-        internal async Task Initialize(CancellationToken threadToken, string persistentDirectory, string regionName)
+        internal async Task Initialize(CancellationToken threadToken, DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string persistentDirectory, string regionName)
         {
             _persistentDirectory = persistentDirectory;
             _threadToken = threadToken;
             _regionName = regionName;
 
-            await ParseDispatch();
-            await ParseGateway();
-            await ParseArchive();
+            await ParseDispatch(downloadClient, downloadProgressDelegate);
+            await ParseGateway(downloadClient, downloadProgressDelegate);
+            await ParseArchive(downloadClient, downloadProgressDelegate);
         }
 
-        private async Task ParseDispatch()
+        private async Task ParseDispatch(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate)
         {
             // Format dispatcher URL
             string dispatchURL = _dispatchURL + string.Format(_dispatchURLFormat, _productID, _productVer, SRMetadata.GetUnixTimestamp());
@@ -95,7 +92,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             // Get the dispatch content
             using (MemoryStream stream = new MemoryStream())
             {
-                await _httpClient.Download(dispatchURL, stream, null, null, _threadToken);
+                await downloadClient.DownloadAsync(dispatchURL, stream, false, downloadProgressDelegate, cancelToken: _threadToken);
                 stream.Position = 0;
                 string response = Encoding.UTF8.GetString(stream.ToArray());
 
@@ -113,7 +110,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             }
         }
 
-        private async Task ParseGateway()
+        private async Task ParseGateway(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate)
         {
             // Format dispatcher URL
             string gatewayURL = _regionInfo.DispatchUrl + string.Format(_gatewayURLFormat, _productID, _productVer, SRMetadata.GetUnixTimestamp(), _dispatchSeed);
@@ -125,7 +122,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             // Get the dispatch content
             using (MemoryStream stream = new MemoryStream())
             {
-                await _httpClient.Download(gatewayURL, stream, null, null, _threadToken);
+                await downloadClient.DownloadAsync(gatewayURL, stream, false, downloadProgressDelegate, cancelToken: _threadToken);
                 stream.Position = 0;
                 string response = Encoding.UTF8.GetString(stream.ToArray());
 
@@ -145,7 +142,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             }
         }
 
-        private async Task ParseArchive()
+        private async Task ParseArchive(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate)
         {
             ArchiveInfo = new Dictionary<string, SRDispatchArchiveInfo>();
             string archiveURL = (_isUseLegacy ? _regionGatewayLegacy.AssetBundleVersionUpdateUrl : _regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"]) + "/client/Windows/Archive/M_ArchiveV.bytes";
@@ -166,7 +163,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
             using (FileStream stream = new FileStream(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
-                await _httpClient.Download(archiveURL, stream, null, null, _threadToken);
+                await downloadClient.DownloadAsync(archiveURL, stream, false, downloadProgressDelegate, cancelToken: _threadToken);
                 stream.Position = 0;
 
                 using (StreamReader reader = new StreamReader(stream))
