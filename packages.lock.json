@@ -4,21 +4,21 @@
     "net8.0": {
       "Google.Protobuf": {
         "type": "Direct",
-        "requested": "[3.27.3, )",
-        "resolved": "3.27.3",
-        "contentHash": "ld+oe1+Mc6no643d8otGm6Zylu7KBpGnAiqOW3nOpV8VxUuqhz70vRNKUU5grLaCeuUQVF8t9dm8TgmkTMr1Tg=="
+        "requested": "[3.28.0, )",
+        "resolved": "3.28.0",
+        "contentHash": "lVsLcLIHpkOABswgydr0sjkIhSN5XE9C6AgLXxvMsa6pSSJIpmAIPvK/NZpuF+HTB6xp1R8T5nhLausWVOrU/w=="
       },
       "Google.Protobuf.Tools": {
         "type": "Direct",
-        "requested": "[3.27.1, )",
-        "resolved": "3.27.1",
-        "contentHash": "YIuvGHEunspG8RqgirWXU/fFIBP3KBVVVXEi4YSDI3cCH4pJojMBpshKKk6hX7Y13WDB7aFPURTVv79fgDUpKA=="
+        "requested": "[3.28.0, )",
+        "resolved": "3.28.0",
+        "contentHash": "m7FJIJw5pis3O94s+9K/ZMSXm2flGujglf1rgSmqT+6RqiSprnvkOiuWds7JRn2MaAWU31FSiFWhDG1gptnUsA=="
       },
       "Microsoft.NET.ILLink.Tasks": {
         "type": "Direct",
-        "requested": "[8.0.8, )",
-        "resolved": "8.0.8",
-        "contentHash": "P8wR6MUWwYXIjPJuBaZgo5zlI/GWI6QEAo6NyVIbPefa9CCkohYu7dP2rD/mrqnjEqfRHyl+h9VZrDoGpELqYg=="
+        "requested": "[8.0.7, )",
+        "resolved": "8.0.7",
+        "contentHash": "iI52ptEKby2ymQ6B7h4TWbFmm85T4VvLgc/HvS45Yr3lgi4IIFbQtjON3bQbX/Vc94jXNSLvrDOp5Kh7SJyFYQ=="
       },
       "System.IO.Hashing": {
         "type": "Direct",
