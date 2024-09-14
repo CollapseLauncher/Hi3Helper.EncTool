@@ -227,42 +227,42 @@ namespace Hi3Helper.EncTool.Parser.Cache
         private static long ReadInt64(Stream stream)
         {
             Span<byte> buffer = stackalloc byte[8];
-            stream.Read(buffer);
+            _ = stream.Read(buffer);
             return BinaryPrimitives.ReadInt64LittleEndian(buffer);
         }
 
         private static ulong ReadUInt64(Stream stream)
         {
             Span<byte> buffer = stackalloc byte[8];
-            stream.Read(buffer);
+            _ = stream.Read(buffer);
             return BinaryPrimitives.ReadUInt64LittleEndian(buffer);
         }
 
         private static int ReadInt32(Stream stream)
         {
             Span<byte> buffer = stackalloc byte[4];
-            stream.Read(buffer);
+            _ = stream.Read(buffer);
             return BinaryPrimitives.ReadInt32LittleEndian(buffer);
         }
 
         private static uint ReadUInt32(Stream stream)
         {
             Span<byte> buffer = stackalloc byte[4];
-            stream.Read(buffer);
+            _ = stream.Read(buffer);
             return BinaryPrimitives.ReadUInt32LittleEndian(buffer);
         }
 
         private static short ReadInt16(Stream stream)
         {
             Span<byte> buffer = stackalloc byte[2];
-            stream.Read(buffer);
+            _ = stream.Read(buffer);
             return BinaryPrimitives.ReadInt16LittleEndian(buffer);
         }
 
         private static ushort ReadUInt16(Stream stream)
         {
             Span<byte> buffer = stackalloc byte[2];
-            stream.Read(buffer);
+            _ = stream.Read(buffer);
             return BinaryPrimitives.ReadUInt16LittleEndian(buffer);
         }
 
@@ -270,7 +270,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
         {
             ushort len = ReadUInt16(stream);
             Span<byte> strArr = stackalloc byte[len];
-            stream.Read(strArr);
+            _ = stream.Read(strArr);
             return _encoding.GetString(strArr);
         }
 
