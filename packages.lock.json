@@ -4,15 +4,15 @@
     "net8.0": {
       "Google.Protobuf": {
         "type": "Direct",
-        "requested": "[3.28.0, )",
-        "resolved": "3.28.0",
-        "contentHash": "lVsLcLIHpkOABswgydr0sjkIhSN5XE9C6AgLXxvMsa6pSSJIpmAIPvK/NZpuF+HTB6xp1R8T5nhLausWVOrU/w=="
+        "requested": "[3.28.1, )",
+        "resolved": "3.28.1",
+        "contentHash": "i4EN7Z+OUdoRBNiVMIG6CfMh6UowXiUx+BKgE+GHLbAX5ArSmpUTFUDwgRNwNfYdosl6GXuBlDiHCcXSHw43+A=="
       },
       "Google.Protobuf.Tools": {
         "type": "Direct",
-        "requested": "[3.28.0, )",
-        "resolved": "3.28.0",
-        "contentHash": "m7FJIJw5pis3O94s+9K/ZMSXm2flGujglf1rgSmqT+6RqiSprnvkOiuWds7JRn2MaAWU31FSiFWhDG1gptnUsA=="
+        "requested": "[3.28.1, )",
+        "resolved": "3.28.1",
+        "contentHash": "xNvgmk0vblBJa4zNPoXF+A3yaqo+Fxs/h431+iDDpPf2E50w/8QoonikVewK/3r+s2TigUhIxa4JJn3jj/OyjA=="
       },
       "Microsoft.NET.ILLink.Tasks": {
         "type": "Direct",
