@@ -64,6 +64,14 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                 throw new NullReferenceException("Gateway content is empty!");
 
             ResponseGateway = ParseGatewayFromGatewayContent(gatewayRegionContentResponse).ThrowIfUnsuccessful();
+
+            if (ResponseGateway == null)
+                throw new NullReferenceException("Gateway response is empty!");
+
+            var baseFileInfo = GetFileInfo(FileInfoKind.Base);
+            string baseFileUrl = ConverterTool.CombineURLFromString(baseFileInfo.BaseUrl, baseFileInfo.ReferenceFileInfo.FileName);
+            string baseFileRevision = await Client.GetStringAsync(baseFileUrl);
+            ResponseGateway.CdnConfig.GameResConfig.BaseRevision = baseFileRevision;
         }
 
         private SleepyGateway ParseGatewayFromGatewayContent(SleepyGatewayRegionContent gatewayResponse)
@@ -168,7 +176,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             return await responseMessage.Content.ReadFromJsonAsync(typeInfo, token);
         }
 
-        public (string BaseUrl, SleepyFileInfo ReferenceFileInfo) GetFileInfo(FileInfoKind kind)
+        public (string BaseUrl, SleepyFileInfo ReferenceFileInfo, string RevisionStamp) GetFileInfo(FileInfoKind kind)
         {
             SleepyGatewayMetadataConfig metadataConfig = kind switch
             {
@@ -189,7 +197,17 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             if (fileInfo == null)
                 throw new KeyNotFoundException("File information is not found inside of the gateway response!");
 
-            return (baseUrl, fileInfo);
+            string revisionStamp = kind switch
+            {
+                FileInfoKind.Res => $"{ResponseGateway.CdnConfig.GameResConfig.ResRevision}",
+                FileInfoKind.Base => ResponseGateway.CdnConfig.GameResConfig.BaseRevision,
+                FileInfoKind.Silence => $"{ResponseGateway.CdnConfig.SilenceDataConfig.SilenceRevision}",
+                FileInfoKind.Data => $"{ResponseGateway.CdnConfig.DesignDataConfig.DataRevision}",
+                FileInfoKind.Audio => $"{ResponseGateway.CdnConfig.GameResConfig.AudioRevision}",
+                _ => throw new NotImplementedException($"FileInfoKind.{kind} is not supported!")
+            };
+
+            return (baseUrl, fileInfo, revisionStamp);
         }
     }
 }

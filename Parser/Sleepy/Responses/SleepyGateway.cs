@@ -43,6 +43,8 @@ namespace Hi3Helper.EncTool.Parser.Sleepy.Responses
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public int ResRevision { get; init; }
 
+        public string BaseRevision { get; set; }
+
         [JsonPropertyName("branch")]
         public string Branch { get; init; }
     }
