@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Buffers.Binary;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Hi3Helper.EncTool.Parser.Sleepy.JsonConverters
 {
-    internal class NumberStringToXxh64HashBytesConverter : JsonConverter<byte[]>
+    public class NumberStringToXxh64HashBytesConverter : JsonConverter<byte[]>
     {
         public override byte[] Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

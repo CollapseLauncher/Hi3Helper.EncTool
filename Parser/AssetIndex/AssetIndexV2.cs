@@ -149,13 +149,13 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         protected virtual void WriteAdditionalHeaderInfo(Stream outputStream) { }
         protected virtual void WriteAdditionalData(Stream outputStream) { }
 
-        public PkgVersionProperties[] Deserialize(string path, out DateTime timestamp)
+        public List<PkgVersionProperties> Deserialize(string path, out DateTime timestamp)
         {
             using FileStream fileStream = File.OpenRead(path);
             return Deserialize(fileStream, out timestamp);
         }
 
-        public PkgVersionProperties[] Deserialize(Stream stream, out DateTime timestamp)
+        public List<PkgVersionProperties> Deserialize(Stream stream, out DateTime timestamp)
         {
             // Assign the stream into raw binary reader
             using BinaryReader rawBinaryReader = new BinaryReader(stream);
@@ -172,7 +172,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             return DeserializeFromBinary(stream, rawBinaryReader, out timestamp);
         }
 
-        private unsafe PkgVersionProperties[] DeserializeFromBinary(Stream fileStream, BinaryReader rawBinaryReader, out DateTime timestampUTC)
+        private unsafe List<PkgVersionProperties> DeserializeFromBinary(Stream fileStream, BinaryReader rawBinaryReader, out DateTime timestampUTC)
         {
             // Get the compression flag
             byte compressionByte = rawBinaryReader.ReadByte();
@@ -216,7 +216,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
             // Read the asset count
             int assetCount = binaryReader.ReadInt32();
-            PkgVersionProperties[] pkgReturn = new PkgVersionProperties[assetCount];
+            List<PkgVersionProperties> pkgReturn = new List<PkgVersionProperties>();
 
             // If the count is not 0, then read the data
             if (assetCount > 0)
@@ -241,12 +241,12 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 // Convert all the data provided by the string array and the AssetProperty struct array into PkgVersionProperties array
                 for (ushort i = 0; i < assetCount; i++)
                 {
-                    pkgReturn[i] = new PkgVersionProperties()
+                    pkgReturn.Add(new PkgVersionProperties()
                     {
                         remoteName = returnString[i],
                         md5 = HexTool.BytesToHexUnsafe(returnStruct[i].hash),
                         fileSize = returnStruct[i].size
-                    };
+                    });
                 }
             }
 

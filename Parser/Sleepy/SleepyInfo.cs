@@ -209,5 +209,11 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
             return (baseUrl, fileInfo, revisionStamp);
         }
+
+        public SleepyFileInfoResult GetFileInfoResult(FileInfoKind kind)
+        {
+            var result = GetFileInfo(kind);
+            return new SleepyFileInfoResult(result.BaseUrl, result.ReferenceFileInfo, result.RevisionStamp);
+        }
     }
 }
