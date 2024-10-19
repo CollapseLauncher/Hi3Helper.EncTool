@@ -24,12 +24,22 @@ namespace Hi3Helper.EncTool.Parser.Sleepy.JsonConverters
                     }
 
                     return bytesFromUlong;
+                case JsonTokenType.None:
+                case JsonTokenType.StartObject:
+                case JsonTokenType.EndObject:
+                case JsonTokenType.StartArray:
+                case JsonTokenType.EndArray:
+                case JsonTokenType.PropertyName:
+                case JsonTokenType.Comment:
+                case JsonTokenType.True:
+                case JsonTokenType.False:
+                case JsonTokenType.Null:
                 default:
                     throw new NotSupportedException($"JsonTokenType.{reader.TokenType} is not supported!");
             }
         }
 
-        private byte[] GetBytesFromNumberString(ReadOnlySpan<byte> valueSpan)
+        private static byte[] GetBytesFromNumberString(ReadOnlySpan<byte> valueSpan)
         {
             if (!ulong.TryParse(valueSpan, out ulong result))
             {
