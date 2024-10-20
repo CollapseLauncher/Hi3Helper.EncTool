@@ -108,7 +108,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             #if DEBUG
             Console.WriteLine($"[SRMetadataBase:GetRemoteData] Fetching metadata from {metadataURL}");
             #endif
-            await downloadClient.DownloadAsync(metadataURL, AssetProperty.MetadataStream, false, downloadProgressDelegate);
+            await downloadClient.DownloadAsync(metadataURL, AssetProperty.MetadataStream, false, downloadProgressDelegate, cancelToken: token);
             AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);
         }
 
