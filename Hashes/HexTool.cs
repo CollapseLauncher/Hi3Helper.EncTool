@@ -1,10 +1,20 @@
-﻿using System;
+﻿#nullable enable
+using System;
+using System.Buffers;
+using System.Runtime.CompilerServices;
+#if !NET9_0_OR_GREATER
 using System.Runtime.InteropServices;
+#endif
 
 namespace Hi3Helper.Data
 {
-    unsafe public class HexTool
+    public
+#if !NET9_0_OR_GREATER
+        unsafe
+#endif
+        class HexTool
     {
+#if !NET9_0_OR_GREATER
         private static readonly byte[] _lookupFromHexTable = new byte[] {
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -61,7 +71,7 @@ namespace Hi3Helper.Data
 
         private static readonly uint* _lookup32UnsafeP = (uint*)GCHandle.Alloc(_lookup32Unsafe, GCHandleType.Pinned).AddrOfPinnedObject();
 
-        public static unsafe string LongToHexUnsafe(long number)
+        public static string LongToHexUnsafe(long number)
         {
             uint* lookupP = &_lookup32UnsafeP[0];
             ReadOnlySpan<char> result = stackalloc char[8];
@@ -76,27 +86,46 @@ namespace Hi3Helper.Data
             }
             return new string(result);
         }
+#endif
 
-        public static unsafe string BytesToHexUnsafe(ReadOnlySpan<byte> bytes)
+        public static string? BytesToHexUnsafe(ReadOnlySpan<byte> bytes)
         {
+#if NET9_0_OR_GREATER
+            if (bytes.IsEmpty)
+                return null;
+
+            int returnLen = bytes.Length * 2;
+            {
+                char[] returnChar = returnLen > (2 << 10) / 2 ? GC.AllocateUninitializedArray<char>(returnLen) : new char[returnLen];
+                if (!TryBytesToHexUnsafe(bytes, returnChar, out _))
+                {
+                    throw new InvalidOperationException($"Cannot convert {nameof(bytes)} to Hex string");
+                }
+
+                return new string(returnChar);
+            }
+#else
             if (bytes.Length == 0)
                 return null;
 
             uint* lookupP = &_lookup32UnsafeP[0];
             ReadOnlySpan<char> result = stackalloc char[bytes.Length * 2];
             fixed (byte* bytesP = &bytes[0])
-            fixed (char* resultP = &result[0])
-            {
-                uint* resultP2 = (uint*)resultP;
-                for (int i = 0; i < bytes.Length; i++)
+                fixed (char* resultP = &result[0])
                 {
-                    resultP2[i] = lookupP[bytesP[i]];
+                    uint* resultP2 = (uint*)resultP;
+                    for (int i = 0; i < bytes.Length; i++)
+                    {
+                        resultP2[i] = lookupP[bytesP[i]];
+                    }
                 }
-            }
             return new string(result);
+#endif
         }
 
-        public static unsafe bool TryBytesToHexUnsafe(ReadOnlySpan<byte> bytes, Span<char> result)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryBytesToHexUnsafe(ReadOnlySpan<byte> bytes, Span<char> result)
+#if !NET9_0_OR_GREATER
         {
             uint* lookupP = &_lookup32UnsafeP[0];
             fixed (byte* bytesP = &bytes[0])
@@ -110,12 +139,32 @@ namespace Hi3Helper.Data
             }
             return true;
         }
+#else
+            => TryBytesToHexUnsafe(bytes, result, out _);
+#endif
 
-        public static unsafe byte[] HexToBytesUnsafe(ReadOnlySpan<char> source)
+#if NET9_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryBytesToHexUnsafe(ReadOnlySpan<byte> bytes, Span<char> result, out int bytesWritten)
+            => Convert.TryToHexStringLower(bytes, result, out bytesWritten);
+#endif
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static byte[] HexToBytesUnsafe(ReadOnlySpan<char> source)
         {
-            if (source.IsEmpty) return new byte[0];
-            if (source.Length % 2 == 1) throw new ArgumentException();
+            if (source.IsEmpty) return [];
+            if (source.Length % 2 == 1) throw new IndexOutOfRangeException($"The length of the {nameof(source)} must be even!");
 
+#if NET9_0_OR_GREATER
+            int    returnLen   = source.Length / 2;
+            byte[] returnBytes = returnLen > 2 << 10 ? GC.AllocateUninitializedArray<byte>(returnLen) : new byte[returnLen];
+
+            OperationStatus result = TryHexToBytesUnsafe(source, returnBytes, out _, out _);
+            if (OperationStatus.Done != result)
+                throw new InvalidOperationException($"Cannot decode Hex to Bytes with operation status: {result}");
+
+            return returnBytes;
+#else
             int index = 0;
             int len = source.Length >> 1;
 
@@ -153,9 +202,12 @@ namespace Hi3Helper.Data
                     return result;
                 }
             }
+#endif
         }
 
-        public static unsafe bool TryHexToBytesUnsafe(ReadOnlySpan<char> source, Span<byte> buffer)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryHexToBytesUnsafe(ReadOnlySpan<char> source, Span<byte> buffer)
+#if !NET9_0_OR_GREATER
         {
             int index = 0;
             int len = buffer.Length;
@@ -194,5 +246,14 @@ namespace Hi3Helper.Data
                 }
             }
         }
+#else
+            => OperationStatus.Done == TryHexToBytesUnsafe(source, buffer, out _, out _);
+#endif
+
+#if NET9_0_OR_GREATER
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static OperationStatus TryHexToBytesUnsafe(ReadOnlySpan<char> source, Span<byte> buffer, out int charsConsumed, out int bytesWritten)
+            => Convert.FromHexString(source, buffer, out charsConsumed, out bytesWritten);
+#endif
     }
 }
