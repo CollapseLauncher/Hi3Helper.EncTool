@@ -117,7 +117,6 @@ namespace Hi3Helper.Data
             int idx = 0, strIdx = 0;
             fixed (byte* inputPtr = input)
             {
-                sbyte* inputSignedPtr = (sbyte*)inputPtr;
                 do
                 {
                     ReadOnlySpan<byte> inputSpanned = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(inputPtr + idx);
@@ -132,8 +131,8 @@ namespace Hi3Helper.Data
             if (array.Length == 0) throw new IndexOutOfRangeException("Array has no content in it");
             if (array.Length >= toLength) return array;
 
-            T lastArray = array[array.Length - 1];
-            T[] newArray = new T[toLength];
+            T   lastArray = array[^1];
+            T[] newArray  = new T[toLength];
             Array.Copy(array, newArray, array.Length);
 
             for (int i = array.Length; i < newArray.Length; i++)
@@ -185,7 +184,7 @@ namespace Hi3Helper.Data
         public static unsafe string NormalizePath(ReadOnlySpan<char> source)
         {
             ReadOnlySpan<char> sourceTrimmed = source.TrimStart('/');
-            fixed (char* ptr = sourceTrimmed)
+            fixed (char* ptr = &MemoryMarshal.GetReference(sourceTrimmed))
             {
                 return string.Create(sourceTrimmed.Length, (nint)ptr, s_normalizePathReplaceCore);
             }
@@ -249,9 +248,9 @@ namespace Hi3Helper.Data
             return value / (1L << (clampSize * 10));
         }
 
-        public static int GetUnixTimestamp(bool isUTC = false) => (int)Math.Truncate(isUTC ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
+        public static int GetUnixTimestamp(bool isUtc = false) => (int)Math.Truncate(isUtc ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
 
-        private static WindowsIdentity CurrentWindowsIdentity = WindowsIdentity.GetCurrent();
+        private static readonly WindowsIdentity CurrentWindowsIdentity = WindowsIdentity.GetCurrent();
         public static bool IsUserHasPermission(string input)
         {
             // Assign the type
@@ -265,7 +264,6 @@ namespace Hi3Helper.Data
             bool isFileType = isFileExist && !isDirectoryExist;
 
             // Check for directory access
-            AuthorizationRuleCollection pathAcl;
             FileSystemSecurity pathSecurity;
             if (!isFileType)
             {
@@ -280,12 +278,8 @@ namespace Hi3Helper.Data
                 pathSecurity = fileInfo.GetAccessControl();
             }
 
-            // If the path security is null, then return false (as not permitted)
-            if (pathSecurity == null) return false;
-
             // If the path ACL is null, then return false (as not permitted)
-            pathAcl = pathSecurity.GetAccessRules(true, true, typeof(NTAccount));
-            if (pathAcl == null) return false;
+            AuthorizationRuleCollection pathAcl = pathSecurity.GetAccessRules(true, true, typeof(NTAccount));
 
             // Get current Windows User Identity principal
             WindowsPrincipal principal = new WindowsPrincipal(CurrentWindowsIdentity);
@@ -293,20 +287,19 @@ namespace Hi3Helper.Data
             // Do LINQ to check across available ACLs and ensure that the exact user has the rights to
             // access the file
             bool isHasAccess = pathAcl
-                .Cast<FileSystemAccessRule>()
-                .Where(x => IsPrincipalHasFileSystemAccess(principal, x) ?? false)
-                .FirstOrDefault() != null;
+                              .Cast<FileSystemAccessRule>()
+                              .FirstOrDefault(x => IsPrincipalHasFileSystemAccess(principal, x) ?? false) != null;
 
             return isHasAccess;
         }
 
         private static bool? IsPrincipalHasFileSystemAccess(this WindowsPrincipal user, FileSystemAccessRule rule) => rule switch
         {
-            { FileSystemRights: FileSystemRights FileSystemRights }
-                when (FileSystemRights & (FileSystemRights.WriteData | FileSystemRights.Write)) == 0 => null,
-            { IdentityReference: { Value: string value } }
+            { FileSystemRights: var fileSystemRights }
+                when (fileSystemRights & (FileSystemRights.WriteData | FileSystemRights.Write)) == 0 => null,
+            { IdentityReference: { Value: { } value } }
                 when value.StartsWith("S-1-") && !user.IsInRole(new SecurityIdentifier(rule.IdentityReference.Value)) => null,
-            { IdentityReference: { Value: string value } }
+            { IdentityReference: { Value: { } value } }
                 when value.StartsWith("S-1-") == false && !user.IsInRole(rule.IdentityReference.Value) => null,
             { AccessControlType: AccessControlType.Deny } => false,
             { AccessControlType: AccessControlType.Allow } => true,
