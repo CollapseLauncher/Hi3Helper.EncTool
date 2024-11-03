@@ -1,9 +1,11 @@
-﻿using Hi3Helper.EncTool.Proto.StarRail;
+﻿using Hi3Helper.Data;
+using Hi3Helper.EncTool.Proto.StarRail;
 using Hi3Helper.Http;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -144,43 +146,128 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         private async Task ParseArchive(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate)
         {
+            /* ===============================
+             * Archive_V region
+             * ===============================
+             */
             ArchiveInfo = new Dictionary<string, SRDispatchArchiveInfo>();
             string archiveURL = (_isUseLegacy ? _regionGatewayLegacy.AssetBundleVersionUpdateUrl : _regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"]) + "/client/Windows/Archive/M_ArchiveV.bytes";
             string localPath = Path.Combine(_persistentDirectory, "Archive\\Windows\\M_ArchiveV_cache.bytes");
-            string localDir = Path.GetDirectoryName(localPath);
 
 #if DEBUG
             Console.WriteLine($"Parsing Archive -----");
             Console.WriteLine($"    URL: {archiveURL}");
             Console.WriteLine($"    LocalPath: {localPath}");
-            Console.WriteLine($"    LocalDir: {localDir}");
 #endif
 
-            if (!Directory.Exists(localDir))
+            // Parse M_ArchiveV first
+            await DownloadAndParseArchiveInfo(downloadClient, downloadProgressDelegate, "AssetBundleVersionUpdateUrl", archiveURL, localPath);
+
+            /* ===============================
+             * Design_Archive_V region
+             * ===============================
+             */
+            archiveURL = (_isUseLegacy ? _regionGatewayLegacy.DesignDataBundleVersionUpdateUrl : _regionGateway.ValuePairs["DesignDataBundleVersionUpdateUrl"]) + "/client/Windows/M_Design_ArchiveV.bytes";
+
+#if DEBUG
+            Console.WriteLine($"Parsing Design Archive -----");
+            Console.WriteLine($"    URL: {archiveURL}");
+#endif
+            // Get HttpClient and response
+            HttpClient client = downloadClient.GetHttpClient();
+            using HttpResponseMessage designArchiveHttpResponse = await client.GetAsync(archiveURL, _threadToken);
+            // Skip if the design archive is unreachable
+            if (!designArchiveHttpResponse.IsSuccessStatusCode)
             {
-                Directory.CreateDirectory(localDir);
+                Console.WriteLine("Cannot parse Design Archive resource as HTTP response returns a non-success code: {0} ({1})",
+                    designArchiveHttpResponse.StatusCode,
+                    designArchiveHttpResponse.StatusCode.ToString());
+                return;
             }
 
+            // Parse design archive and get Native Data resources
+            await using Stream designArchiveStream = await designArchiveHttpResponse.Content.ReadAsStreamAsync(_threadToken);
+            await ParseArchiveInfoFromStream(designArchiveStream, "DesignDataBundleVersionUpdateUrl", _threadToken);
+
+            const string NativeDataRefDictKey = "M_NativeDataV";
+            const string NativeDataDataDictKey = "NativeDataV_";
+            if (ArchiveInfo.TryGetValue(NativeDataRefDictKey, out SRDispatchArchiveInfo nativeDataArchiveInfo))
+            {
+                string localNativeDataRefName = NativeDataRefDictKey + ".bytes";
+                string localNativeDataRefUrl = ConverterTool.CombineURLFromString(nativeDataArchiveInfo.FullAssetsDownloadUrl, localNativeDataRefName);
+                string localNativeDataRefPath = Path.Combine(_persistentDirectory, "NativeData\\Windows", localNativeDataRefName);
+#if DEBUG
+                Console.WriteLine($"    NativeDataRefUrl: {localNativeDataRefUrl}");
+                Console.WriteLine($"    NativeDataRefPath: {localNativeDataRefPath}");
+#endif
+                await DownloadArchiveInfo(downloadClient, downloadProgressDelegate, localNativeDataRefUrl, localNativeDataRefName);
+
+                string localNativeDataResName = NativeDataDataDictKey + nativeDataArchiveInfo.ContentHash + ".bytes";
+                string localNativeDataResUrl = ConverterTool.CombineURLFromString(nativeDataArchiveInfo.FullAssetsDownloadUrl, localNativeDataResName);
+                string localNativeDataResPath = Path.Combine(_persistentDirectory, "NativeData\\Windows", localNativeDataResName);
+#if DEBUG
+                Console.WriteLine($"    NativeDataResUrl: {localNativeDataResUrl}");
+                Console.WriteLine($"    NativeDataResPath: {localNativeDataResPath}");
+#endif
+                await DownloadArchiveInfo(downloadClient, downloadProgressDelegate, localNativeDataResUrl, localNativeDataResPath);
+            }
+        }
+
+        private async Task DownloadArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string archiveURL, string localPath)
+        {
+            EnsureDirectoryExistance(localPath);
+            using (FileStream stream = new FileStream(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))
+            {
+                await downloadClient.DownloadAsync(archiveURL, stream, false, downloadProgressDelegate, cancelToken: _threadToken);
+            }
+        }
+
+        private async Task DownloadAndParseArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string gatewayDictKey, string archiveURL, string localPath)
+        {
+            EnsureDirectoryExistance(localPath);
             using (FileStream stream = new FileStream(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite))
             {
                 await downloadClient.DownloadAsync(archiveURL, stream, false, downloadProgressDelegate, cancelToken: _threadToken);
                 stream.Position = 0;
+                await ParseArchiveInfoFromStream(stream, gatewayDictKey, _threadToken);
+            }
+        }
 
-                using (StreamReader reader = new StreamReader(stream))
+        private void EnsureDirectoryExistance(string path)
+        {
+            string dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+        }
+
+        private async Task ParseArchiveInfoFromStream(Stream stream, string gatewayDictKey, CancellationToken token)
+        {
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                while (!reader.EndOfStream)
                 {
-                    while (!reader.EndOfStream)
-                    {
-                        string line = reader.ReadLine();
-                        SRDispatchArchiveInfo archiveInfo = (SRDispatchArchiveInfo)JsonSerializer.Deserialize(line, typeof(SRDispatchArchiveInfo), SRDispatchArchiveInfoContext.Default);
-                        archiveInfo.FullAssetsDownloadUrl = TrimLastURLRelativePath(_isUseLegacy ? _regionGatewayLegacy.AssetBundleVersionUpdateUrl : _regionGateway.ValuePairs["AssetBundleVersionUpdateUrl"])
-                            + '/' + archiveInfo.BaseAssetsDownloadUrl + (archiveInfo.FileName switch
+                    string line = await reader.ReadLineAsync(token);
+                    SRDispatchArchiveInfo archiveInfo = JsonSerializer.Deserialize(line, SRDispatchArchiveInfoContext.Default.SRDispatchArchiveInfo);
+                    string baseUrl = string.IsNullOrEmpty(archiveInfo.BaseAssetsDownloadUrl) ?
+                        _regionGateway.ValuePairs[gatewayDictKey] :
+                        TrimLastURLRelativePath(_isUseLegacy ?
+                                _regionGatewayLegacy.AssetBundleVersionUpdateUrl :
+                                _regionGateway.ValuePairs[gatewayDictKey]
+                            );
+                    archiveInfo.FullAssetsDownloadUrl = 
+                        ConverterTool.CombineURLFromString(
+                            baseUrl,
+                            archiveInfo.BaseAssetsDownloadUrl,
+                            archiveInfo.FileName switch
                             {
                                 "M_AudioV" => "/client/Windows/AudioBlock",
                                 "M_VideoV" => "/client/Windows/Video",
+                                "M_DesignV" or "M_Design_PatchV" => "/client/Windows",
+                                "M_NativeDataV" => "/client/Windows/NativeData",
                                 _ => "/client/Windows/Block"
-                            });
-                        ArchiveInfo.Add(archiveInfo.FileName, archiveInfo);
-                    }
+                            }
+                        );
+                    ArchiveInfo.Add(archiveInfo.FileName, archiveInfo);
                 }
             }
         }

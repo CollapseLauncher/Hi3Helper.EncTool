@@ -74,6 +74,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
     {
         IFix,
         DesignData,
+        NativeData,
         Asb,
         Block,
         Lua,
