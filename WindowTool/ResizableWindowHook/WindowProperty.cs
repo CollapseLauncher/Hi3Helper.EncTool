@@ -3,8 +3,7 @@ using Hi3Helper.Win32.Native;
 using Hi3Helper.Win32.Native.Enums;
 using Hi3Helper.Win32.Native.Structs;
 using System;
-using System.Diagnostics;
-using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Hi3Helper.EncTool.WindowTool
 {
@@ -93,8 +92,10 @@ namespace Hi3Helper.EncTool.WindowTool
 
         public void ResetPosToDefault()
         {
+            int sizeOfWindowRect = Marshal.SizeOf<WindowRect>();
+
             // Reset the current pos + size as it's using the initial one by copying the buffer
-            Array.Copy(initialPosBuffer, currentPosBuffer, initialPosBuffer.Length);
+            NativeMemory.Copy(initialPos, currentPos, (nuint)sizeOfWindowRect);
 
             // Then apply the change
             ChangePosition(currentPos->X, currentPos->Y, currentPos->Width, currentPos->Height);
@@ -107,26 +108,6 @@ namespace Hi3Helper.EncTool.WindowTool
             PInvoke.SetWindowLong(hwnd, GWL_INDEX.GWL_STYLE, currentStyle);
         }
 
-        public bool IsProcessAlive()
-        {
-            int proc = procId;
-#nullable enable
-            // Try to get the process based on its matching ID
-            Process? process = Process.GetProcesses().Where(x =>
-            {
-                // If it matches, then return true
-                if (x.Id == proc)
-                    return true;
-
-                // Otherwise, dispose and return false
-                x.Dispose();
-                return false;
-            }).FirstOrDefault();
-
-            // Dispose the process and return check if it's not null
-            process?.Dispose();
-            return process != null;
-#nullable disable
-        }
+        public bool IsProcessAlive() => PInvoke.IsProcessExist(procId);
     }
 }
