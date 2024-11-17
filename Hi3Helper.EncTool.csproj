@@ -44,6 +44,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\Hi3Helper.Http\Hi3Helper.Http.csproj" />
+	  <ProjectReference Include="..\Hi3Helper.Win32\Hi3Helper.Win32.csproj" />
 	</ItemGroup>
 
 	<!-- 

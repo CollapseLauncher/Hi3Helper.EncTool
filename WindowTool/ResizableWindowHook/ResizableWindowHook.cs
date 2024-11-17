@@ -1,30 +1,37 @@
 ﻿using Hi3Helper.Data;
+using Hi3Helper.Win32.Native;
+using Hi3Helper.Win32.Native.Enums;
+using Hi3Helper.Win32.Native.Structs;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Hi3Helper.EncTool.WindowTool
 {
     public class ResizableWindowHook
     {
         const int refreshRateMs = 250;  // Loop refresh rate = 250ms
 
-        public async Task StartHook(string processName, int? height, int? width,
+        public unsafe void StartHook(string processName, int? height, int? width,
                                     CancellationToken token = default,
-                                    bool   isNeedResetOnInit = false)
+                                    bool   isNeedResetOnInit = false,
+                                    ILogger? logger = null)
         {
             // Initialize the empty window property struct
             WindowProperty targetWindow = WindowProperty.Empty();
             try
             {
                 // Try get the window property from the process
-                targetWindow = await GetProcessWindowProperty(processName, token);
+                targetWindow = GetProcessWindowProperty(processName, token, logger);
 
                 // Assign the current style and initial pos + size of the window to old variable
-                PInvoke.WS_STYLE oldStyle = targetWindow.initialStyle;
-                WindowRect oldPos = targetWindow.initialPos;
+                WS_STYLE oldStyle = targetWindow.initialStyle;
+                WindowRect* oldPos = targetWindow.initialPos;
 
                 // Always set the window border and resizable flag to true
                 targetWindow.ToggleBorder(true);
@@ -33,15 +40,15 @@ namespace Hi3Helper.EncTool.WindowTool
 
                 // Do loop for tracking the window style and pos + size changes while
                 // the process is still alive
-                while (await targetWindow.IsProcessAlive())
+                while (targetWindow.IsProcessAlive())
                 {
                     // Refresh the current style and pos + size of the window
                     targetWindow.RefreshCurrentStyle();
                     targetWindow.RefreshCurrentPosition();
 
                     // Get the current style and pos + size of the window
-                    PInvoke.WS_STYLE curStyle = targetWindow.currentStyle;
-                    WindowRect curPos = targetWindow.currentPos;
+                    WS_STYLE curStyle = targetWindow.currentStyle;
+                    WindowRect* curPos = targetWindow.currentPos;
 
                     // Check if the window is in a borderless fullscreen (by checking if it doesn't have SYS_MENU flag)
                     // and the style is changed, then reset the style and pos + size to the last state.
@@ -53,18 +60,18 @@ namespace Hi3Helper.EncTool.WindowTool
                     {
                         if (IsStyleChanged(oldStyle, curStyle))
                         {
-                            Console.WriteLine($"\r\nCurrent window style has changed!\r\n\tfrom:\t0x{(uint)oldStyle:x8}\t({ConverterTool.ToBinaryString((uint)oldStyle)})\r\n\tto:\t0x{(uint)curStyle:x8}\t({ConverterTool.ToBinaryString((uint)curStyle)})");
-                            Console.WriteLine("Resetting...");
+                            logger?.LogDebug($"\r\nCurrent window style has changed!\r\n\tfrom:\t0x{(uint)oldStyle:x8}\t({ConverterTool.ToBinaryString((uint)oldStyle)})\r\n\tto:\t0x{(uint)curStyle:x8}\t({ConverterTool.ToBinaryString((uint)curStyle)})");
+                            logger?.LogDebug("Resetting...");
 
                             // Reset the window style and pos + size to the old state
                             targetWindow.ToggleBorder(true);
                             targetWindow.ToggleResizable(true);
                             targetWindow.ApplyStyle();
-                            targetWindow.ChangePosition(oldPos.X, oldPos.Y, oldPos.Width, oldPos.Height);
+                            targetWindow.ChangePosition(oldPos->X, oldPos->Y, oldPos->Width, oldPos->Height);
 
                             // If reset to the initial style is required and the pos + size is changed,
                             // then reset the pos + size to its initial style
-                            if (isNeedResetOnInit && !curPos.Equals(oldPos))
+                            if (isNeedResetOnInit && !curPos->Equals(oldPos))
                             {
                                 isNeedResetOnInit = false;
                                 targetWindow.ResetPosToDefault();
@@ -75,9 +82,8 @@ namespace Hi3Helper.EncTool.WindowTool
                             targetWindow.RefreshCurrentPosition();
                             if (height != null && width != null)
                             {
-                                Console
-                                   .WriteLine($"Moving window to posX: {oldPos.X} posY: {oldPos.Y} W: {width} H: {height}");
-                                targetWindow.ChangePosition(oldPos.X, oldPos.Y, oldPos.Width, oldPos.Height);
+                                logger?.LogDebug($"Moving window to posX: {oldPos->X} posY: {oldPos->Y} W: {width} H: {height}");
+                                targetWindow.ChangePosition(oldPos->X, oldPos->Y, oldPos->Width, oldPos->Height);
                             }
 
                             curStyle = targetWindow.currentStyle;
@@ -90,7 +96,7 @@ namespace Hi3Helper.EncTool.WindowTool
                     }
 
                     // Do the delay before running the next loop iteration.
-                    await Task.Delay(refreshRateMs, token);
+                    Thread.Sleep(refreshRateMs);
                 }
             }
             catch (Exception e)
@@ -106,10 +112,10 @@ namespace Hi3Helper.EncTool.WindowTool
             }
         }
 
-        private bool IsStyleChanged(PInvoke.WS_STYLE oldStyle, PInvoke.WS_STYLE newStyle)
+        private bool IsStyleChanged(WS_STYLE oldStyle, WS_STYLE newStyle)
         {
             // Get the mask by OR the WS_MINIMIZE and WS_MAXIMIZE flag
-            const PInvoke.WS_STYLE ignoreMinimizeMaximizeStyleMask = PInvoke.WS_STYLE.WS_MINIMIZE | PInvoke.WS_STYLE.WS_MAXIMIZE;
+            const WS_STYLE ignoreMinimizeMaximizeStyleMask = WS_STYLE.WS_MINIMIZE | WS_STYLE.WS_MAXIMIZE;
 
             // Mask the old style and new style to ignore the WS_MINIMIZE and WS_MAXIMIZE flag
             oldStyle &= ~ignoreMinimizeMaximizeStyleMask;
@@ -119,68 +125,72 @@ namespace Hi3Helper.EncTool.WindowTool
             return oldStyle != newStyle;
         }
 
-        private async ValueTask<WindowProperty> GetProcessWindowProperty(string processName, CancellationToken token)
+        private unsafe WindowProperty GetProcessWindowProperty(string processName, CancellationToken token, ILogger? logger)
         {
-            Console.WriteLine($"Waiting for process handle: {processName}");
+            Process? GetProcessByName(string process)
+            {
+                // Get the process list
+                Process[] processes = Process.GetProcessesByName(process);
+                Process? _ret = processes.Where(x =>
+                {
+                    // If the HWND of the process is not null (!Zero), then return true
+                    if (x.MainWindowHandle != nint.Zero)
+                        return true;
+
+                    // Otherwise, dispose the process instance and return false
+                    x.Dispose();
+                    return false;
+                }).FirstOrDefault(); // Select the first or default (null)
+
+                // Return the process
+                return _ret;
+            }
+
+            logger?.LogDebug($"Waiting for process handle: {processName}");
             // Do the loop to try getting the process
             while (!token.IsCancellationRequested)
             {
-                // Run the LINQ as a fake async routine
-#nullable enable
-                using (Process? returnProcess = await Task.Run(() =>
-                {
-                    // Get the process list
-                    Process[] processes = Process.GetProcessesByName(processName);
-                    Process? _ret = processes.Where(x =>
-                    {
-                        // If the HWND of the process is not null (!Zero), then return true
-                        if (x.MainWindowHandle != nint.Zero)
-                            return true;
-
-                        // Otherwise, dispose the process instance and return false
-                        x.Dispose();
-                        return false;
-                    }).FirstOrDefault(); // Select the first or default (null)
-
-                    // Return the process
-                    return _ret;
-                }))
-#nullable disable
+                // Run the LINQ
+                using (Process? returnProcess = GetProcessByName(processName))
                 {
                     // If the return process is null (not found), then delay and redo the loop
                     if (returnProcess == null)
                     {
-                        await Task.Delay(refreshRateMs, token);
+                        Thread.Sleep(refreshRateMs);
                         continue;
                     }
 
                     // If the return process is assigned, then get the initial size + position and style of the window
-                    WindowRect initialRect = new WindowRect();
-                    PInvoke.GetWindowRect(returnProcess.MainWindowHandle, ref initialRect);
-                    PInvoke.WS_STYLE initialStyle = PInvoke.GetWindowLongA(returnProcess.MainWindowHandle, PInvoke.GWL_INDEX.GWL_STYLE);
-
-                    // Assign the current position + size of the window
-                    WindowRect currentRect = new WindowRect
+                    byte[] initialRectBuffer = new byte[Marshal.SizeOf<WindowRect>()];
+                    byte[] currentPosBuffer = new byte[Marshal.SizeOf<WindowRect>()];
+                    fixed (byte* initialRectBufferPtr = &initialRectBuffer[0])
+                    fixed (byte* currentPosBufferPtr = &currentPosBuffer[0])
                     {
-                        X = initialRect.X,
-                        Y = initialRect.Y,
-                        Width = initialRect.Width,
-                        Height = initialRect.Height,
-                    };
+                        WindowRect* initialRectPtr = (WindowRect*)initialRectBufferPtr;
+                        WindowRect* currentPosPtr = (WindowRect*)currentPosBufferPtr;
 
-                    Console.WriteLine($"Got process handle with name: {returnProcess.ProcessName} (PID: {returnProcess.Id}) - (HWND at: 0x{returnProcess.MainWindowHandle:x})");
-                    Console.WriteLine($"Initial window style enum is: 0x{(uint)initialStyle:x8}\t({ConverterTool.ToBinaryString((uint)initialStyle)})");
+                        PInvoke.GetWindowRect(returnProcess.MainWindowHandle, initialRectPtr);
+                        WS_STYLE initialStyle = PInvoke.GetWindowLong(returnProcess.MainWindowHandle, GWL_INDEX.GWL_STYLE);
 
-                    // Return the window property
-                    return new WindowProperty
-                    {
-                        hwnd = returnProcess.MainWindowHandle,
-                        procId = returnProcess.Id,
-                        initialStyle = initialStyle,
-                        currentStyle = initialStyle,
-                        initialPos = initialRect,
-                        currentPos = currentRect
-                    };
+                        // Assign the current position + size of the window by copying the buffer
+                        NativeMemory.Copy(initialRectBufferPtr, currentPosBufferPtr, (nuint)initialRectBuffer.Length);
+
+                        logger?.LogDebug($"Got process handle with name: {returnProcess.ProcessName} (PID: {returnProcess.Id}) - (HWND at: 0x{returnProcess.MainWindowHandle:x})");
+                        logger?.LogDebug($"Initial window style enum is: 0x{(uint)initialStyle:x8}\t({ConverterTool.ToBinaryString((uint)initialStyle)})");
+
+                        // Return the window property
+                        return new WindowProperty
+                        {
+                            hwnd = returnProcess.MainWindowHandle,
+                            procId = returnProcess.Id,
+                            initialStyle = initialStyle,
+                            currentStyle = initialStyle,
+                            initialPos = initialRectPtr,
+                            currentPos = currentPosPtr,
+                            initialPosBuffer = initialRectBuffer,
+                            currentPosBuffer = currentPosBuffer,
+                        };
+                    }
                 }
             }
 
