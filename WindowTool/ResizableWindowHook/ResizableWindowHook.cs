@@ -4,8 +4,7 @@ using Hi3Helper.Win32.Native.Enums;
 using Hi3Helper.Win32.Native.Structs;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Buffers;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,7 +17,7 @@ namespace Hi3Helper.EncTool.WindowTool
 
         public unsafe void StartHook(string processName, int? height, int? width,
                                     CancellationToken token = default,
-                                    bool   isNeedResetOnInit = false,
+                                    bool isNeedResetOnInit = false,
                                     ILogger? logger = null,
                                     string? checkProcessFromDir = null)
         {
@@ -29,7 +28,7 @@ namespace Hi3Helper.EncTool.WindowTool
 
                 // Assign the current style and initial pos + size of the window to old variable
                 WS_STYLE oldStyle = targetWindow.initialStyle;
-                WindowRect* oldPos = targetWindow.initialPos;
+                WindowRect oldPos = targetWindow.initialPos;
 
                 // Always set the window border and resizable flag to true
                 targetWindow.ToggleBorder(true);
@@ -46,7 +45,7 @@ namespace Hi3Helper.EncTool.WindowTool
 
                     // Get the current style and pos + size of the window
                     WS_STYLE curStyle = targetWindow.currentStyle;
-                    WindowRect* curPos = targetWindow.currentPos;
+                    WindowRect curPos = targetWindow.currentPos;
 
                     // Check if the window is in a borderless fullscreen (by checking if it doesn't have SYS_MENU flag)
                     // and the style is changed, then reset the style and pos + size to the last state.
@@ -65,11 +64,11 @@ namespace Hi3Helper.EncTool.WindowTool
                             targetWindow.ToggleBorder(true);
                             targetWindow.ToggleResizable(true);
                             targetWindow.ApplyStyle();
-                            targetWindow.ChangePosition(oldPos->X, oldPos->Y, oldPos->Width, oldPos->Height);
+                            targetWindow.ChangePosition(oldPos.X, oldPos.Y, oldPos.Width, oldPos.Height);
 
                             // If reset to the initial style is required and the pos + size is changed,
                             // then reset the pos + size to its initial style
-                            if (isNeedResetOnInit && !curPos->Equals(oldPos))
+                            if (isNeedResetOnInit && !curPos.Equals(ref oldPos))
                             {
                                 isNeedResetOnInit = false;
                                 targetWindow.ResetPosToDefault();
@@ -80,8 +79,8 @@ namespace Hi3Helper.EncTool.WindowTool
                             targetWindow.RefreshCurrentPosition();
                             if (height != null && width != null)
                             {
-                                logger?.LogDebug($"Moving window to posX: {oldPos->X} posY: {oldPos->Y} W: {width} H: {height}");
-                                targetWindow.ChangePosition(oldPos->X, oldPos->Y, oldPos->Width, oldPos->Height);
+                                logger?.LogDebug($"Moving window to posX: {oldPos.X} posY: {oldPos.Y} W: {width} H: {height}");
+                                targetWindow.ChangePosition(oldPos.X, oldPos.Y, oldPos.Width, oldPos.Height);
                             }
 
                             curStyle = targetWindow.currentStyle;
@@ -126,7 +125,7 @@ namespace Hi3Helper.EncTool.WindowTool
         private unsafe WindowProperty GetProcessWindowProperty(string processName, string? checkProcessFromDir, CancellationToken token, ILogger? logger)
         {
             logger?.LogDebug($"Waiting for process handle: {processName}");
-            
+
             // Do the loop to try getting the process
             while (!token.IsCancellationRequested)
             {
@@ -140,28 +139,17 @@ namespace Hi3Helper.EncTool.WindowTool
                 }
 
                 // If the return process is assigned, then get the initial size + position and style of the window
-                int sizeOfWindowRect = Marshal.SizeOf<WindowRect>();
-                byte[] initialRectBuffer = new byte[sizeOfWindowRect];
-                try
-                {
-                    fixed (byte* initialRectBufferPtr = &initialRectBuffer[0])
-                    {
-                        WindowRect* initialRectPtr = (WindowRect*)initialRectBufferPtr;
+                WindowRect initialRect = new WindowRect();
+                WindowRect* initialRectPtr = (WindowRect*)Unsafe.AsPointer(ref initialRect);
 
-                        PInvoke.GetWindowRect(hwnd, initialRectPtr);
-                        WS_STYLE initialStyle = PInvoke.GetWindowLong(hwnd, GWL_INDEX.GWL_STYLE);
+                PInvoke.GetWindowRect(hwnd, initialRectPtr);
+                WS_STYLE initialStyle = PInvoke.GetWindowLong(hwnd, GWL_INDEX.GWL_STYLE);
 
-                        logger?.LogDebug($"Got process handle with name: {processName} (PID: {processId}) - (HWND at: 0x{hwnd:x})");
-                        logger?.LogDebug($"Initial window style enum is: 0x{(uint)initialStyle:x8}\t({ConverterTool.ToBinaryString((uint)initialStyle)})");
+                logger?.LogDebug($"Got process handle with name: {processName} (PID: {processId}) - (HWND at: 0x{hwnd:x})");
+                logger?.LogDebug($"Initial window style enum is: 0x{(uint)initialStyle:x8}\t({ConverterTool.ToBinaryString((uint)initialStyle)})");
 
-                        // Return the window property
-                        return new WindowProperty(hwnd, processId, initialStyle, initialRectPtr);
-                    }
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(initialRectBuffer);
-                }
+                // Return the window property
+                return new WindowProperty(hwnd, processId, initialStyle, initialRect);
             }
 
             // If the cancel has been called, then return the empty struct

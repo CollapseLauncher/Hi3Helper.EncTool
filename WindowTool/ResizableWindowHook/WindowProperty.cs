@@ -3,7 +3,7 @@ using Hi3Helper.Win32.Native;
 using Hi3Helper.Win32.Native.Enums;
 using Hi3Helper.Win32.Native.Structs;
 using System;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace Hi3Helper.EncTool.WindowTool
 {
@@ -13,40 +13,32 @@ namespace Hi3Helper.EncTool.WindowTool
         public int procId;
         public WS_STYLE initialStyle;
         public WS_STYLE currentStyle;
-        public WindowRect* initialPos;
-        public WindowRect* currentPos;
+        public WindowRect initialPos;
+        public WindowRect currentPos;
         public bool isEmpty;
 
-        internal byte[] initialPosBuffer;
-        internal byte[] currentPosBuffer;
-
-        public WindowProperty(nint hwndFrom, int procIdFrom, WS_STYLE initialStyleFrom, WindowRect* windowRectFrom)
+        public WindowProperty()
         {
+            isEmpty = true;
+        }
+
+        public WindowProperty(nint hwndFrom, int procIdFrom, WS_STYLE initialStyleFrom, WindowRect windowRectFrom)
+        {
+            if (hwndFrom == IntPtr.Zero || procIdFrom == 0)
+                return;
+
             hwnd = hwndFrom;
             procId = procIdFrom;
             initialStyle = initialStyleFrom;
             currentStyle = initialStyleFrom;
 
-            int sizeOf = Marshal.SizeOf<WindowRect>();
-            initialPosBuffer = new byte[sizeOf];
-            currentPosBuffer = new byte[sizeOf];
+            initialPos = windowRectFrom;
+            currentPos = windowRectFrom;
 
-            fixed (byte* ptr1 = &initialPosBuffer[0])
-            fixed (byte* ptr2 = &currentPosBuffer[0])
-            {
-                initialPos = (WindowRect*)ptr1;
-                currentPos = (WindowRect*)ptr2;
-
-                initialPos->Top = windowRectFrom->Top;
-                initialPos->Left = windowRectFrom->Left;
-                initialPos->Right = windowRectFrom->Right;
-                initialPos->Bottom = windowRectFrom->Bottom;
-
-                initialPosBuffer.CopyTo(currentPosBuffer, 0);
-            }
+            isEmpty = false;
         }
 
-        public static WindowProperty Empty() => new WindowProperty { isEmpty = true };
+        public static WindowProperty Empty() => new WindowProperty();
 
         public void ToggleBorder(bool isEnable)
         {
@@ -78,14 +70,14 @@ namespace Hi3Helper.EncTool.WindowTool
         public void ChangePosition(int? x = null, int? y = null, int? width = null, int? height = null)
         {
             // Assign a number with the current position if one of the arguments is null
-            x ??= currentPos->X;
-            y ??= currentPos->Y;
-            width ??= currentPos->Width;
-            height ??= currentPos->Height;
+            x ??= currentPos.X;
+            y ??= currentPos.Y;
+            width ??= currentPos.Width;
+            height ??= currentPos.Height;
 
             // Assign the current value of the currentPos and call the SetWindowPos function
             // ReSharper disable ConstantNullCoalescingCondition
-            PInvoke.SetWindowPos(hwnd, 0, currentPos->X = x ?? 0, currentPos->Y = y ?? 0, currentPos->Width = width ?? 0, currentPos->Height = height ?? 0, SWP_FLAGS.SWP_NOZORDER);
+            PInvoke.SetWindowPos(hwnd, 0, currentPos.X = x ?? 0, currentPos.Y = y ?? 0, currentPos.Width = width ?? 0, currentPos.Height = height ?? 0, SWP_FLAGS.SWP_NOZORDER);
             // ReSharper restore ConstantNullCoalescingCondition
         }
 
@@ -106,7 +98,8 @@ namespace Hi3Helper.EncTool.WindowTool
         }
 
         public void RefreshCurrentStyle() => currentStyle = PInvoke.GetWindowLong(hwnd, GWL_INDEX.GWL_STYLE);
-        public void RefreshCurrentPosition() => PInvoke.GetWindowRect(hwnd, currentPos);
+
+        public unsafe void RefreshCurrentPosition() => PInvoke.GetWindowRect(hwnd, (WindowRect*)Unsafe.AsPointer(ref currentPos));
 
         public void ResetStyleToDefault()
         {
@@ -118,13 +111,11 @@ namespace Hi3Helper.EncTool.WindowTool
 
         public void ResetPosToDefault()
         {
-            int sizeOfWindowRect = Marshal.SizeOf<WindowRect>();
-
-            // Reset the current pos + size as it's using the initial one by copying the buffer
-            initialPosBuffer.CopyTo(currentPosBuffer, 0);
+            // Reset the current pos + size as it's using the initial one
+            currentPos = initialPos;
 
             // Then apply the change
-            ChangePosition(currentPos->X, currentPos->Y, currentPos->Width, currentPos->Height);
+            ChangePosition(currentPos.X, currentPos.Y, currentPos.Width, currentPos.Height);
         }
 
         public void ApplyStyle()
