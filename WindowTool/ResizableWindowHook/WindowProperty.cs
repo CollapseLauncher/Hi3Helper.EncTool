@@ -20,6 +20,32 @@ namespace Hi3Helper.EncTool.WindowTool
         internal byte[] initialPosBuffer;
         internal byte[] currentPosBuffer;
 
+        public WindowProperty(nint hwndFrom, int procIdFrom, WS_STYLE initialStyleFrom, WindowRect* windowRectFrom)
+        {
+            hwnd = hwndFrom;
+            procId = procIdFrom;
+            initialStyle = initialStyleFrom;
+            currentStyle = initialStyleFrom;
+
+            int sizeOf = Marshal.SizeOf<WindowRect>();
+            initialPosBuffer = new byte[sizeOf];
+            currentPosBuffer = new byte[sizeOf];
+
+            fixed (byte* ptr1 = &initialPosBuffer[0])
+            fixed (byte* ptr2 = &currentPosBuffer[0])
+            {
+                initialPos = (WindowRect*)ptr1;
+                currentPos = (WindowRect*)ptr2;
+
+                initialPos->Top = windowRectFrom->Top;
+                initialPos->Left = windowRectFrom->Left;
+                initialPos->Right = windowRectFrom->Right;
+                initialPos->Bottom = windowRectFrom->Bottom;
+
+                initialPosBuffer.CopyTo(currentPosBuffer, 0);
+            }
+        }
+
         public static WindowProperty Empty() => new WindowProperty { isEmpty = true };
 
         public void ToggleBorder(bool isEnable)
@@ -95,7 +121,7 @@ namespace Hi3Helper.EncTool.WindowTool
             int sizeOfWindowRect = Marshal.SizeOf<WindowRect>();
 
             // Reset the current pos + size as it's using the initial one by copying the buffer
-            NativeMemory.Copy(initialPos, currentPos, (nuint)sizeOfWindowRect);
+            initialPosBuffer.CopyTo(currentPosBuffer, 0);
 
             // Then apply the change
             ChangePosition(currentPos->X, currentPos->Y, currentPos->Width, currentPos->Height);

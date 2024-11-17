@@ -4,7 +4,7 @@ using Hi3Helper.Win32.Native.Enums;
 using Hi3Helper.Win32.Native.Structs;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Diagnostics;
+using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,12 +22,10 @@ namespace Hi3Helper.EncTool.WindowTool
                                     ILogger? logger = null,
                                     string? checkProcessFromDir = null)
         {
-            // Initialize the empty window property struct
-            WindowProperty targetWindow = WindowProperty.Empty();
             try
             {
                 // Try get the window property from the process
-                targetWindow = GetProcessWindowProperty(processName, checkProcessFromDir, token, logger);
+                WindowProperty targetWindow = GetProcessWindowProperty(processName, checkProcessFromDir, token, logger);
 
                 // Assign the current style and initial pos + size of the window to old variable
                 WS_STYLE oldStyle = targetWindow.initialStyle;
@@ -144,34 +142,25 @@ namespace Hi3Helper.EncTool.WindowTool
                 // If the return process is assigned, then get the initial size + position and style of the window
                 int sizeOfWindowRect = Marshal.SizeOf<WindowRect>();
                 byte[] initialRectBuffer = new byte[sizeOfWindowRect];
-                byte[] currentPosBuffer = new byte[sizeOfWindowRect];
-                fixed (byte* initialRectBufferPtr = &initialRectBuffer[0])
-                fixed (byte* currentPosBufferPtr = &currentPosBuffer[0])
+                try
                 {
-                    WindowRect* initialRectPtr = (WindowRect*)initialRectBufferPtr;
-                    WindowRect* currentPosPtr = (WindowRect*)currentPosBufferPtr;
-
-                    PInvoke.GetWindowRect(hwnd, initialRectPtr);
-                    WS_STYLE initialStyle = PInvoke.GetWindowLong(hwnd, GWL_INDEX.GWL_STYLE);
-
-                    // Assign the current position + size of the window by copying the buffer
-                    NativeMemory.Copy(initialRectBufferPtr, currentPosBufferPtr, (nuint)sizeOfWindowRect);
-
-                    logger?.LogDebug($"Got process handle with name: {processName} (PID: {processId}) - (HWND at: 0x{hwnd:x})");
-                    logger?.LogDebug($"Initial window style enum is: 0x{(uint)initialStyle:x8}\t({ConverterTool.ToBinaryString((uint)initialStyle)})");
-
-                    // Return the window property
-                    return new WindowProperty
+                    fixed (byte* initialRectBufferPtr = &initialRectBuffer[0])
                     {
-                        hwnd = hwnd,
-                        procId = processId,
-                        initialStyle = initialStyle,
-                        currentStyle = initialStyle,
-                        initialPos = initialRectPtr,
-                        currentPos = currentPosPtr,
-                        initialPosBuffer = initialRectBuffer,
-                        currentPosBuffer = currentPosBuffer,
-                    };
+                        WindowRect* initialRectPtr = (WindowRect*)initialRectBufferPtr;
+
+                        PInvoke.GetWindowRect(hwnd, initialRectPtr);
+                        WS_STYLE initialStyle = PInvoke.GetWindowLong(hwnd, GWL_INDEX.GWL_STYLE);
+
+                        logger?.LogDebug($"Got process handle with name: {processName} (PID: {processId}) - (HWND at: 0x{hwnd:x})");
+                        logger?.LogDebug($"Initial window style enum is: 0x{(uint)initialStyle:x8}\t({ConverterTool.ToBinaryString((uint)initialStyle)})");
+
+                        // Return the window property
+                        return new WindowProperty(hwnd, processId, initialStyle, initialRectPtr);
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(initialRectBuffer);
                 }
             }
 
