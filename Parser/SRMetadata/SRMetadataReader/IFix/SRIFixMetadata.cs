@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+// Resharper disable all
+
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
     internal class SRIFixMetadata : SRMetadataBase

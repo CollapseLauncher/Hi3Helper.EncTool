@@ -104,7 +104,7 @@
                 throw new InvalidDataException($"Failed while getting hash name for input: {input}");
 
             SHA256.HashData(nameBuffer.Slice(0, written), data);
-            return HexTool.BytesToHexUnsafe(data);
+            return HexTool.BytesToHexUnsafe(data) ?? "";
         }
 
         private static byte[] GenerateMothKoentji(string inputKey)

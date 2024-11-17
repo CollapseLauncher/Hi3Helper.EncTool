@@ -4,6 +4,8 @@ using Google.Protobuf.Reflection;
 using System.Collections.Generic;
 using System.Linq;
 
+// ReSharper disable All
+
 namespace Hi3Helper.EncTool.Proto.StarRail
 {
     public sealed partial class StarRailDispatchStatic : IMessage<StarRailDispatchStatic>, IBufferMessage

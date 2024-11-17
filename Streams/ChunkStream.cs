@@ -16,7 +16,6 @@ namespace Hi3Helper.EncTool
         private bool _isDisposing { get; set; }
 
         public ChunkStream(Stream stream, long start, long end, bool isDisposing = false)
-            : base()
         {
             _stream = stream;
 
@@ -27,7 +26,7 @@ namespace Hi3Helper.EncTool
 
             if (_stream.Length < start || end > _stream.Length)
             {
-                throw new ArgumentOutOfRangeException("Offset is out of stream size range!");
+                throw new ArgumentOutOfRangeException(nameof(stream));
             }
 
             _stream.Position = start;
@@ -51,7 +50,7 @@ namespace Hi3Helper.EncTool
             return read;
         }
 
-        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
         {
             if (_remain == 0) return 0;
 
@@ -95,7 +94,7 @@ namespace Hi3Helper.EncTool
             _stream.Write(buffer.Slice(0, toSlice));
         }
 
-        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token)
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token = default)
         {
             if (_remain == 0) return;
 
@@ -211,7 +210,7 @@ namespace Hi3Helper.EncTool
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) base.Dispose(disposing);
+            if (disposing) base.Dispose(true);
             if (_isDisposing) _stream.Dispose();
             GC.SuppressFinalize(this);
         }

@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+// Resharper disable all
+
 namespace Hi3Helper.EncTool.Proto.StarRail
 {
     [JsonSerializable(typeof(DispatchGatewayProtoIdsInfo))]

@@ -36,7 +36,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         public SRAssetProperty(string metadataPath, string metadataStartPath = null)
         {
             string metadataFolder = Path.GetDirectoryName(metadataPath);
-            if (!Directory.Exists(metadataFolder))
+            if (!string.IsNullOrEmpty(metadataFolder) && !Directory.Exists(metadataFolder))
             {
                 Directory.CreateDirectory(metadataFolder);
             }
@@ -45,7 +45,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             if (!string.IsNullOrEmpty(metadataStartPath))
             {
                 string metadataStartFolder = Path.GetDirectoryName(metadataStartPath);
-                if (!Directory.Exists(metadataStartFolder))
+                if (!string.IsNullOrEmpty(metadataStartFolder) && !Directory.Exists(metadataStartFolder))
                 {
                     Directory.CreateDirectory(metadataStartFolder);
                 }
@@ -133,7 +133,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             SRDispatchArchiveInfo archiveInfo = dictArchiveInfo[key];
             ReadOnlySpan<char> baseName = archiveInfo.FileName.AsSpan().Slice(2);
 
-            return '/' + string.Concat(baseName, new char[] { '_' }, archiveInfo.ContentHash, ".bytes");
+            return '/' + string.Concat(baseName, ['_'], archiveInfo.ContentHash, ".bytes");
         }
 
         public void Dispose()

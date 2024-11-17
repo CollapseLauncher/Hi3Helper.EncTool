@@ -10,7 +10,7 @@ namespace Hi3Helper.EncTool
         public static bool IsStructEqual<TStruct>(TStruct self, TStruct to)
             where TStruct : struct => IsStructEqualFromTo(self, to);
 
-        public unsafe static bool IsStructEqualFromTo<TFrom, TTo>(TFrom self, TTo to)
+        public static unsafe bool IsStructEqualFromTo<TFrom, TTo>(TFrom self, TTo to)
             where TFrom : struct
             where TTo : struct
         {
@@ -46,13 +46,11 @@ namespace Hi3Helper.EncTool
             // Check if the one of the value is null, if true check the other value if it's null
             if (self == null)
             {
-                if (to != null) return false;
-                else return true;
+                return to == null;
             }
             if (to == null)
             {
-                if (self != null) return false;
-                else return true;
+                return false;
             }
 
             // Get the type of the instance
@@ -61,8 +59,8 @@ namespace Hi3Helper.EncTool
             foreach (PropertyInfo pi in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
             {
                 // Get the property name and value from both self and to
-                object selfValue = type.GetProperty(pi.Name).GetValue(self, null);
-                object toValue = type.GetProperty(pi.Name).GetValue(to, null);
+                object selfValue = type.GetProperty(pi.Name)?.GetValue(self, null);
+                object toValue   = type.GetProperty(pi.Name)?.GetValue(to,   null);
 
                 // If the value on both self and to is different, then return false (not equal)
                 if (selfValue != toValue && (selfValue == null || !selfValue.Equals(toValue)))

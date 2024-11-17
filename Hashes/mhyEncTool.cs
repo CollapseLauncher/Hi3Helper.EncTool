@@ -4,6 +4,8 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
+// ReSharper disable All
+
 namespace Hi3Helper.EncTool
 {
     public class mhyEncTool

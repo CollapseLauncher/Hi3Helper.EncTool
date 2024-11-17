@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 
+// Resharper disable all
+
 namespace Hi3Helper.EncTool
 {
     public class XORStream : Stream

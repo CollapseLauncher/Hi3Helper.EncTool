@@ -12,6 +12,8 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
+// Resharper disable all
+
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
     internal struct SRDispatchArchiveInfo
