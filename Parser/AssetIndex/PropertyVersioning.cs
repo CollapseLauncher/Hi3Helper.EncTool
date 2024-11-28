@@ -15,16 +15,18 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
     public class PkgVersionProperties : IAssetIndexSummary
     {
-        public string localName { get; set; }
-        public string remoteURL { get; set; }
-        public string remoteName { get; set; }
-        public string remoteNamePersistent { get; set; }
-        public string md5 { get; set; }
-        public long fileSize { get; set; }
-        public bool isPatch { get; set; } = false;
-        public string type { get; set; }
-        public bool isForceStoreInPersistent { get; set; }
-        public bool isForceStoreInStreaming { get; set; }
+        public string localName                { get; set; }
+        public string remoteURL                { get; set; }
+        public string remoteName               { get; set; }
+        public string remoteNamePersistent     { get; set; }
+        public string md5                      { get; set; }
+        [JsonPropertyName("hash")]
+        public string xxh64hash                { get; set; }
+        public long   fileSize                 { get; set; }
+        public bool   isPatch                  { get; set; } = false;
+        public string type                     { get; set; }
+        public bool   isForceStoreInPersistent { get; set; }
+        public bool   isForceStoreInStreaming  { get; set; }
 
         public string PrintSummary() => $"File [T: {type}]: {remoteName}\t{ConverterTool.SummarizeSizeSimple(fileSize)} ({fileSize} bytes)";
         public long GetAssetSize() => fileSize;
