@@ -37,7 +37,7 @@ namespace Hi3Helper.EncTool
         /// An array of <see cref="Stream"/> objects that will be chained together and
         /// considered to be one big stream.
         /// </param>
-        public CombinedStream(params Stream[] underlyingStreams)
+        public CombinedStream(params FileStream[] underlyingStreams)
         {
             if (underlyingStreams == null)
                 throw new ArgumentNullException("underlyingStreams");
@@ -57,6 +57,42 @@ namespace Hi3Helper.EncTool
 
             _Position = 0;
             _Index = 0;
+
+            _UnderlyingStartingPositions[0] = 0;
+            for (int index = 1; index < _UnderlyingStartingPositions.Length; index++)
+                _UnderlyingStartingPositions[index] = _UnderlyingStartingPositions[index - 1] + _UnderlyingStreams[index - 1].Length;
+
+            _TotalLength = _UnderlyingStartingPositions[_UnderlyingStartingPositions.Length - 1] + _UnderlyingStreams[_UnderlyingStreams.Length - 1].Length;
+        }
+        
+        /// <summary>
+        /// Constructs a new <see cref="CombinedStream"/> on top of the specified array
+        /// of streams.
+        /// </summary>
+        /// <param name="underlyingStreams">
+        /// An array of <see cref="Stream"/> objects that will be chained together and
+        /// considered to be one big stream.
+        /// </param>
+        public CombinedStream(params Stream[] underlyingStreams)
+        {
+            if (underlyingStreams == null)
+                throw new ArgumentNullException("underlyingStreams");
+            foreach (Stream stream in underlyingStreams)
+            {
+                if (stream == null)
+                    throw new ArgumentException("underlyingStreams contains a null stream reference", "underlyingStreams");
+                if (!stream.CanRead)
+                    throw new InvalidOperationException("CanRead not true for all streams");
+                if (!stream.CanSeek)
+                    throw new InvalidOperationException("CanSeek not true for all streams");
+            }
+
+            _UnderlyingStreams           = new Stream[underlyingStreams.Length];
+            _UnderlyingStartingPositions = new long[underlyingStreams.Length];
+            Array.Copy(underlyingStreams, _UnderlyingStreams, underlyingStreams.Length);
+
+            _Position = 0;
+            _Index    = 0;
 
             _UnderlyingStartingPositions[0] = 0;
             for (int index = 1; index < _UnderlyingStartingPositions.Length; index++)
