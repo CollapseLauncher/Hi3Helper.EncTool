@@ -13,7 +13,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         public uint size;
     }
 
-    public class PkgVersionProperties : IAssetIndexSummary
+    public class PkgVersionProperties : IAssetIndexSummary<PkgVersionProperties>
     {
         public string localName                { get; set; }
         public string remoteURL                { get; set; }
@@ -32,6 +32,21 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         public long GetAssetSize() => fileSize;
         public string GetRemoteURL() => remoteURL;
         public void SetRemoteURL(string url) => remoteURL = url;
+        public PkgVersionProperties Clone()
+            => new PkgVersionProperties
+            {
+                localName = localName,
+                remoteURL = remoteURL,
+                remoteName = remoteName,
+                remoteNamePersistent = remoteNamePersistent,
+                fileSize = fileSize,
+                isForceStoreInPersistent = isForceStoreInPersistent,
+                isForceStoreInStreaming = isForceStoreInStreaming,
+                isPatch = isPatch,
+                md5 = md5,
+                type = type,
+                xxh64hash = xxh64hash
+            };
     }
 
     [JsonSerializable(typeof(PkgVersionProperties))]
