@@ -1,6 +1,7 @@
 ﻿using Hi3Helper.Data;
-using Hi3Helper.Win32.Native;
 using Hi3Helper.Win32.Native.Enums;
+using Hi3Helper.Win32.Native.LibraryImport;
+using Hi3Helper.Win32.Native.ManagedTools;
 using Hi3Helper.Win32.Native.Structs;
 using System;
 using System.Runtime.CompilerServices;
@@ -125,6 +126,6 @@ namespace Hi3Helper.EncTool.WindowTool
             PInvoke.SetWindowLong(hwnd, GWL_INDEX.GWL_STYLE, currentStyle);
         }
 
-        public bool IsProcessAlive() => PInvoke.IsProcessExist(procId);
+        public bool IsProcessAlive() => ProcessChecker.IsProcessExist(procId);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Hi3Helper.Data;
-using Hi3Helper.Win32.Native;
 using Hi3Helper.Win32.Native.Enums;
+using Hi3Helper.Win32.Native.LibraryImport;
+using Hi3Helper.Win32.Native.ManagedTools;
 using Hi3Helper.Win32.Native.Structs;
 using Microsoft.Extensions.Logging;
 using System;
@@ -130,7 +131,7 @@ namespace Hi3Helper.EncTool.WindowTool
             while (!token.IsCancellationRequested)
             {
                 // Try get the process detail
-                bool isProcessExist = PInvoke.IsProcessExist(processName, out int processId, out nint hwnd, checkProcessFromDir ?? "", true, logger);
+                bool isProcessExist = ProcessChecker.IsProcessExist(processName, out int processId, out nint hwnd, checkProcessFromDir ?? "", true, logger);
                 // If the return process is null (not found), then delay and redo the loop
                 if (!isProcessExist)
                 {
