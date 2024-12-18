@@ -15,7 +15,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             where TContent : SleepyReturnableCode
         {
             if (content == null) throw new ArgumentNullException($"Content of: {nameof(TContent)} returns null!");
-            if (content.ReturnCode != 0) throw new InvalidOperationException($"Content of: {nameof(TContent)} returns a non-successful code: {content.ReturnCode}");
+            //if (content.ReturnCode != 0) throw new InvalidOperationException($"Content of: {nameof(TContent)} returns a non-successful code: {content.ReturnCode}");
             if (content.ReturnCode == short.MinValue) throw new InvalidOperationException($"Content of: {nameof(TContent)} is not readable or uninitialized!");
 
             return content;
