@@ -237,7 +237,7 @@ namespace Hi3Helper.Data
         {
             byte mag = (byte)Math.Log(value, 1000);
 
-            return string.Format("{0} {1}", Math.Round(value / (1L << (mag * 10)), decimalPlaces), SizeSuffixes[mag]);
+            return $"{Math.Round(value / (1L << (mag * 10)), decimalPlaces)} {SizeSuffixes[mag]}";
         }
         
         public static double SummarizeSizeDouble(double value, byte clampSize = byte.MaxValue)
