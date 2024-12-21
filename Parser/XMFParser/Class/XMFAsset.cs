@@ -93,22 +93,24 @@ namespace Hi3Helper.EncTool.Parser
             }
             if (OffsetStart > _parentHashFileSize || _parentHashFileSize < OffsetEnd)
             {
-                throw new FileLoadException($"Cannot create a stream because parent block file with hash: {_parentHashString} doesn't have a correct size or maybe corrupted!");
+                throw new FileLoadException($"Cannot create a stream because parent block file with hash: " +
+                                            $"{_parentHashString} doesn't have a correct size or maybe corrupted!");
             }
         }
 
         private void IsUnityFSHeaderValid(long exSig = 0x53467974696E55)
         {
             using (Stream fs = new FileStream(_parentHashFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
-            using (Stream cs = new ChunkStream(fs, OffsetStart, OffsetEnd))
-            using (EndianBinaryReader s = new EndianBinaryReader(cs, EndianType.LittleEndian))
-            {
-                long sig = s.ReadInt64();
-                if (sig != exSig)
-                {
-                    throw new FormatException($"Asset file doesn't seem to be a valid UnityFS file! (Expecting: {exSig} but get: {sig} instead)");
-                }
-            }
+                using (Stream cs = new ChunkStream(fs, OffsetStart, OffsetEnd))
+                    using (EndianBinaryReader s = new EndianBinaryReader(cs, EndianType.LittleEndian))
+                    {
+                        long sig = s.ReadInt64();
+                        if (sig != exSig)
+                        {
+                            throw new FormatException($"Asset file doesn't seem to be a valid UnityFS file! " +
+                                                      $"(Expecting: {exSig} but get: {sig} instead)");
+                        }
+                    }
         }
 
         /// <summary>
