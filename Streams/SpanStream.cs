@@ -28,7 +28,7 @@ namespace Hi3Helper.EncTool
             int remain = Base.Length - (int)_position;
             int toRead = remain < count ? remain : count;
 
-            buffer = Base.Slice((int)_position, toRead).ToArray();
+            _ = Base.Slice((int)_position, toRead).ToArray(); // buffer
 
             return toRead;
         }

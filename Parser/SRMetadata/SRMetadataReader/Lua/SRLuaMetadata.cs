@@ -1,5 +1,4 @@
 ﻿using Hi3Helper.Data;
-using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
 using System;
 
@@ -17,20 +16,37 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             InheritedAssetType = SRAssetType.Lua;
         }
 
+        protected sealed override string MetadataPath
+        {
+            get { return base.MetadataPath; }
+            set { base.MetadataPath = value; }
+        }
+
+        protected sealed override SRAssetProperty AssetProperty
+        {
+            get { return base.AssetProperty; }
+            set { base.AssetProperty = value; }
+        }
+
+        protected sealed override string ParentRemotePath
+        {
+            get { return base.ParentRemotePath; }
+            set { base.ParentRemotePath = value; }
+        }
+
         internal static new SRMetadataBase CreateInstance(string baseURL) => new SRLuaMetadata(baseURL);
 
         internal override void Deserialize()
         {
-            using (EndianBinaryReader reader = new EndianBinaryReader(AssetProperty.MetadataStream, EndianType.BigEndian, false))
+            using (EndianBinaryReader reader = new EndianBinaryReader(AssetProperty.MetadataStream))
             {
                 uint toSeekPos = 20;
                 uint count = reader.ReadUInt32();
                 uint childAssetsCount = 0;
-                uint ver = 0;
 
                 if (count == 255)
                 {
-                    ver = reader.ReadUInt32();
+                    _ = reader.ReadUInt32(); // version
                     count = reader.ReadUInt32();
                     childAssetsCount = reader.ReadUInt32();
                     toSeekPos = 12;
@@ -49,7 +65,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                     long lastPos = reader.Position;
                     byte[] assetID = reader.ReadBytes(4);
                     byte[] hash = reader.ReadBytes(16);
-                    uint type = reader.ReadUInt32();
+                    _ = reader.ReadUInt32(); // type
                     uint size = reader.ReadUInt32();
                     uint insideCount = reader.ReadUInt32();
                     sanityChildAssetsCount += insideCount;

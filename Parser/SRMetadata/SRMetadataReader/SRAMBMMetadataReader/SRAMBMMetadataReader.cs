@@ -28,7 +28,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         JSON
     }
 
-    internal class SRAMBMMetadataReader : SRMetadataBase
+    internal sealed class SRAMBMMetadataReader : SRMetadataBase
     {
         internal List<SRAMBMMetadataStruct> StructList { get; set; }
         internal SRAMBMMetadataType StructType { get; set; }
@@ -73,13 +73,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
                 reader.endian = EndianType.LittleEndian;
 
-                uint numA1 = reader.ReadUInt32();
+                _ = reader.ReadUInt32(); // A1
                 ushort count = reader.ReadUInt16();
-                ushort numA2 = reader.ReadUInt16();
-
-                uint numA3;
-                uint numA4;
-                uint numA5;
+                _ = reader.ReadUInt16(); // A2
+                
                 uint offset;
                 uint structCount;
                 uint structSize;
@@ -91,9 +88,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 switch (StructType)
                 {
                     case SRAMBMMetadataType.SRAM:
-                        numA3 = reader.ReadUInt32();
-                        numA4 = reader.ReadUInt32();
-                        numA5 = reader.ReadUInt32();
+                        _ = reader.ReadUInt32(); // A3
+                        _ = reader.ReadUInt32(); // A4
+                        _ = reader.ReadUInt32(); // A5
                         for (int i = 0; i < count; i++)
                         {
                             offset = reader.ReadUInt32();

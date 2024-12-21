@@ -13,19 +13,16 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         private Dictionary<string, SRDispatchArchiveInfo> _dispatchArchiveInfo;
         private SRAMBMMetadataStruct _structSRAMData;
 
-        protected string MetadataStartRemoteName = "M_Start_AsbV";
-        protected string MetadataRemoteName = "M_AsbV";
-        protected SRAssetType AssetType { get; set; }
-        protected SRAMBMMetadataType MetadataType { get; set; }
-        protected override string ParentRemotePath { get; set; }
-        protected override string MetadataPath { get; set; }
-        protected override SRAssetProperty AssetProperty { get; set; }
+        protected          string             MetadataStartRemoteName = "M_Start_AsbV";
+        protected          string             MetadataRemoteName      = "M_AsbV";
+        protected          SRAssetType        AssetType        { get; set; }
+        protected          SRAMBMMetadataType MetadataType     { get; set; }
+        protected override string             ParentRemotePath { get; set; } = "/client/Windows/Block";
+        protected override string             MetadataPath     { get; set; }
+        protected override SRAssetProperty    AssetProperty    { get; set; }
         protected SRAsbMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(baseURL)
         {
             _dispatchArchiveInfo = dictArchiveInfo;
-            ParentRemotePath = "/client/Windows/Block";
-            MetadataRemoteName = "M_AsbV";
-            MetadataStartRemoteName = "M_Start_AsbV";
             MetadataType = SRAMBMMetadataType.SRAM;
             AssetType = SRAssetType.Asb;
         }
@@ -88,7 +85,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             {
                 DeserializeAsset();
             }
-            catch { throw; }
             finally
             {
                 _structSRAMData.ClearStruct();
@@ -103,6 +99,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 #if DEBUG
             Console.WriteLine($"{AssetType} Assets Parsed Info: ({refStruct.structSize} bytes) ({refStruct.structCount} assets)");
 #endif
+            // Force the stack allocation
+            // ReSharper disable once RedundantAssignment
             Span<byte> hash = stackalloc byte[16];
 
             for (int index = 0; index < refStruct.structData.Length; index++)
