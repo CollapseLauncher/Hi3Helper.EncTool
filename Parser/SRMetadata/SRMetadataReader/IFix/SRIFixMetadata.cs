@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRIFixMetadata : SRMetadataBase
+    internal partial class SRIFixMetadata : SRMetadataBase
     {
         private ushort SRMIID { get; set; }
 

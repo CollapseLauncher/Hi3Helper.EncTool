@@ -5,7 +5,7 @@ using System.IO;
 
 namespace Hi3Helper.EncTool
 {
-    public class XORStream : Stream
+    public partial class XORStream : Stream
     {
         private protected readonly Stream _stream;
         private protected readonly byte _xorKey;

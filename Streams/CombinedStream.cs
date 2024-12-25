@@ -20,7 +20,7 @@ namespace Hi3Helper.EncTool
     /// streams which are considered to be chained together to one large stream. Only reading
     /// and seeking is allowed, writing will throw exceptions.
     /// </summary>
-    public sealed class CombinedStream : Stream
+    public sealed partial class CombinedStream : Stream
     {
         private Stream[] _UnderlyingStreams;
         private long[] _UnderlyingStartingPositions;

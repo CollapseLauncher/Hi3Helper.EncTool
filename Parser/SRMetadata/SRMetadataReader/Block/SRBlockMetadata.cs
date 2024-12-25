@@ -2,7 +2,7 @@
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRBlockMetadata : SRAsbMetadata
+    internal partial class SRBlockMetadata : SRAsbMetadata
     {
         protected SRBlockMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
         {

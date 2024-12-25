@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Hi3Helper.EncTool
 {
-    public class SpanStream : Stream
+    public partial class SpanStream : Stream
     {
         private readonly Memory<byte> Base;
         private long _position = 0;

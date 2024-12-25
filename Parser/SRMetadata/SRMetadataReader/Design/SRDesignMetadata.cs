@@ -1,6 +1,6 @@
 ﻿namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRDesignMetadata : SRLuaMetadata
+    internal partial class SRDesignMetadata : SRLuaMetadata
     {
         protected SRDesignMetadata(string baseURL) : base(baseURL)
         {

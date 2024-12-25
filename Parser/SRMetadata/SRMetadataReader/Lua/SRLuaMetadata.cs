@@ -4,7 +4,7 @@ using System;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRLuaMetadata : SRIFixMetadata
+    internal partial class SRLuaMetadata : SRIFixMetadata
     {
         protected SRAssetType InheritedAssetType { get; set; }
 

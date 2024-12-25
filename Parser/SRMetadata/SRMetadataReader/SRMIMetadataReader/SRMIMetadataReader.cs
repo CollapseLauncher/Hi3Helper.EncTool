@@ -6,7 +6,7 @@ using System.IO;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRMIMetadataReader : SRMetadataBase
+    internal partial class SRMIMetadataReader : SRMetadataBase
     {
         protected override string ParentRemotePath { get; set; }
         protected override string MetadataPath { get; set; }

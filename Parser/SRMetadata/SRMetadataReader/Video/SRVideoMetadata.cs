@@ -2,7 +2,7 @@
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRVideoMetadata : SRAudioMetadata
+    internal partial class SRVideoMetadata : SRAudioMetadata
     {
         protected SRVideoMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
         {

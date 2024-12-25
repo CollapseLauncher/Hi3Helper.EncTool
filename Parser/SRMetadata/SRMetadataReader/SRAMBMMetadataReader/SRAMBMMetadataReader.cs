@@ -28,7 +28,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         JSON
     }
 
-    internal sealed class SRAMBMMetadataReader : SRMetadataBase
+    internal sealed partial class SRAMBMMetadataReader : SRMetadataBase
     {
         internal List<SRAMBMMetadataStruct> StructList { get; set; }
         internal SRAMBMMetadataType StructType { get; set; }

@@ -15,7 +15,7 @@
     namespace Hi3Helper.EncTool.Parser.Senadina
 {
     public enum SenadinaKind { bricksBase, bricksCurrent, platformBase, wandCurrent, chiptunesCurrent, chiptunesPreload }
-    public class SenadinaFileIdentifier : IDisposable
+    public partial class SenadinaFileIdentifier : IDisposable
     {
         public string? relativePath { get; set; }
         public string? lastIdentifier { get; set; }

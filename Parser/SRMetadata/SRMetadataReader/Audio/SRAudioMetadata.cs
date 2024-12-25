@@ -21,7 +21,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
     [JsonSerializable(typeof(SRJSONAssetInfo))]
     internal sealed partial class SRJSONAssetInfoContext : JsonSerializerContext { }
 
-    internal class SRAudioMetadata : SRAsbMetadata
+    internal partial class SRAudioMetadata : SRAsbMetadata
     {
         protected SRAudioMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
         {

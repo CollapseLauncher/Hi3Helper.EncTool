@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Hi3Helper.EncTool
 {
-    public sealed class ChunkStream : Stream
+    public sealed partial class ChunkStream : Stream
     {
         private long _start { get; set; }
         private long _end { get; set; }

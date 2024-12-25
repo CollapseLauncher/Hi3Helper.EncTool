@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
-    public class SRMetadata : IDisposable
+    public partial class SRMetadata : IDisposable
     {
         private string                      _persistentPath         { get; set; }
         private SRDispatcherInfo            _dispatcherInfo         { get; init; }

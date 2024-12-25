@@ -33,7 +33,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
     [JsonSerializable(typeof(SRDispatchArchiveInfo))]
     internal sealed partial class SRDispatchArchiveInfoContext : JsonSerializerContext { }
 
-    internal class SRDispatcherInfo : IDisposable
+    internal partial class SRDispatcherInfo : IDisposable
     {
         private string                      _persistentDirectory    { get; set; }
         private string                      _dispatchURLFormat      { get; set; }
