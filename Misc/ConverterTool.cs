@@ -200,14 +200,14 @@ namespace Hi3Helper.Data
             => TimeSpan.FromSeconds((totalBytes - currentBytes) / Math.Max(speed, 1f));
 
         /// <summary>
-        /// Calculates the percentage of current bytes out of total bytes.
+        /// Calculates the percentage of progress.
         /// </summary>
-        /// <param name="totalBytes">The total number of bytes.</param>
-        /// <param name="currentBytes">The current number of bytes processed.</param>
-        /// <param name="decimalDigits">The number of decimal digits to round to.</param>
-        /// <returns>A double representing the percentage of current bytes out of total bytes.</returns>
-        public static double ToBytesPercentage(double totalBytes, double currentBytes, int decimalDigits = 2)
-            => Math.Round(currentBytes / totalBytes * 100, decimalDigits);
+        /// <param name="toProgress">The total progress value.</param>
+        /// <param name="fromProgress">The current progress value.</param>
+        /// <param name="decimalDigits">The number of decimal digits to round the result to. Default is 2.</param>
+        /// <returns>A double representing the percentage of progress.</returns>
+        public static double ToPercentage(double toProgress, double fromProgress, int decimalDigits = 2)
+            => Math.Round(fromProgress / toProgress * 100, decimalDigits);
 
         private static readonly SpanAction<char, nint> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
         public static unsafe string NormalizePath(ReadOnlySpan<char> source)
