@@ -159,26 +159,64 @@ namespace Hi3Helper.Data
             return HexTool.BytesToHexUnsafe(res);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double Unzeroed(this double i) => Math.Max(i, double.Epsilon);
+        /// <summary>
+        /// Calculates the remaining time based on total bytes, current bytes, and speed.
+        /// </summary>
+        /// <param name="totalBytes">The total number of bytes.</param>
+        /// <param name="currentBytes">The current number of bytes processed.</param>
+        /// <param name="speed">The speed of processing in bytes per second.</param>
+        /// <returns>A TimeSpan representing the remaining time.</returns>
+        public static TimeSpan ToTimeSpanRemain(double totalBytes, double currentBytes, double speed)
+            => TimeSpan.FromSeconds((totalBytes - currentBytes) / Math.Max(speed, 1d));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Unzeroed(this float i) => Math.Max(i, float.Epsilon);
+        /// <summary>
+        /// Calculates the remaining time based on total bytes, current bytes, and speed.
+        /// </summary>
+        /// <param name="totalBytes">The total number of bytes.</param>
+        /// <param name="currentBytes">The current number of bytes processed.</param>
+        /// <param name="speed">The speed of processing in bytes per second.</param>
+        /// <returns>A TimeSpan representing the remaining time.</returns>
+        public static TimeSpan ToTimeSpanRemain(long totalBytes, long currentBytes, double speed)
+            => TimeSpan.FromSeconds((totalBytes - currentBytes) / Math.Max(speed, 1d));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TimeSpan ToTimeSpanNormalized(this double i) => TimeSpan.FromSeconds(i.UnNaNInfinity() * 1);
+        /// <summary>
+        /// Calculates the remaining time based on total bytes, current bytes, and speed.
+        /// </summary>
+        /// <param name="totalBytes">The total number of bytes.</param>
+        /// <param name="currentBytes">The current number of bytes processed.</param>
+        /// <param name="speed">The speed of processing in bytes per second.</param>
+        /// <returns>A TimeSpan representing the remaining time.</returns>
+        public static TimeSpan ToTimeSpanRemain(float totalBytes, float currentBytes, float speed)
+            => TimeSpan.FromSeconds((totalBytes - currentBytes) / Math.Max(speed, 1f));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static TimeSpan ToTimeSpanNormalized(this float i) => TimeSpan.FromSeconds(i.UnNaNInfinity() * 1);
+        /// <summary>
+        /// Calculates the remaining time based on total bytes, current bytes, and speed.
+        /// </summary>
+        /// <param name="totalBytes">The total number of bytes.</param>
+        /// <param name="currentBytes">The current number of bytes processed.</param>
+        /// <param name="speed">The speed of processing in bytes per second.</param>
+        /// <returns>A TimeSpan representing the remaining time.</returns>
+        public static TimeSpan ToTimeSpanRemain(int totalBytes, int currentBytes, float speed)
+            => TimeSpan.FromSeconds((totalBytes - currentBytes) / Math.Max(speed, 1f));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double UnNaNInfinity(this float i) => float.IsNaN(i) || float.IsInfinity(i) ? 0 : i;
+        /// <summary>
+        /// Calculates the percentage of current bytes out of total bytes.
+        /// </summary>
+        /// <param name="totalBytes">The total number of bytes.</param>
+        /// <param name="currentBytes">The current number of bytes processed.</param>
+        /// <returns>A double representing the percentage of current bytes out of total bytes.</returns>
+        public static double ToBytesPercentage(double totalBytes, double currentBytes)
+            => currentBytes / totalBytes * 100;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double UnNaNInfinity(this double i) => double.IsNaN(i) || double.IsInfinity(i) ? 0 : i;
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double GetPercentageNumber(double cur, double max, int round = 2) => Math.Round((100 * cur) / max.Unzeroed(), round);
+        /// <summary>
+        /// Calculates the percentage of current bytes out of total bytes.
+        /// </summary>
+        /// <param name="totalBytes">The total number of bytes.</param>
+        /// <param name="currentBytes">The current number of bytes processed.</param>
+        /// <param name="decimalDigits">The number of decimal digits to round to.</param>
+        /// <returns>A double representing the percentage of current bytes out of total bytes.</returns>
+        public static double ToBytesPercentage(double totalBytes, double currentBytes, int decimalDigits)
+            => Math.Round(currentBytes / totalBytes * 100, decimalDigits);
 
         private static readonly SpanAction<char, nint> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
         public static unsafe string NormalizePath(ReadOnlySpan<char> source)
