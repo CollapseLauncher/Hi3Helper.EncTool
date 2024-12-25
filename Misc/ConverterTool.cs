@@ -204,18 +204,9 @@ namespace Hi3Helper.Data
         /// </summary>
         /// <param name="totalBytes">The total number of bytes.</param>
         /// <param name="currentBytes">The current number of bytes processed.</param>
-        /// <returns>A double representing the percentage of current bytes out of total bytes.</returns>
-        public static double ToBytesPercentage(double totalBytes, double currentBytes)
-            => currentBytes / totalBytes * 100;
-
-        /// <summary>
-        /// Calculates the percentage of current bytes out of total bytes.
-        /// </summary>
-        /// <param name="totalBytes">The total number of bytes.</param>
-        /// <param name="currentBytes">The current number of bytes processed.</param>
         /// <param name="decimalDigits">The number of decimal digits to round to.</param>
         /// <returns>A double representing the percentage of current bytes out of total bytes.</returns>
-        public static double ToBytesPercentage(double totalBytes, double currentBytes, int decimalDigits)
+        public static double ToBytesPercentage(double totalBytes, double currentBytes, int decimalDigits = 2)
             => Math.Round(currentBytes / totalBytes * 100, decimalDigits);
 
         private static readonly SpanAction<char, nint> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
