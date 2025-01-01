@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Hashing;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -12,9 +13,15 @@ using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+// ReSharper disable IdentifierTypo
 
 namespace Hi3Helper.Data
 {
+    public delegate ValueTask<TResult> GetSelectorSignedAsync<in TFrom, TResult>(TFrom item, CancellationToken token)
+        where TResult : struct, ISignedNumber<TResult>;
+
     public static class ConverterTool
     {
         private static readonly MD5 MD5Hash = MD5.Create();
@@ -375,6 +382,93 @@ namespace Hi3Helper.Data
                 ascii[31 - i] = (byte)((u & (1u << i)) >> i | 0x30);
             }
             return Encoding.ASCII.GetString(ascii);
+        }
+
+        /// <summary>
+        /// Asynchronously sums the results of a selector function applied to each element in a collection.
+        /// </summary>
+        /// <typeparam name="TFrom">The type of the elements in the collection.</typeparam>
+        /// <typeparam name="TResult">The type of the result, which must be a struct implementing ISignedNumber.</typeparam>
+        /// <param name="enums">The collection of elements to process.</param>
+        /// <param name="selector">The asynchronous selector function to apply to each element.</param>
+        /// <param name="token">A cancellation token to observe while waiting for the task to complete.</param>
+        /// <returns>A ValueTask representing the asynchronous operation, with a TResult result containing the sum of the selected values.</returns>
+        /// <exception cref="NotSupportedException">Thrown if TResult is not a member of <typeparamref name="TResult"/>.</exception>
+        public static async ValueTask<TResult> SumParallelAsync<TFrom, TResult>(
+            this ICollection<TFrom> enums,
+            GetSelectorSignedAsync<TFrom, TResult> selector,
+            CancellationToken token = default)
+            where TResult : struct, ISignedNumber<TResult>
+        {
+            // Allocate buffer to calculate
+            int elementLen = enums.Count;
+            TResult[] chunks = ArrayPool<TResult>.Shared.Rent(elementLen);
+
+            // Clear the previous data
+            Array.Clear(chunks);
+
+            try
+            {
+                // If the element length is less than defined limit, then
+                // use normal iteration to assign the value
+                if (elementLen < 512)
+                {
+                    foreach ((int Index, TFrom Item) chunk in enums.Index())
+                    {
+                        chunks[chunk.Index] = await selector(chunk.Item, token);
+                    }
+                }
+                // Otherwise, perform it in parallel
+                else
+                {
+                    await Parallel.ForEachAsync(enums.Index(), new ParallelOptions
+                    {
+                        CancellationToken = token
+                    },
+                    async (chunk, ctx) =>
+                    {
+                        chunks[chunk.Index] = await selector(chunk.Item, ctx);
+                    });
+                }
+
+                // Calculate the chunks using SIMD's .Sum() methods.
+                switch (chunks)
+                {
+                    case int[] chunksAsInts:
+                        {
+                            object result = chunksAsInts.Sum();
+                            return (TResult)result;
+                        }
+                    case long[] chunksAsLongs:
+                        {
+                            object result = chunksAsLongs.Sum();
+                            return (TResult)result;
+                        }
+                    case float[] chunksAsFloats:
+                        {
+                            object result = chunksAsFloats.Sum();
+                            return (TResult)result;
+                        }
+                    case double[] chunksAsDoubles:
+                        {
+                            object result = chunksAsDoubles.Sum();
+                            return (TResult)result;
+                        }
+                    case decimal[] chunksAsDecimals:
+                        {
+                            object result = chunksAsDecimals.Sum();
+                            return (TResult)result;
+                        }
+                    // If the type is not supported, throw
+                    default:
+                        throw new NotSupportedException($"Type of {typeof(TResult)} is not a member of ISignedNumber<T> or there is no overload on .Sum() method");
+                }
+            }
+            finally
+            {
+                // Return the buffer
+                ArrayPool<TResult>.Shared.Return(chunks);
+            }
         }
     }
 }
