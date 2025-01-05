@@ -214,7 +214,7 @@ namespace Hi3Helper.Data
         /// <param name="decimalDigits">The number of decimal digits to round the result to. Default is 2.</param>
         /// <returns>A double representing the percentage of progress.</returns>
         public static double ToPercentage(double toProgress, double fromProgress, int decimalDigits = 2)
-            => Math.Round(fromProgress / toProgress * 100, decimalDigits);
+            => Math.Round(fromProgress / toProgress * 100, decimalDigits, MidpointRounding.ToEven);
 
         private static readonly SpanAction<char, nint> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
         public static unsafe string NormalizePath(ReadOnlySpan<char> source)
