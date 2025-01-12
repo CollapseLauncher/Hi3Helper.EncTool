@@ -1,23 +1,18 @@
 ﻿using System;
 using System.IO;
+// ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
 
 namespace Hi3Helper.EncTool
 {
-    public partial class SpanStream : Stream
+    public class SpanStream(Memory<byte> @base) : Stream
     {
-        private readonly Memory<byte> Base;
-        private long _position = 0;
-
-        public SpanStream(Memory<byte> buffer)
-        {
-            Base = buffer;
-        }
+        private          long         _position;
 
         ~SpanStream() => Dispose();
 
         public override int Read(Span<byte> buffer)
         {
-            buffer = Base.Slice((int)_position, buffer.Length).Span;
+            buffer = @base.Slice((int)_position, buffer.Length).Span;
             _position += buffer.Length;
             return buffer.Length;
         }
@@ -25,10 +20,10 @@ namespace Hi3Helper.EncTool
         public override int Read(byte[] buffer, int offset, int count)
         {
             _position += offset;
-            int remain = Base.Length - (int)_position;
+            int remain = @base.Length - (int)_position;
             int toRead = remain < count ? remain : count;
 
-            _ = Base.Slice((int)_position, toRead).ToArray(); // buffer
+            _ = @base.Slice((int)_position, toRead).ToArray(); // buffer
 
             return toRead;
         }
@@ -37,6 +32,7 @@ namespace Hi3Helper.EncTool
         {
             throw new NotSupportedException();
         }
+
         public override void Write(byte[] buffer, int offset, int count)
         {
             throw new NotSupportedException();
@@ -59,12 +55,12 @@ namespace Hi3Helper.EncTool
 
         public override void Flush()
         {
-            Base.Span.Clear();
+            @base.Span.Clear();
         }
 
         public override long Length
         {
-            get { return Base.Length; }
+            get { return @base.Length; }
         }
 
         public override long Position
@@ -90,7 +86,7 @@ namespace Hi3Helper.EncTool
                     _position += offset;
                     break;
                 case SeekOrigin.End:
-                    _position = Base.Length - offset;
+                    _position = @base.Length - offset;
                     break;
             }
             return _position;
@@ -104,7 +100,7 @@ namespace Hi3Helper.EncTool
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            Base.Span.Clear();
+            @base.Span.Clear();
         }
     }
 }

@@ -1,18 +1,21 @@
-﻿#nullable enable
-    using Hi3Helper.Data;
-    using Hi3Helper.Http.Legacy;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.IO.Compression;
-    using System.Net.Http;
-    using System.Runtime.InteropServices;
-    using System.Security.Cryptography;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-
-    namespace Hi3Helper.EncTool.Parser.Senadina
+﻿using Hi3Helper.Data;
+using Hi3Helper.Http.Legacy;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Net.Http;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+// ReSharper disable IdentifierTypo
+// ReSharper disable PartialTypeWithSinglePart
+// ReSharper disable InconsistentNaming
+// ReSharper disable StringLiteralTypo
+#nullable enable
+namespace Hi3Helper.EncTool.Parser.Senadina
 {
     public enum SenadinaKind { bricksBase, bricksCurrent, platformBase, wandCurrent, chiptunesCurrent, chiptunesPreload }
     public partial class SenadinaFileIdentifier : IDisposable
@@ -38,54 +41,58 @@
             where T : struct
         {
             result = null;
-            if (IsKeyStoreExist(key))
+            if (!IsKeyStoreExist(key))
             {
-                ReadOnlySpan<byte> dataSpan = stringStore?[key];
-                int sizeOfStruct = Marshal.SizeOf<T>();
-                int count = dataSpan.Length / sizeOfStruct;
-
-                if (count <= 0) return false;
-                if (dataSpan.Length % sizeOfStruct != 0) return false;
-
-                result = new T[count];
-                int offset = 0;
-                for (int i = 0; i < count; i++)
-                    result[i] = ReadTInner<T>(dataSpan, sizeOfStruct, ref offset);
+                return false;
             }
+
+            ReadOnlySpan<byte> dataSpan     = stringStore?[key];
+            int                sizeOfStruct = Marshal.SizeOf<T>();
+            int                count        = dataSpan.Length / sizeOfStruct;
+
+            if (count <= 0) return false;
+            if (dataSpan.Length % sizeOfStruct != 0) return false;
+
+            result = new T[count];
+            int offset = 0;
+            for (int i = 0; i < count; i++)
+                result[i] = ReadTInner<T>(dataSpan, sizeOfStruct, ref offset);
             return false;
         }
 
         public bool TryReadStringStoreAs(string key, out string? result)
         {
             result = null;
-            if (IsKeyStoreExist(key))
+            if (!IsKeyStoreExist(key))
             {
-                ReadOnlySpan<byte> dataSpan = stringStore?[key];
-                result = Encoding.UTF8.GetString(dataSpan);
-                return true;
+                return false;
             }
-            return false;
+
+            ReadOnlySpan<byte> dataSpan = stringStore?[key];
+            result = Encoding.UTF8.GetString(dataSpan);
+            return true;
         }
 
         public bool TryReadStringStoreAs<T>(string key, out T? result)
             where T : struct
         {
             result = null;
-            if (IsKeyStoreExist(key))
+            if (!IsKeyStoreExist(key))
             {
-                ReadOnlySpan<byte> dataSpan = stringStore?[key];
-                int sizeOfStruct = Marshal.SizeOf<T>();
-                if (dataSpan.Length < sizeOfStruct)
-                    return false;
-
-                int offset = 0;
-                result = ReadTInner<T>(dataSpan, sizeOfStruct, ref offset);
-                return true;
+                return false;
             }
-            return false;
+
+            ReadOnlySpan<byte> dataSpan     = stringStore?[key];
+            int                sizeOfStruct = Marshal.SizeOf<T>();
+            if (dataSpan.Length < sizeOfStruct)
+                return false;
+
+            int offset = 0;
+            result = ReadTInner<T>(dataSpan, sizeOfStruct, ref offset);
+            return true;
         }
 
-        private T ReadTInner<T>(ReadOnlySpan<byte> span, int structSizeOf, ref int offset)
+        private static T ReadTInner<T>(ReadOnlySpan<byte> span, int structSizeOf, ref int offset)
             where T : struct
         {
             T value = MemoryMarshal.Read<T>(span.Slice(offset));
@@ -152,16 +159,18 @@
         public async Task<Stream?> GetOriginalFileStream(HttpClient client, CancellationToken token = default)
         {
             const string dictKey = "origUrl";
-            if (this.TryReadStringStoreAs(dictKey, out string? result))
+            if (!this.TryReadStringStoreAs(dictKey, out string? result))
             {
-                if (string.IsNullOrEmpty(result))
-                    throw new NullReferenceException($"origUrl from pustaka's store is null or just an empty string. Please report this issue to our Discord Server!");
-
-                Stream networkStream = await HttpResponseInputStream.CreateStreamAsync(client, result, 0, null, token);
-                return networkStream;
+                throw new
+                    KeyNotFoundException("origUrl from pustaka's store is not exist. Please report this issue to our Discord Server!");
             }
 
-            throw new KeyNotFoundException($"origUrl from pustaka's store is not exist. Please report this issue to our Discord Server!");
+            if (string.IsNullOrEmpty(result))
+                throw new NullReferenceException("origUrl from pustaka's store is null or just an empty string. Please report this issue to our Discord Server!");
+
+            Stream networkStream = await HttpResponseInputStream.CreateStreamAsync(client, result, 0, null, token);
+            return networkStream;
+
         }
     }
 }

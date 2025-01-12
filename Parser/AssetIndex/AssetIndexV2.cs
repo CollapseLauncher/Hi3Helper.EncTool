@@ -34,11 +34,11 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
     public class AssetIndexV2
     {
         private const ulong HeaderMagic = 7310310183885631299; // Collapse
-        private const byte Version = 2;
+        private const byte  Version     = 2;
 
         public void Serialize(string path, string outPath, CompressionFlag compressionType)
         {
-            using FileStream fileStream = File.OpenRead(path);
+            using FileStream fileStream   = File.OpenRead(path);
             using FileStream outputStream = File.Create(outPath);
             Serialize(fileStream, outputStream, compressionType);
         }
@@ -49,7 +49,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             using StreamReader streamReader = new StreamReader(input, Encoding.UTF8, true, -1, true);
 
             // Deserialize lines of the JSON into the list
-            List<PkgVersionProperties> versionList = new List<PkgVersionProperties>();
+            List<PkgVersionProperties> versionList = [];
             while (!streamReader.EndOfStream)
             {
                 string line = streamReader.ReadLine()!;
@@ -103,7 +103,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             {
                 // Get the size of the struct and assign the size of the output buffer
                 int sizeOf = Marshal.SizeOf<AssetProperty>();
-                sizeOf = sizeOf * versionList.Count;
+                sizeOf *= versionList.Count;
                 byte[] bufferOut = new byte[sizeOf];
 
                 // Get the struct array
@@ -115,7 +115,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                     }).ToArray();
 
                 // Serialize the AssetProperty struct array into the output buffer
-                ConverterTool.TrySerializeStruct(assets, bufferOut, out int read);
+                ConverterTool.TrySerializeStruct(assets, bufferOut, out _);
 
                 // Write the size of the output buffer and output buffer itself
                 binaryWriter.Write(sizeOf);
@@ -133,9 +133,8 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 int pos = 0;
                 foreach (string path in paths)
                 {
-                    byte[] strBuffer = new byte[(path?.Length ?? 0) + 1];
                     Encoding.UTF8.GetBytes(path, stringBuffer.Slice(pos));
-                    pos += strBuffer.Length;
+                    pos += (path?.Length ?? 0) + 1;
                 }
 
                 // Write the string output buffer
@@ -172,7 +171,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             return DeserializeFromBinary(stream, rawBinaryReader, out timestamp);
         }
 
-        private unsafe List<PkgVersionProperties> DeserializeFromBinary(Stream fileStream, BinaryReader rawBinaryReader, out DateTime timestampUTC)
+        private List<PkgVersionProperties> DeserializeFromBinary(Stream fileStream, BinaryReader rawBinaryReader, out DateTime timestampUtc)
         {
             // Get the compression flag
             byte compressionByte = rawBinaryReader.ReadByte();
@@ -184,7 +183,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
             // Read the additional header information
             long unixTimestamp = rawBinaryReader.ReadInt64();
-            timestampUTC = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp).DateTime;
+            timestampUtc = DateTimeOffset.FromUnixTimeSeconds(unixTimestamp).DateTime;
 
             // Run override method to read potential additional header information
             int readHeadInfo = ReadAdditionalHeaderInfo(fileStream);
@@ -216,7 +215,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
             // Read the asset count
             int assetCount = binaryReader.ReadInt32();
-            List<PkgVersionProperties> pkgReturn = new List<PkgVersionProperties>();
+            List<PkgVersionProperties> pkgReturn = [];
 
             // If the count is not 0, then read the data
             if (assetCount > 0)
@@ -241,11 +240,11 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 // Convert all the data provided by the string array and the AssetProperty struct array into PkgVersionProperties array
                 for (ushort i = 0; i < assetCount; i++)
                 {
-                    pkgReturn.Add(new PkgVersionProperties()
+                    pkgReturn.Add(new PkgVersionProperties
                     {
                         remoteName = returnString[i],
-                        md5 = HexTool.BytesToHexUnsafe(returnStruct[i].hash),
-                        fileSize = returnStruct[i].size
+                        md5        = HexTool.BytesToHexUnsafe(returnStruct[i].hash),
+                        fileSize   = returnStruct[i].size
                     });
                 }
             }

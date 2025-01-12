@@ -1,8 +1,9 @@
-﻿namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
+﻿// ReSharper disable InconsistentNaming
+namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal partial class SRDesignMetadata : SRLuaMetadata
+    internal sealed class SRDesignMetadata : SRLuaMetadata
     {
-        protected SRDesignMetadata(string baseURL) : base(baseURL)
+        private SRDesignMetadata(string baseURL) : base(baseURL)
         {
             AssetProperty = new SRAssetProperty();
             ParentRemotePath = "/client/Windows";
@@ -10,6 +11,6 @@
             InheritedAssetType = SRAssetType.DesignData;
         }
 
-        internal static new SRMetadataBase CreateInstance(string baseURL) => new SRDesignMetadata(baseURL);
+        internal new static SRMetadataBase CreateInstance(string baseURL) => new SRDesignMetadata(baseURL);
     }
 }

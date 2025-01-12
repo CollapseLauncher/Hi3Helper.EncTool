@@ -5,13 +5,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+// ReSharper disable PartialTypeWithSinglePart
+// ReSharper disable IdentifierTypo
+// ReSharper disable InconsistentNaming
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal partial class SRAsbMetadata : SRMetadataBase
+    internal class SRAsbMetadata : SRMetadataBase
     {
-        private Dictionary<string, SRDispatchArchiveInfo> _dispatchArchiveInfo;
-        private SRAMBMMetadataStruct _structSRAMData;
+        private readonly Dictionary<string, SRDispatchArchiveInfo> _dispatchArchiveInfo;
+        private          SRAMBMMetadataStruct                      _structSRAMData;
 
         protected          string             MetadataStartRemoteName = "M_Start_AsbV";
         protected          string             MetadataRemoteName      = "M_AsbV";
@@ -23,8 +26,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected SRAsbMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(baseURL)
         {
             _dispatchArchiveInfo = dictArchiveInfo;
-            MetadataType = SRAMBMMetadataType.SRAM;
-            AssetType = SRAssetType.Asb;
+            MetadataType         = SRAMBMMetadataType.SRAM;
+            AssetType            = SRAssetType.Asb;
         }
 
         internal static SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) => new SRAsbMetadata(dictArchiveInfo, baseURL);
@@ -32,21 +35,14 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal override async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadClientProgress, string persistentPath, CancellationToken token, string localManifestPath)
         {
             PersistentPath = persistentPath;
-            MetadataPath = GetMetadataPathFromArchiveInfo(_dispatchArchiveInfo, MetadataRemoteName);
+            MetadataPath   = GetMetadataPathFromArchiveInfo(_dispatchArchiveInfo, MetadataRemoteName);
 
-            if (MetadataType != SRAMBMMetadataType.JSON)
-            {
-                AssetProperty = new SRAssetProperty();
-            }
-            else
-            {
-                AssetProperty = new SRAssetProperty(Path.Combine(persistentPath, localManifestPath, MetadataPath.TrimStart('/')));
-            }
+            AssetProperty = MetadataType != SRAMBMMetadataType.JSON ? new SRAssetProperty() : new SRAssetProperty(Path.Combine(persistentPath, localManifestPath, MetadataPath.TrimStart('/')));
 
             AssetProperty.MetadataRemoteURL = BaseURL + ParentRemotePath + MetadataPath;
-            AssetProperty.MetadataRevision = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
+            AssetProperty.MetadataRevision  = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
             AssetProperty.MetadataLocalName = MetadataPath.TrimStart('/');
-            AssetProperty.BaseURL = _dispatchArchiveInfo[MetadataRemoteName].FullAssetsDownloadUrl;
+            AssetProperty.BaseURL           = _dispatchArchiveInfo[MetadataRemoteName].FullAssetsDownloadUrl;
 
             if (MetadataType != SRAMBMMetadataType.JSON)
             {
@@ -54,7 +50,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 {
                     await _SRAMReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, token, "Asb\\Windows");
                     _SRAMReader.Deserialize();
-                    Magic = _SRAMReader.Magic;
+                    Magic  = _SRAMReader.Magic;
                     TypeID = _SRAMReader.TypeID;
 
                     _structSRAMData = _SRAMReader.StructList[0];
@@ -62,9 +58,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
                 string MetadataStartPath = GetMetadataPathFromArchiveInfo(_dispatchArchiveInfo, MetadataStartRemoteName);
                 AssetProperty.MetadataStartRemoteURL = BaseURL + ParentRemotePath + MetadataStartPath;
-                AssetProperty.MetadataStartRevision = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
+                AssetProperty.MetadataStartRevision  = _dispatchArchiveInfo[MetadataRemoteName].PatchVersion;
                 AssetProperty.MetadataStartLocalName = MetadataStartPath.TrimStart('/');
-                AssetProperty.StartBaseURL = BaseURL + ParentRemotePath;
+                AssetProperty.StartBaseURL           = BaseURL + ParentRemotePath;
 
                 using (SRAMBMMetadataReader _SRAMReader = new SRAMBMMetadataReader(BaseURL, ParentRemotePath, MetadataStartPath, MetadataType))
                 {
@@ -80,7 +76,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Deserialize()
         {
-            if (_structSRAMData.structData == null) throw new InvalidOperationException($"Struct data is empty! Please initialize it using GetRemoteMetadata()");
+            if (_structSRAMData.StructData == null) throw new InvalidOperationException($"Struct data is empty! Please initialize it using GetRemoteMetadata()");
             try
             {
                 DeserializeAsset();
@@ -97,24 +93,22 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
             SRAMBMMetadataStruct refStruct = _structSRAMData;
 #if DEBUG
-            Console.WriteLine($"{AssetType} Assets Parsed Info: ({refStruct.structSize} bytes) ({refStruct.structCount} assets)");
+            Console.WriteLine($"{AssetType} Assets Parsed Info: ({refStruct.StructSize} bytes) ({refStruct.StructCount} assets)");
 #endif
             // Force the stack allocation
-            // ReSharper disable once RedundantAssignment
-            Span<byte> hash = stackalloc byte[16];
 
-            for (int index = 0; index < refStruct.structData.Length; index++)
+            for (int index = 0; index < refStruct.StructData.Length; index++)
             {
-                ReadOnlySpan<byte> bufferSpan = refStruct.structData[index];
-                ReadOnlySpan<byte> hashBuffer = bufferSpan.Slice(0, 16);
-                ReadOnlySpan<byte> assetID = bufferSpan.Slice(16, 4);
-                uint size = BitConverter.ToUInt32(bufferSpan.Slice(20, 4));
+                ReadOnlySpan<byte> bufferSpan = refStruct.StructData[index];
+                ReadOnlySpan<byte> hashBuffer = bufferSpan.Slice(0,  16);
+                ReadOnlySpan<byte> assetID    = bufferSpan.Slice(16, 4);
+                uint               size       = BitConverter.ToUInt32(bufferSpan.Slice(20, 4));
 
-                hash = BigEndianBytesToHexBytes(hashBuffer);
-                string hashName = HexTool.BytesToHexUnsafe(hash);
-                string assetName = $"{hashName}.block";
+                Span<byte> hash      = BigEndianBytesToHexBytes(hashBuffer);
+                string     hashName  = HexTool.BytesToHexUnsafe(hash);
+                string     assetName = $"{hashName}.block";
 
-                bool isStart = (assetID[2] >> 4) > 0;
+                bool isStart = assetID[2] >> 4 > 0;
 
 #if DEBUG
                 Console.WriteLine($"    Mark: {HexTool.BytesToHexUnsafe(assetID)} {hashName} -> Size: {size} Pos: {index} IsStart: {isStart}");
@@ -123,10 +117,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 SRAsset asset = new SRAsset
                 {
                     AssetType = AssetType,
-                    Hash = hash.ToArray(),
+                    Hash      = hash.ToArray(),
                     LocalName = assetName,
                     RemoteURL = (isStart ? AssetProperty.StartBaseURL : AssetProperty.BaseURL) + '/' + assetName,
-                    Size = size
+                    Size      = size
                 };
 
                 AssetProperty.AssetList.Add(asset);

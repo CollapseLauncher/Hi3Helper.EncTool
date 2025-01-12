@@ -3,54 +3,51 @@ using Hi3Helper.UABT.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+// ReSharper disable CommentTypo
+// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Local
 
 namespace Hi3Helper.EncTool.Parser
 {
     public sealed partial class XMFParser
     {
-        private void TryCheckXMFPath()
+        private void TryCheckXmfPath()
         {
             // If the path does exist as a file, then set _folderPath.
-            if (File.Exists(_xmfPath))
+            if (File.Exists(XmfPath))
             {
-                _folderPath = Path.GetDirectoryName(_xmfPath);
+                FolderPath = Path.GetDirectoryName(XmfPath);
                 return;
             }
 
             // Try find XMF file by enumerating the content of the given path as a directory.
-            if (!Directory.Exists(_xmfPath))
+            if (!Directory.Exists(XmfPath))
             {
-                throw new DirectoryNotFoundException($"You're trying to load XMF from a directory in this path: \"{_xmfPath}\" and it doesn't exist.");
+                throw new DirectoryNotFoundException($"You're trying to load XMF from a directory in this path: \"{XmfPath}\" and it doesn't exist.");
             }
 
-            // Try enumerate XMF file from the given path.
-            string assumedXMFPath = Directory.EnumerateFiles(_xmfPath, "Blocks.xmf", SearchOption.TopDirectoryOnly).FirstOrDefault();
-            if (assumedXMFPath != null)
-            {
-                _xmfPath = assumedXMFPath;
-                _folderPath = Path.GetDirectoryName(assumedXMFPath);
-                return;
-            }
+            // Try to enumerate XMF file from the given path.
+            string assumedXmfPath = Directory.EnumerateFiles(XmfPath, "Blocks.xmf", SearchOption.TopDirectoryOnly).FirstOrDefault();
 
-            // If it doesn't, then...
-            throw new FileNotFoundException($"XMF file in this path: \"{_xmfPath}\" doesn't exist or the directory with the path given has no XMF file inside it.");
+            XmfPath    = assumedXmfPath ?? throw new
+                // If it doesn't, then...
+                FileNotFoundException($"XMF file in this path: \"{XmfPath}\" doesn't exist or the directory with the path given has no XMF file inside it.");
+            FolderPath = Path.GetDirectoryName(assumedXmfPath);
         }
 
         private void ParseMetadata(Stream xmfStream, bool isMeta)
         {
             // Read XMF with Endianess-aware BinaryReader
-            using (EndianBinaryReader reader = new EndianBinaryReader(xmfStream))
-            {
-                // Start read the header of the XMF file.
-                ReadHeader(reader, isMeta);
+            using EndianBinaryReader reader = new EndianBinaryReader(xmfStream);
+            // Start read the header of the XMF file.
+            ReadHeader(reader);
 
-                // Start read the metadata including block info and asset indexes.
-                ReadMetadata(reader, isMeta);
+            // Start read the metadata including block info and asset indexes.
+            ReadMetadata(reader, isMeta);
 
-                // Finalize by creating catalog for block lookup as hash name and index.
-                // This will make searching process for the block easier.
-                CreateBlockIndexCatalog(BlockCount);
-            }
+            // Finalize by creating catalog for block lookup as hash name and index.
+            // This will make searching process for the block easier.
+            CreateBlockIndexCatalog(BlockCount);
         }
 
         private void CreateBlockIndexCatalog(uint count)
@@ -65,16 +62,16 @@ namespace Hi3Helper.EncTool.Parser
 
         internal static byte[] ReadSignature(EndianBinaryReader reader)
         {
-            // Switch to Little-endian to read header.
-            reader.endian = EndianType.LittleEndian;
-            return reader.ReadBytes(_signatureLength);
+            // Switch to Little-endian on reading the header.
+            reader.Endian = EndianType.LittleEndian;
+            return reader.ReadBytes(SignatureLength);
         }
 
         internal static int[] ReadVersion(EndianBinaryReader reader)
         {
             // Read block version.
-            int[] ver = new int[_versioningLength];
-            for (int i = 0; i < _versioningLength; i++)
+            int[] ver = new int[VersioningLength];
+            for (int i = 0; i < VersioningLength; i++)
             {
                 // If the offset is more than 2, then read the revision number as byte.
                 if (i > 2)
@@ -87,16 +84,16 @@ namespace Hi3Helper.EncTool.Parser
                     ver[i] = reader.ReadInt32();
                 }
 
-                if (ver[i] < _allowedMinVersion || ver[i] > _allowedMaxVersion)
+                if (ver[i] < AllowedMinVersion || ver[i] > AllowedMaxVersion)
                 {
-                    throw new InvalidDataException($"Header version on array: {i} is invalid with value: {ver[i]}. The allowed range is: ({_allowedMinVersion} - {_allowedMaxVersion})");
+                    throw new InvalidDataException($"Header version on array: {i} is invalid with value: {ver[i]}. The allowed range is: ({AllowedMinVersion} - {AllowedMaxVersion})");
                 }
             }
 
             return ver;
         }
 
-        private void ReadHeader(EndianBinaryReader reader, bool isMeta)
+        private void ReadHeader(EndianBinaryReader reader)
         {
             // Read signature (32 bytes).
             VersionSignature = ReadSignature(reader);
@@ -108,7 +105,7 @@ namespace Hi3Helper.EncTool.Parser
             Version = ReadVersion(reader);
 
             // Switch to Big-endian.
-            reader.endian = EndianType.BigEndian;
+            reader.Endian = EndianType.BigEndian;
 
             // Allocate the size of Block array.
             BlockEntry = new XMFBlock[reader.ReadUInt32()];
@@ -135,13 +132,13 @@ namespace Hi3Helper.EncTool.Parser
         {
             // Check if the block catalog contains the key name.
             // If not, then throw.
-            if (!BlockIndexCatalog.ContainsKey(hash))
+            if (!BlockIndexCatalog.TryGetValue(hash, out var value))
             {
                 throw new KeyNotFoundException($"Block: {hash} doesn't exist!");
             }
 
             // If found, then return the block entry.
-            return BlockEntry[BlockIndexCatalog[hash]];
+            return BlockEntry[value];
         }
 
         /// <summary>
@@ -166,7 +163,7 @@ namespace Hi3Helper.EncTool.Parser
             uint count = BlockCount;
             for (uint i = 0; i < count; i++)
             {
-                yield return Path.Combine(_folderPath, BlockEntry[i].HashString + ".wmv");
+                yield return Path.Combine(FolderPath, BlockEntry[i].HashString + ".wmv");
             }
         }
 

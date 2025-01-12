@@ -2,6 +2,8 @@
 using Hi3Helper.Preset;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
+// ReSharper disable InconsistentNaming
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool.Parser.AssetIndex
 {
@@ -23,7 +25,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         [JsonPropertyName("hash")]
         public string xxh64hash                { get; set; }
         public long   fileSize                 { get; set; }
-        public bool   isPatch                  { get; set; } = false;
+        public bool   isPatch                  { get; set; }
         public string type                     { get; set; }
         public bool   isForceStoreInPersistent { get; set; }
         public bool   isForceStoreInStreaming  { get; set; }
@@ -33,19 +35,19 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         public string GetRemoteURL() => remoteURL;
         public void SetRemoteURL(string url) => remoteURL = url;
         public PkgVersionProperties Clone()
-            => new PkgVersionProperties
+            => new()
             {
-                localName = localName,
-                remoteURL = remoteURL,
-                remoteName = remoteName,
-                remoteNamePersistent = remoteNamePersistent,
-                fileSize = fileSize,
+                localName                = localName,
+                remoteURL                = remoteURL,
+                remoteName               = remoteName,
+                remoteNamePersistent     = remoteNamePersistent,
+                fileSize                 = fileSize,
                 isForceStoreInPersistent = isForceStoreInPersistent,
-                isForceStoreInStreaming = isForceStoreInStreaming,
-                isPatch = isPatch,
-                md5 = md5,
-                type = type,
-                xxh64hash = xxh64hash
+                isForceStoreInStreaming  = isForceStoreInStreaming,
+                isPatch                  = isPatch,
+                md5                      = md5,
+                type                     = type,
+                xxh64hash                = xxh64hash
             };
     }
 

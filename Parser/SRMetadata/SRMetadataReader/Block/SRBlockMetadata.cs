@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+// ReSharper disable InconsistentNaming
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal partial class SRBlockMetadata : SRAsbMetadata
+    internal sealed class SRBlockMetadata : SRAsbMetadata
     {
-        protected SRBlockMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
+        private SRBlockMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
         {
             MetadataRemoteName = "M_BlockV";
             MetadataStartRemoteName = "M_Start_BlockV";
@@ -12,6 +13,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             AssetType = SRAssetType.Block;
         }
 
-        internal static new SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) => new SRBlockMetadata(dictArchiveInfo, baseURL);
+        internal new static SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) => new SRBlockMetadata(dictArchiveInfo, baseURL);
     }
 }

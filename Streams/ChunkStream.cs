@@ -5,15 +5,15 @@ using System.Threading.Tasks;
 
 namespace Hi3Helper.EncTool
 {
-    public sealed partial class ChunkStream : Stream
+    public sealed class ChunkStream : Stream
     {
-        private long _start { get; set; }
-        private long _end { get; set; }
-        private long _size { get => _end - _start; }
-        private long _curPos { get; set; }
-        private long _remain { get => _size - _curPos; }
         private readonly Stream _stream;
-        private bool _isDisposing { get; set; }
+        private          long   Start       { get; }
+        private          long   End         { get; }
+        private          long   Size        { get => End - Start; }
+        private          long   CurPos      { get; set; }
+        private          long   Remain      { get => Size - CurPos; }
+        private          bool   IsDisposing { get; }
 
         public ChunkStream(Stream stream, long start, long end, bool isDisposing = false)
         {
@@ -30,96 +30,96 @@ namespace Hi3Helper.EncTool
             }
 
             _stream.Position = start;
-            _start = start;
-            _end = end;
-            _curPos = 0;
-            _isDisposing = isDisposing;
+            Start            = start;
+            End              = end;
+            CurPos           = 0;
+            IsDisposing      = isDisposing;
         }
 
-        ~ChunkStream() => this.Dispose(_isDisposing);
+        ~ChunkStream() => Dispose(IsDisposing);
 
         public override int Read(Span<byte> buffer)
         {
-            if (_remain == 0) return 0;
+            if (Remain == 0) return 0;
 
-            int toSlice = (int)(buffer.Length > _remain ? _remain : buffer.Length);
-            _stream.Position = _start + _curPos;
+            int toSlice = (int)(buffer.Length > Remain ? Remain : buffer.Length);
+            _stream.Position = Start + CurPos;
             int read = _stream.Read(buffer.Slice(0, toSlice));
-            _curPos += read;
+            CurPos += read;
 
             return read;
         }
 
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default)
         {
-            if (_remain == 0) return 0;
+            if (Remain == 0) return 0;
 
-            int toSlice = (int)(buffer.Length > _remain ? _remain : buffer.Length);
-            _stream.Position = _start + _curPos;
+            int toSlice = (int)(buffer.Length > Remain ? Remain : buffer.Length);
+            _stream.Position = Start + CurPos;
             int read = await _stream.ReadAsync(buffer.Slice(0, toSlice), token);
-            _curPos += read;
+            CurPos += read;
 
             return read;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (_remain == 0) return 0;
+            if (Remain == 0) return 0;
 
-            int toRead = (int)(_remain < count ? _remain : count);
-            _stream.Position = _start + _curPos;
+            int toRead = (int)(Remain < count ? Remain : count);
+            _stream.Position = Start + CurPos;
             int read = _stream.Read(buffer, offset, toRead);
-            _curPos += read;
+            CurPos += read;
             return read;
         }
 
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
-            if (_remain == 0) return 0;
+            if (Remain == 0) return 0;
 
-            int toRead = (int)(_remain < count ? _remain : count);
-            _curPos += toRead;
-            _stream.Position = _start + _curPos;
+            int toRead = (int)(Remain < count ? Remain : count);
+            CurPos += toRead;
+            _stream.Position = Start + CurPos;
 
             return await _stream.ReadAsync(buffer, offset, toRead, token);
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
-            if (_remain == 0) return;
+            if (Remain == 0) return;
 
-            int toSlice = (int)(buffer.Length > _remain ? _remain : buffer.Length);
-            _curPos += toSlice;
+            int toSlice = (int)(buffer.Length > Remain ? Remain : buffer.Length);
+            CurPos += toSlice;
 
             _stream.Write(buffer.Slice(0, toSlice));
         }
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token = default)
         {
-            if (_remain == 0) return;
+            if (Remain == 0) return;
 
-            int toSlice = (int)(buffer.Length > _remain ? _remain : buffer.Length);
-            _curPos += toSlice;
+            int toSlice = (int)(buffer.Length > Remain ? Remain : buffer.Length);
+            CurPos += toSlice;
 
             await _stream.WriteAsync(buffer.Slice(0, toSlice), token);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            int toRead = (int)(_remain < count ? _remain : count);
-            int toOffset = offset > _remain ? 0 : offset;
+            int toRead = (int)(Remain < count ? Remain : count);
+            int toOffset = offset > Remain ? 0 : offset;
             _stream.Position += toOffset;
-            _curPos += toOffset + toRead;
+            CurPos += toOffset + toRead;
 
             _stream.Write(buffer, offset, toRead);
         }
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
-            int toRead = (int)(_remain < count ? _remain : count);
-            int toOffset = offset > _remain ? 0 : offset;
+            int toRead = (int)(Remain < count ? Remain : count);
+            int toOffset = offset > Remain ? 0 : offset;
             _stream.Position += toOffset;
-            _curPos += toOffset + toRead;
+            CurPos += toOffset + toRead;
 
             await _stream.WriteAsync(buffer, offset, toRead, token);
         }
@@ -151,24 +151,24 @@ namespace Hi3Helper.EncTool
 
         public override long Length
         {
-            get { return _size; }
+            get { return Size; }
         }
 
         public override long Position
         {
             get
             {
-                return _curPos;
+                return CurPos;
             }
             set
             {
-                if (value > _size)
+                if (value > Size)
                 {
                     throw new IndexOutOfRangeException();
                 }
 
-                _curPos = value;
-                _stream.Position = _curPos + _start;
+                CurPos = value;
+                _stream.Position = CurPos + Start;
             }
         }
 
@@ -177,25 +177,23 @@ namespace Hi3Helper.EncTool
             switch (origin)
             {
                 case SeekOrigin.Begin:
-                    {
-                        if (offset > _size)
-                        {
-                            throw new ArgumentOutOfRangeException();
-                        }
-                        return _stream.Seek(offset + _start, SeekOrigin.Begin) - _start;
-                    }
+                {
+                    return offset > Size
+                        ? throw new ArgumentOutOfRangeException(nameof(offset))
+                        : _stream.Seek(offset + Start, SeekOrigin.Begin) - Start;
+                }
                 case SeekOrigin.Current:
                     {
-                        long pos = _stream.Position - _start;
-                        if (pos + offset > _size)
+                        long pos = _stream.Position - Start;
+                        if (pos + offset > Size)
                         {
-                            throw new ArgumentOutOfRangeException();
+                            throw new ArgumentOutOfRangeException(nameof(offset));
                         }
-                        return _stream.Seek(offset, SeekOrigin.Current) - _start;
+                        return _stream.Seek(offset, SeekOrigin.Current) - Start;
                     }
                 default:
                     {
-                        _stream.Position = _end;
+                        _stream.Position = End;
                         _stream.Position -= offset;
 
                         return Position;
@@ -211,8 +209,7 @@ namespace Hi3Helper.EncTool
         protected override void Dispose(bool disposing)
         {
             if (disposing) base.Dispose(true);
-            if (_isDisposing) _stream.Dispose();
-            GC.SuppressFinalize(this);
+            if (IsDisposing) _stream.Dispose();
         }
     }
 }

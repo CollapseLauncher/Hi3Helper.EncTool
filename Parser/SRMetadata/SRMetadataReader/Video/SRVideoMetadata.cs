@@ -1,17 +1,19 @@
 ﻿using System.Collections.Generic;
+// ReSharper disable IdentifierTypo
+// ReSharper disable InconsistentNaming
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal partial class SRVideoMetadata : SRAudioMetadata
+    internal sealed class SRVideoMetadata : SRAudioMetadata
     {
-        protected SRVideoMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
+        private SRVideoMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
         {
-            ParentRemotePath = "/client/Windows/Video";
+            ParentRemotePath   = "/client/Windows/Video";
             MetadataRemoteName = "M_VideoV";
-            MetadataType = SRAMBMMetadataType.JSON;
-            AssetType = SRAssetType.Video;
+            MetadataType       = SRAMBMMetadataType.JSON;
+            AssetType          = SRAssetType.Video;
         }
 
-        internal static new SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) => new SRVideoMetadata(dictArchiveInfo, baseURL);
+        internal new static SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) => new SRVideoMetadata(dictArchiveInfo, baseURL);
     }
 }

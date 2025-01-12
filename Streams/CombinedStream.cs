@@ -6,13 +6,14 @@
 using System;
 using System.IO;
 using System.Linq;
+// ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
 
 namespace Hi3Helper.EncTool
 {
-    public struct NewFileCombinedStreamStruct
+    public class NewFileCombinedStreamStruct
     {
-        public FileStream stream;
-        public long size;
+        public FileStream Stream { get; set; }
+        public long       Size   { get; set; }
     }
 
     /// <summary>
@@ -20,14 +21,12 @@ namespace Hi3Helper.EncTool
     /// streams which are considered to be chained together to one large stream. Only reading
     /// and seeking is allowed, writing will throw exceptions.
     /// </summary>
-    public sealed partial class CombinedStream : Stream
+    public sealed class CombinedStream : Stream
     {
-        private Stream[] _UnderlyingStreams;
-        private long[] _UnderlyingStartingPositions;
-        private long _TotalLength;
-
-        private long _Position;
-        private int _Index;
+        private readonly Stream[] _underlyingStreams;
+        private readonly long[]   _underlyingStartingPositions;
+        private          long     _position;
+        private          int      _index;
 
         /// <summary>
         /// Constructs a new <see cref="CombinedStream"/> on top of the specified array
@@ -39,30 +38,38 @@ namespace Hi3Helper.EncTool
         /// </param>
         public CombinedStream(params FileStream[] underlyingStreams)
         {
-            if (underlyingStreams == null)
-                throw new ArgumentNullException("underlyingStreams");
-            foreach (Stream stream in underlyingStreams)
+            if (underlyingStreams != null)
             {
-                if (stream == null)
-                    throw new ArgumentException("underlyingStreams contains a null stream reference", "underlyingStreams");
-                if (!stream.CanRead)
-                    throw new InvalidOperationException("CanRead not true for all streams");
-                if (!stream.CanSeek)
-                    throw new InvalidOperationException("CanSeek not true for all streams");
+                foreach (FileStream stream in underlyingStreams)
+                {
+                    if (stream == null)
+                        throw new ArgumentException("underlyingStreams contains a null stream reference",
+                                                    nameof(underlyingStreams));
+                    if (!stream.CanRead)
+                        throw new InvalidOperationException("CanRead not true for all streams");
+                    if (!stream.CanSeek)
+                        throw new InvalidOperationException("CanSeek not true for all streams");
+                }
+
+                _underlyingStreams           = new Stream[underlyingStreams.Length];
+                _underlyingStartingPositions = new long[underlyingStreams.Length];
+                Array.Copy(underlyingStreams, _underlyingStreams, underlyingStreams.Length);
+
+                _position = 0;
+                _index    = 0;
+
+                _underlyingStartingPositions[0] = 0;
+                for (int index = 1; index < _underlyingStartingPositions.Length; index++)
+                    _underlyingStartingPositions[index] = _underlyingStartingPositions[index - 1] +
+                                                          _underlyingStreams[index - 1].Length;
+
+                Length = _underlyingStartingPositions[^1] +
+                               _underlyingStreams[^1].Length;
             }
-
-            _UnderlyingStreams = new Stream[underlyingStreams.Length];
-            _UnderlyingStartingPositions = new long[underlyingStreams.Length];
-            Array.Copy(underlyingStreams, _UnderlyingStreams, underlyingStreams.Length);
-
-            _Position = 0;
-            _Index = 0;
-
-            _UnderlyingStartingPositions[0] = 0;
-            for (int index = 1; index < _UnderlyingStartingPositions.Length; index++)
-                _UnderlyingStartingPositions[index] = _UnderlyingStartingPositions[index - 1] + _UnderlyingStreams[index - 1].Length;
-
-            _TotalLength = _UnderlyingStartingPositions[_UnderlyingStartingPositions.Length - 1] + _UnderlyingStreams[_UnderlyingStreams.Length - 1].Length;
+            else
+            {
+                throw new ArgumentNullException(nameof(underlyingStreams));
+            }
         }
         
         /// <summary>
@@ -75,30 +82,38 @@ namespace Hi3Helper.EncTool
         /// </param>
         public CombinedStream(params Stream[] underlyingStreams)
         {
-            if (underlyingStreams == null)
-                throw new ArgumentNullException("underlyingStreams");
-            foreach (Stream stream in underlyingStreams)
+            if (underlyingStreams != null)
             {
-                if (stream == null)
-                    throw new ArgumentException("underlyingStreams contains a null stream reference", "underlyingStreams");
-                if (!stream.CanRead)
-                    throw new InvalidOperationException("CanRead not true for all streams");
-                if (!stream.CanSeek)
-                    throw new InvalidOperationException("CanSeek not true for all streams");
+                foreach (Stream stream in underlyingStreams)
+                {
+                    if (stream == null)
+                        throw new ArgumentException("underlyingStreams contains a null stream reference",
+                                                    nameof(underlyingStreams));
+                    if (!stream.CanRead)
+                        throw new InvalidOperationException("CanRead not true for all streams");
+                    if (!stream.CanSeek)
+                        throw new InvalidOperationException("CanSeek not true for all streams");
+                }
+
+                _underlyingStreams           = new Stream[underlyingStreams.Length];
+                _underlyingStartingPositions = new long[underlyingStreams.Length];
+                Array.Copy(underlyingStreams, _underlyingStreams, underlyingStreams.Length);
+
+                _position = 0;
+                _index    = 0;
+
+                _underlyingStartingPositions[0] = 0;
+                for (int index = 1; index < _underlyingStartingPositions.Length; index++)
+                    _underlyingStartingPositions[index] = _underlyingStartingPositions[index - 1] +
+                                                          _underlyingStreams[index - 1].Length;
+
+                Length = _underlyingStartingPositions[^1] +
+                               _underlyingStreams[^1].Length;
             }
-
-            _UnderlyingStreams           = new Stream[underlyingStreams.Length];
-            _UnderlyingStartingPositions = new long[underlyingStreams.Length];
-            Array.Copy(underlyingStreams, _UnderlyingStreams, underlyingStreams.Length);
-
-            _Position = 0;
-            _Index    = 0;
-
-            _UnderlyingStartingPositions[0] = 0;
-            for (int index = 1; index < _UnderlyingStartingPositions.Length; index++)
-                _UnderlyingStartingPositions[index] = _UnderlyingStartingPositions[index - 1] + _UnderlyingStreams[index - 1].Length;
-
-            _TotalLength = _UnderlyingStartingPositions[_UnderlyingStartingPositions.Length - 1] + _UnderlyingStreams[_UnderlyingStreams.Length - 1].Length;
+            else
+            {
+                throw new ArgumentNullException(nameof(underlyingStreams));
+            }
         }
 
         /// <summary>
@@ -111,41 +126,48 @@ namespace Hi3Helper.EncTool
         /// </param>
         public CombinedStream(params NewFileCombinedStreamStruct[] underlyingStreams)
         {
-            if (underlyingStreams == null)
-                throw new ArgumentNullException("underlyingStreams");
-
-            _UnderlyingStreams = new Stream[underlyingStreams.Length];
-            _UnderlyingStartingPositions = new long[underlyingStreams.Length];
-
-            foreach (NewFileCombinedStreamStruct stream in underlyingStreams)
+            if (underlyingStreams != null)
             {
-                if (stream.stream == null)
-                    throw new ArgumentException("underlyingStreams contains a null stream reference", "underlyingStreams");
-                if (!stream.stream.CanRead)
-                    throw new InvalidOperationException("CanRead not true for all streams");
-                if (!stream.stream.CanSeek)
-                    throw new InvalidOperationException("CanSeek not true for all streams");
+                _underlyingStreams           = new Stream[underlyingStreams.Length];
+                _underlyingStartingPositions = new long[underlyingStreams.Length];
 
-                stream.stream.SetLength(stream.size);
-#if DEBUG && SHOWDEBUGINFO
+                foreach (NewFileCombinedStreamStruct stream in underlyingStreams)
+                {
+                    if (stream.Stream == null)
+                        throw new ArgumentException("underlyingStreams contains a null stream reference",
+                                                    nameof(underlyingStreams));
+                    if (!stream.Stream.CanRead)
+                        throw new InvalidOperationException("CanRead not true for all streams");
+                    if (!stream.Stream.CanSeek)
+                        throw new InvalidOperationException("CanSeek not true for all streams");
+
+                    stream.Stream.SetLength(stream.Size);
+                #if DEBUG && SHOWDEBUGINFO
                 Console.WriteLine($"[CombinedStream.ctor()] Initializing file with length {stream.size} bytes: {stream.stream.Name}");
-#endif
+                #endif
+                }
+
+                Array.Copy(underlyingStreams.Select(x => x.Stream).ToArray(), _underlyingStreams,
+                           underlyingStreams.Length);
+
+                _position = 0;
+                _index    = 0;
+
+                _underlyingStartingPositions[0] = 0;
+                for (int index = 1; index < _underlyingStartingPositions.Length; index++)
+                    _underlyingStartingPositions[index] =
+                        _underlyingStartingPositions[index - 1] + underlyingStreams[index - 1].Size;
+
+                Length = _underlyingStartingPositions[^1] + underlyingStreams[^1].Size;
+            }
+            else
+            {
+                throw new ArgumentNullException(nameof(underlyingStreams));
             }
 
-            Array.Copy(underlyingStreams.Select(x => x.stream).ToArray(), _UnderlyingStreams, underlyingStreams.Length);
-
-            _Position = 0;
-            _Index = 0;
-
-            _UnderlyingStartingPositions[0] = 0;
-            for (int index = 1; index < _UnderlyingStartingPositions.Length; index++)
-                _UnderlyingStartingPositions[index] = _UnderlyingStartingPositions[index - 1] + underlyingStreams[index - 1].size;
-
-            _TotalLength = _UnderlyingStartingPositions[_UnderlyingStartingPositions.Length - 1] + underlyingStreams[_UnderlyingStreams.Length - 1].size;
-
-#if DEBUG && SHOWDEBUGINFO
+        #if DEBUG && SHOWDEBUGINFO
             Console.WriteLine($"[CombinedStream.ctor()] Total length of the CombinedStream: {_TotalLength} bytes with total of {underlyingStreams.Length} streams");
-#endif
+        #endif
         }
 
         /// <summary>
@@ -205,18 +227,20 @@ namespace Hi3Helper.EncTool
         /// <exception cref="T:System.IO.IOException">An I/O error occurs. </exception>
         public override void Flush()
         {
-            foreach (Stream stream in _UnderlyingStreams)
+            foreach (Stream stream in _underlyingStreams)
                 stream.Flush();
         }
 
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            if (_UnderlyingStreams != null)
+            if (_underlyingStreams == null)
             {
-                foreach (Stream stream in _UnderlyingStreams)
-                    stream.Dispose();
+                return;
             }
+
+            foreach (Stream stream in _underlyingStreams)
+                stream.Dispose();
         }
 
         /// <summary>
@@ -230,13 +254,7 @@ namespace Hi3Helper.EncTool
         /// </returns>
         /// <exception cref="T:System.NotSupportedException">A class derived from Stream does not support seeking. </exception>
         /// <exception cref="T:System.ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        public override long Length
-        {
-            get
-            {
-                return _TotalLength;
-            }
-        }
+        public override long Length { get; }
 
         /// <summary>
         /// Gets or sets the position within the current stream.
@@ -250,24 +268,24 @@ namespace Hi3Helper.EncTool
         {
             get
             {
-                return _Position;
+                return _position;
             }
 
             set
             {
-                if (value < 0 || value > _TotalLength)
-                    throw new ArgumentOutOfRangeException("value");
+                if (value < 0 || value > Length)
+                    throw new ArgumentOutOfRangeException(nameof(value));
 
-                _Position = value;
-                if (value == _TotalLength)
-                    _Index = _UnderlyingStreams.Length - 1;
+                _position = value;
+                if (value == Length)
+                    _index = _underlyingStreams.Length - 1;
                 else
                 {
-                    while (_Index > 0 && _Position < _UnderlyingStartingPositions[_Index])
-                        _Index--;
+                    while (_index > 0 && _position < _underlyingStartingPositions[_index])
+                        _index--;
 
-                    while (_Index < _UnderlyingStreams.Length - 1 && _Position >= _UnderlyingStartingPositions[_Index] + _UnderlyingStreams[_Index].Length)
-                        _Index++;
+                    while (_index < _underlyingStreams.Length - 1 && _position >= _underlyingStartingPositions[_index] + _underlyingStreams[_index].Length)
+                        _index++;
                 }
             }
         }
@@ -280,25 +298,27 @@ namespace Hi3Helper.EncTool
 
             while (count > 0)
             {
-                _UnderlyingStreams[_Index].Position = _Position - _UnderlyingStartingPositions[_Index];
-                int bytesRead = _UnderlyingStreams[_Index].Read(buffer.Slice(offset));
+                _underlyingStreams[_index].Position = _position - _underlyingStartingPositions[_index];
+                int bytesRead = _underlyingStreams[_index].Read(buffer.Slice(offset));
                 result += bytesRead;
                 offset += bytesRead;
                 count -= bytesRead;
-                _Position += bytesRead;
+                _position += bytesRead;
 
-                if (count > 0)
+                if (count <= 0)
                 {
-                    if (_Index < _UnderlyingStreams.Length - 1)
-                    {
-                        _Index++;
-#if DEBUG && SHOWDEBUGINFO
-                        Console.WriteLine($"[CombinedStream.Read()] Moving the stream to Index: {_Index}");
-#endif
-                    }
-                    else
-                        break;
+                    continue;
                 }
+
+                if (_index < _underlyingStreams.Length - 1)
+                {
+                    _index++;
+                #if DEBUG && SHOWDEBUGINFO
+                        Console.WriteLine($"[CombinedStream.Read()] Moving the stream to Index: {_Index}");
+                #endif
+                }
+                else
+                    break;
             }
 
             return result;
@@ -324,25 +344,27 @@ namespace Hi3Helper.EncTool
             int result = 0;
             while (count > 0)
             {
-                _UnderlyingStreams[_Index].Position = _Position - _UnderlyingStartingPositions[_Index];
-                int bytesRead = _UnderlyingStreams[_Index].Read(buffer, offset, count);
-                result += bytesRead;
-                offset += bytesRead;
-                count -= bytesRead;
-                _Position += bytesRead;
+                _underlyingStreams[_index].Position = _position - _underlyingStartingPositions[_index];
+                int bytesRead = _underlyingStreams[_index].Read(buffer, offset, count);
+                result    += bytesRead;
+                offset    += bytesRead;
+                count     -= bytesRead;
+                _position += bytesRead;
 
-                if (count > 0)
+                if (count <= 0)
                 {
-                    if (_Index < _UnderlyingStreams.Length - 1)
-                    {
-                        _Index++;
-#if DEBUG && SHOWDEBUGINFO
-                        Console.WriteLine($"[CombinedStream.Read()] Moving the stream to Index: {_Index}");
-#endif
-                    }
-                    else
-                        break;
+                    continue;
                 }
+
+                if (_index < _underlyingStreams.Length - 1)
+                {
+                    _index++;
+                #if DEBUG && SHOWDEBUGINFO
+                        Console.WriteLine($"[CombinedStream.Read()] Moving the stream to Index: {_Index}");
+                #endif
+                }
+                else
+                    break;
             }
 
             return result;
@@ -398,30 +420,32 @@ namespace Hi3Helper.EncTool
             int offset = 0;
             while (count > 0)
             {
-                _UnderlyingStreams[_Index].Position = _Position - _UnderlyingStartingPositions[_Index];
+                _underlyingStreams[_index].Position = _position - _underlyingStartingPositions[_index];
                 int bytesWrite = count;
-                int remainedMaxLength = (int)(_UnderlyingStreams[_Index].Length - _UnderlyingStreams[_Index].Position);
+                int remainedMaxLength = (int)(_underlyingStreams[_index].Length - _underlyingStreams[_index].Position);
                 if (remainedMaxLength < count)
                 {
                     bytesWrite = remainedMaxLength;
                 }
-                _UnderlyingStreams[_Index].Write(buffer.Slice(offset, bytesWrite));
+                _underlyingStreams[_index].Write(buffer.Slice(offset, bytesWrite));
                 offset += bytesWrite;
                 count -= bytesWrite;
-                _Position += bytesWrite;
+                _position += bytesWrite;
 
-                if (count > 0)
+                if (count <= 0)
                 {
-                    if (_Index < _UnderlyingStreams.Length - 1)
-                    {
-                        _Index++;
-#if DEBUG && SHOWDEBUGINFO
-                        Console.WriteLine($"[CombinedStream.Write()] Moving the stream to Index: {_Index}");
-#endif
-                    }
-                    else
-                        break;
+                    continue;
                 }
+
+                if (_index < _underlyingStreams.Length - 1)
+                {
+                    _index++;
+                #if DEBUG && SHOWDEBUGINFO
+                        Console.WriteLine($"[CombinedStream.Write()] Moving the stream to Index: {_Index}");
+                #endif
+                }
+                else
+                    break;
             }
         }
 
@@ -439,30 +463,32 @@ namespace Hi3Helper.EncTool
         {
             while (count > 0)
             {
-                _UnderlyingStreams[_Index].Position = _Position - _UnderlyingStartingPositions[_Index];
+                _underlyingStreams[_index].Position = _position - _underlyingStartingPositions[_index];
                 int bytesWrite = count;
-                int remainedMaxLength = (int)(_UnderlyingStreams[_Index].Length - _UnderlyingStreams[_Index].Position);
+                int remainedMaxLength = (int)(_underlyingStreams[_index].Length - _underlyingStreams[_index].Position);
                 if (remainedMaxLength < count)
                 {
                     bytesWrite = remainedMaxLength;
                 }
-                _UnderlyingStreams[_Index].Write(buffer, offset, bytesWrite);
+                _underlyingStreams[_index].Write(buffer, offset, bytesWrite);
                 offset += bytesWrite;
                 count -= bytesWrite;
-                _Position += bytesWrite;
+                _position += bytesWrite;
 
-                if (count > 0)
+                if (count <= 0)
                 {
-                    if (_Index < _UnderlyingStreams.Length - 1)
-                    {
-                        _Index++;
-#if DEBUG && SHOWDEBUGINFO
-                        Console.WriteLine($"[CombinedStream.Write()] Moving the stream to Index: {_Index}");
-#endif
-                    }
-                    else
-                        break;
+                    continue;
                 }
+
+                if (_index < _underlyingStreams.Length - 1)
+                {
+                    _index++;
+                #if DEBUG && SHOWDEBUGINFO
+                        Console.WriteLine($"[CombinedStream.Write()] Moving the stream to Index: {_Index}");
+                #endif
+                }
+                else
+                    break;
             }
         }
     }

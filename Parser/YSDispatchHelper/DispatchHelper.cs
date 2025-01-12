@@ -12,7 +12,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-
+// ReSharper disable PartialTypeWithSinglePart
 // ReSharper disable IdentifierTypo
 // ReSharper disable CheckNamespace
 // ReSharper disable StringLiteralTypo
@@ -24,15 +24,15 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
     [JsonSerializable(typeof(PkgVersionProperties))]
     internal partial class DispatchHelperContext : JsonSerializerContext { }
 
-    public class DispatchHelper
+    public sealed class DispatchHelper
     {
         private readonly CancellationToken _cancelToken;
         private readonly string _channelName = "OSRELWin";
 
-        private GenshinGateway? _gateway;
-        private readonly HttpClient _httpClient;
-        private QueryProperty? _returnValProp;
-        private ILogger? _logger;
+        private          GenshinGateway? _gateway;
+        private readonly HttpClient      _httpClient;
+        private          QueryProperty?  _returnValProp;
+        private readonly ILogger?        _logger;
 
         public DispatchHelper(HttpClient httpClient, int regionID, string dispatchKey, string dispatchURLPrefix,
                               string versionString = "2.6.0", CancellationToken cancelToken = default)
@@ -46,17 +46,16 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
                 _channelName = "CNRELWin";
             }
 
-            _httpClient = httpClient;
+            _httpClient     = httpClient;
             RegionSubdomain = GetSubdomainByRegionID(regionID);
-            Version = versionString;
+            Version         = versionString;
             DispatchBaseURL = string.Format(
-                dispatchURLPrefix,
-                RegionSubdomain,
-                $"{_channelName}{versionString}",
-                dispatchKey);
-
+                                            dispatchURLPrefix,
+                                            RegionSubdomain,
+                                            $"{_channelName}{versionString}",
+                                            dispatchKey);
             _cancelToken = cancelToken;
-            _logger = logger;
+            _logger      = logger;
         }
 
         private string DispatchBaseURL { get; }
@@ -89,11 +88,11 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
                     $"{_gateway.GatewayProperties.RepoDesignDataURL}/output_{_gateway.GatewayProperties.RepoDesignDataNumber}_{_gateway.GatewayProperties.RepoDesignDataHash}/client/General",
                 ClientDesignDataSilURL =
                     $"{_gateway.GatewayProperties.RepoDesignDataURL}/output_{_gateway.GatewayProperties.RepoDesignDataSilenceNumber}_{_gateway.GatewayProperties.RepoDesignDataSilenceHash}/client_silence/General",
-                DataRevisionNum = _gateway.GatewayProperties.RepoDesignDataNumber,
+                DataRevisionNum    = _gateway.GatewayProperties.RepoDesignDataNumber,
                 SilenceRevisionNum = _gateway.GatewayProperties.RepoDesignDataSilenceNumber,
-                ResRevisionNum = _gateway.GatewayProperties.RepoResVersionProperties.ResVersionNumber,
-                ChannelName = _channelName,
-                GameVersion = Version
+                ResRevisionNum     = _gateway.GatewayProperties.RepoResVersionProperties.ResVersionNumber,
+                ChannelName        = _channelName,
+                GameVersion        = Version
             };
 
             ParseGameResPkgProp(_returnValProp);
@@ -114,7 +113,7 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
 
         private void ParseGameResPkgProp(QueryProperty valProp)
         {
-            var jsonDesignData = _gateway!.GatewayProperties!.RepoDesignDataJSON;
+            var jsonDesignData    = _gateway!.GatewayProperties!.RepoDesignDataJSON;
             var jsonDesignDataSil = _gateway!.GatewayProperties!.RepoDesignDataSilenceJSON;
 #if DEBUG
             _logger?.LogDebug($"[GenshinDispatchHelper::ParseGameResPkgProp] DesignData Response:" +

@@ -4,6 +4,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool.Parser.Sleepy
 {
@@ -14,7 +15,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
         internal static TContent ThrowIfUnsuccessful<TContent>(this TContent content)
             where TContent : SleepyReturnableCode
         {
-            if (content == null) throw new ArgumentNullException($"Content of: {nameof(TContent)} returns null!");
+            if (content == null) throw new ArgumentNullException(nameof(content), $"Content of: {nameof(TContent)} returns null!");
             //if (content.ReturnCode != 0) throw new InvalidOperationException($"Content of: {nameof(TContent)} returns a non-successful code: {content.ReturnCode}");
             if (content.ReturnCode == short.MinValue) throw new InvalidOperationException($"Content of: {nameof(TContent)} is not readable or uninitialized!");
 

@@ -26,29 +26,27 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
     public class SleepyInfo
     {
-        private const string UserAgent = "UnityPlayer/2019.4.40f1 (UnityWebRequest/1.0, libcurl/7.80.0-DEV)";
-
-        private SleepyProperty Property { get; set; }
-        private RSA RSAInstance { get; set; }
-        private HttpClient Client { get; set; }
+        private SleepyProperty Property         { get; }
+        private RSA            RsaInstance      { get; }
+        private HttpClient     Client           { get; }
         private SleepyDispatch ResponseDispatch { get; set; }
-        private SleepyGateway ResponseGateway { get; set; }
+        private SleepyGateway  ResponseGateway  { get; set; }
 
-        private SleepyInfo(HttpClient httpClient, RSA RSAInstance, SleepyProperty Property)
+        private SleepyInfo(HttpClient httpClient, RSA rsaInstance, SleepyProperty property)
         {
-            this.Client = httpClient;
-            this.Property = Property;
-            this.RSAInstance = RSAInstance;
+            Client = httpClient;
+            Property = property;
+            RsaInstance = rsaInstance;
         }
 
-        public static SleepyInfo CreateSleepyInfo(HttpClient httpClient, RSA rsaInstance, SleepyProperty property)
-            => new SleepyInfo(httpClient, rsaInstance, property);
+        public static SleepyInfo CreateSleepyInfo(HttpClient httpClient, RSA rsaInstance, SleepyProperty property) =>
+            new(httpClient, rsaInstance, property);
 
         public async Task Initialize(CancellationToken token = default)
         {
-            Uri dispatchUrl = CreateDispatchUri(out Dictionary<string, string> dispatchUrlQueries); // TODO: Add queries to the request header
-            ResponseDispatch = (await GetJsonFromUrl(dispatchUrl, dispatchUrlQueries, SleepyContext.Default.SleepyDispatch, token))
-                .ThrowIfUnsuccessful();
+            // TODO: Add queries to the request header
+            Uri dispatchUrl = CreateDispatchUri(out Dictionary<string, string> dispatchUrlQueries);
+            ResponseDispatch = (await GetJsonFromUrl(dispatchUrl, dispatchUrlQueries, SleepyContext.Default.SleepyDispatch, token)).ThrowIfUnsuccessful();
 
             SleepyDispatchRegionInfo regionInfo = ResponseDispatch.RegionList
                 .FirstOrDefault(x => x.GatewayName
@@ -70,8 +68,11 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
             var baseFileInfo = GetFileInfo(FileInfoKind.Base);
             string baseFileUrl = ConverterTool.CombineURLFromString(baseFileInfo.BaseUrl, baseFileInfo.ReferenceFileInfo.FileName);
-            string baseFileRevision = await Client.GetStringAsync(baseFileUrl);
-            ResponseGateway.CdnConfig.GameResConfig.BaseRevision = baseFileRevision;
+            if (Client != null)
+            {
+                string baseFileRevision = await Client.GetStringAsync(baseFileUrl, token);
+                ResponseGateway.CdnConfig.GameResConfig.BaseRevision = baseFileRevision;
+            }
         }
 
         private SleepyGateway ParseGatewayFromGatewayContent(SleepyGatewayRegionContent gatewayResponse)
@@ -79,14 +80,14 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             byte[] gatewayResponseOutBuff = ArrayPool<byte>.Shared.Rent(gatewayResponse.Content.Length);
             try
             {
-                int keyToReadLen = RSAInstance.KeySize >> 3; // Should expect 128 bytes
-                int offset = 0;
-                int offsetDec = 0;
+                int keyToReadLen       = RsaInstance.KeySize >> 3; // Should expect 128 bytes
+                int offset             = 0;
+                int offsetDec          = 0;
                 int gatewayResponseLen = gatewayResponse.Content.Length;
                 while (offset < gatewayResponseLen)
                 {
                     int toRead = Math.Min(gatewayResponseLen - offset, keyToReadLen);
-                    if (!RSAInstance.TryDecrypt(
+                    if (!RsaInstance.TryDecrypt(
                         gatewayResponse.Content.AsSpan(offset, toRead),
                         gatewayResponseOutBuff.AsSpan(offsetDec),
                         RSAEncryptionPadding.Pkcs1,
@@ -140,7 +141,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             return result;
         }
 
-        private void ParseQueryToDictionary(string query, out Dictionary<string, string> urlQueries)
+        private static void ParseQueryToDictionary(string query, out Dictionary<string, string> urlQueries)
         {
             ReadOnlySpan<char> querySpan = query.AsSpan().TrimStart('?');
 
@@ -149,13 +150,13 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             foreach (Range queryRange in querySpan.Split('&'))
             {
                 ReadOnlySpan<char> querySpanCurrent = querySpan[queryRange];
-                int currentQuerySplitLen = querySpanCurrent.Split(currentQueryRange, '=', StringSplitOptions.None);
+                int currentQuerySplitLen = querySpanCurrent.Split(currentQueryRange, '=');
                 if (currentQuerySplitLen != 2)
                 {
                     throw new InvalidDataException($"Dispatch query: {querySpanCurrent.ToString()} is malformed!");
                 }
 
-                string currentQueryKey = querySpanCurrent[currentQueryRange[0]].ToString();
+                string currentQueryKey   = querySpanCurrent[currentQueryRange[0]].ToString();
                 string currentQueryValue = querySpanCurrent[currentQueryRange[1]].ToString();
 
                 urlQueries.Add(currentQueryKey, currentQueryValue);
@@ -171,7 +172,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             }
 
             using HttpResponseMessage responseMessage = await Client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, token);
-            using Stream responseStream = await responseMessage.Content.ReadAsStreamAsync(token);
+            await using Stream        responseStream  = await responseMessage.Content.ReadAsStreamAsync(token);
 
             return await responseMessage.Content.ReadFromJsonAsync(typeInfo, token);
         }

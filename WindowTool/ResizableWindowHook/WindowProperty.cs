@@ -5,22 +5,24 @@ using Hi3Helper.Win32.Native.ManagedTools;
 using Hi3Helper.Win32.Native.Structs;
 using System;
 using System.Runtime.CompilerServices;
+// ReSharper disable CommentTypo
+// ReSharper disable IdentifierTypo
 
 namespace Hi3Helper.EncTool.WindowTool
 {
     internal unsafe struct WindowProperty
     {
-        public nint hwnd;
-        public int procId;
-        public WS_STYLE initialStyle;
-        public WS_STYLE currentStyle;
-        public WindowRect initialPos;
-        public WindowRect currentPos;
-        public bool isEmpty;
+        public nint       Hwnd;
+        public int        ProcId;
+        public WS_STYLE   InitialStyle;
+        public WS_STYLE   CurrentStyle;
+        public WindowRect InitialPos;
+        public WindowRect CurrentPos;
+        public bool       IsEmpty;
 
         public WindowProperty()
         {
-            isEmpty = true;
+            IsEmpty = true;
         }
 
         public WindowProperty(nint hwndFrom, int procIdFrom, WS_STYLE initialStyleFrom, WindowRect windowRectFrom)
@@ -28,104 +30,102 @@ namespace Hi3Helper.EncTool.WindowTool
             if (hwndFrom == IntPtr.Zero || procIdFrom == 0)
                 return;
 
-            hwnd = hwndFrom;
-            procId = procIdFrom;
-            initialStyle = initialStyleFrom;
-            currentStyle = initialStyleFrom;
-
-            initialPos = windowRectFrom;
-            currentPos = windowRectFrom;
-
-            isEmpty = false;
+            Hwnd         = hwndFrom;
+            ProcId       = procIdFrom;
+            InitialStyle = initialStyleFrom;
+            CurrentStyle = initialStyleFrom;
+            InitialPos   = windowRectFrom;
+            CurrentPos   = windowRectFrom;
+            IsEmpty      = false;
         }
 
-        public static WindowProperty Empty() => new WindowProperty();
+        public static WindowProperty Empty() => new();
 
         public void ToggleBorder(bool isEnable)
         {
             // Toggle the WS_CAPTION and WS_THICKFRAME flag
             const WS_STYLE toggleBorderStyle = WS_STYLE.WS_CAPTION | WS_STYLE.WS_THICKFRAME;
-            currentStyle = isEnable ?
-                currentStyle | toggleBorderStyle
-              : currentStyle & ~toggleBorderStyle;
+            CurrentStyle = isEnable ?
+                CurrentStyle | toggleBorderStyle
+              : CurrentStyle & ~toggleBorderStyle;
         }
 
         public void ToggleResizable(bool isEnable)
         {
             // Toggle the WS_POPUPWINDOW, WS_SIZEBOX and WS_MAXIMIZEBOX flag
             const WS_STYLE toggleResizableStyle = WS_STYLE.WS_POPUPWINDOW | WS_STYLE.WS_SIZEBOX | WS_STYLE.WS_MAXIMIZEBOX;
-            currentStyle = isEnable ?
-                currentStyle | toggleResizableStyle
-              : currentStyle & ~toggleResizableStyle;
+            CurrentStyle = isEnable ?
+                CurrentStyle | toggleResizableStyle
+              : CurrentStyle & ~toggleResizableStyle;
         }
 
         public void ToggleWindowButton(bool isEnable)
         {
             // Toggle the WS_SYSMENU flag
             const WS_STYLE toggleWinButtonStyle = WS_STYLE.WS_SYSMENU;
-            currentStyle = isEnable ?
-                currentStyle | toggleWinButtonStyle
-              : currentStyle & ~(toggleWinButtonStyle);
+            CurrentStyle = isEnable ?
+                CurrentStyle | toggleWinButtonStyle
+              : CurrentStyle & ~(toggleWinButtonStyle);
         }
 
         public void ChangePosition(int? x = null, int? y = null, int? width = null, int? height = null)
         {
             // Assign a number with the current position if one of the arguments is null
-            x ??= currentPos.X;
-            y ??= currentPos.Y;
-            width ??= currentPos.Width;
-            height ??= currentPos.Height;
+            x ??= CurrentPos.X;
+            y ??= CurrentPos.Y;
+            width ??= CurrentPos.Width;
+            height ??= CurrentPos.Height;
 
             // Assign the current value of the currentPos and call the SetWindowPos function
             // ReSharper disable ConstantNullCoalescingCondition
-            PInvoke.SetWindowPos(hwnd, 0, currentPos.X = x ?? 0, currentPos.Y = y ?? 0, currentPos.Width = width ?? 0, currentPos.Height = height ?? 0, SWP_FLAGS.SWP_NOZORDER);
+            PInvoke.SetWindowPos(Hwnd, 0, CurrentPos.X = x ?? 0, CurrentPos.Y = y ?? 0, CurrentPos.Width = width ?? 0, CurrentPos.Height = height ?? 0, SWP_FLAGS.SWP_NOZORDER);
             // ReSharper restore ConstantNullCoalescingCondition
         }
 
         public bool IsWindowBorderlessFullscreen()
         {
             // Get the mask by using WS_SYSMENU Flag
-            WS_STYLE hasMask = WS_STYLE.WS_SYSMENU;
+            const WS_STYLE hasMask = WS_STYLE.WS_SYSMENU;
 
             // Remove the WS_SYSMENU Flag by AND the current style and the mask
             // Leaving only the bit representing the WS_SYSMENU flag on the currentStyle.
             // If it has the bit, then it will return all zero. If not, then return 0x8000
             // Or in binary:
             // 1000 0000 0000 0000
-            WS_STYLE maskedCurrentStyle = currentStyle & hasMask;
+            WS_STYLE maskedCurrentStyle = CurrentStyle & hasMask;
 
             // Compare the masked style with the WS_SYSMENU mask
             return hasMask != maskedCurrentStyle;
         }
 
-        public void RefreshCurrentStyle() => currentStyle = PInvoke.GetWindowLong(hwnd, GWL_INDEX.GWL_STYLE);
+        public void RefreshCurrentStyle() => CurrentStyle = PInvoke.GetWindowLong(Hwnd, GWL_INDEX.GWL_STYLE);
 
-        public unsafe void RefreshCurrentPosition() => PInvoke.GetWindowRect(hwnd, (WindowRect*)Unsafe.AsPointer(ref currentPos));
+        public void RefreshCurrentPosition() => PInvoke.GetWindowRect(Hwnd, (WindowRect*)Unsafe.AsPointer(ref CurrentPos));
 
         public void ResetStyleToDefault()
         {
             // Reset the current style as it's using the initial one
-            Console.Write($"\rReset the window style enum to: 0x{(uint)currentStyle:x8}\t({ConverterTool.ToBinaryString((uint)currentStyle)})");
-            currentStyle = initialStyle;
-            PInvoke.SetWindowLong(hwnd, GWL_INDEX.GWL_STYLE, currentStyle);
+            Console.Write($"\rReset the window style enum to: 0x{(uint)CurrentStyle:x8}\t({ConverterTool.ToBinaryString((uint)CurrentStyle)})");
+            CurrentStyle = InitialStyle;
+            PInvoke.SetWindowLong(Hwnd, GWL_INDEX.GWL_STYLE, CurrentStyle);
         }
 
         public void ResetPosToDefault()
         {
             // Reset the current pos + size as it's using the initial one
-            currentPos = initialPos;
+            CurrentPos = InitialPos;
 
             // Then apply the change
-            ChangePosition(currentPos.X, currentPos.Y, currentPos.Width, currentPos.Height);
+            ChangePosition(CurrentPos.X, CurrentPos.Y, CurrentPos.Width, CurrentPos.Height);
         }
 
         public void ApplyStyle()
         {
             // Apply the current style with GWL_STYLE flag to SetWindowLongA() native method
-            Console.Write($"\rSetting the window style enum to: 0x{(uint)currentStyle:x8}\t({ConverterTool.ToBinaryString((uint)currentStyle)})");
-            PInvoke.SetWindowLong(hwnd, GWL_INDEX.GWL_STYLE, currentStyle);
+            Console.Write($"\rSetting the window style enum to: 0x{(uint)CurrentStyle:x8}\t({ConverterTool.ToBinaryString((uint)CurrentStyle)})");
+            PInvoke.SetWindowLong(Hwnd, GWL_INDEX.GWL_STYLE, CurrentStyle);
         }
 
-        public bool IsProcessAlive() => ProcessChecker.IsProcessExist(procId);
+        public bool IsProcessAlive() => ProcessChecker.IsProcessExist(ProcId);
     }
 }

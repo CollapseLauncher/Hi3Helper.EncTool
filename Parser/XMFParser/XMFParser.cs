@@ -4,28 +4,28 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+// ReSharper disable InconsistentNaming
 namespace Hi3Helper.EncTool.Parser
 {
     public sealed partial class XMFParser
     {
-        internal const byte _signatureLength = 0x10;    // 16
-        internal const byte _versioningLength = 0x04;   // 4
-        internal const byte _allowedMinVersion = 0x00;  // 0
-        internal const byte _allowedMaxVersion = 0x40;  // 64
-        internal string _xmfPath;
-        internal static string _folderPath;
-        private bool _isMeta;
+        internal const  byte   SignatureLength   = 0x10;    // 16
+        internal const  byte   VersioningLength  = 0x04;   // 4
+        internal const  byte   AllowedMinVersion = 0x00;  // 0
+        internal const  byte   AllowedMaxVersion = 0x40;  // 64
+        internal        string XmfPath;
+        internal static string FolderPath;
 
         public XMFParser(string path, Stream xmfStream, bool isMeta)
         {
-            _xmfPath = path;
-            _isMeta = isMeta;
+            XmfPath = path;
+            IsMeta = isMeta;
 
             ParseMetadata(xmfStream, isMeta);
 
 #if DEBUG
-            Console.WriteLine($"XMF File Loaded   : {_xmfPath}");
-            Console.WriteLine($"Folder Path       : {_folderPath}");
+            Console.WriteLine($"XMF File Loaded   : {XmfPath}");
+            Console.WriteLine($"Folder Path       : {FolderPath}");
             Console.WriteLine($"Version Signature : {HexTool.BytesToHexUnsafe(VersionSignature)}");
             Console.WriteLine($"Manifest Version  : {string.Join('.', Version)}");
             Console.WriteLine($"Block Count       : {BlockCount}");
@@ -35,14 +35,11 @@ namespace Hi3Helper.EncTool.Parser
         }
 
         public Dictionary<string, uint> BlockIndexCatalog { get; private set; }
-
-        public byte[] VersionSignature { get; private set; }
-
-        public int[] Version { get; private set; }
-
-        public string BlockDirectory { get => _folderPath; }
-
-        public XMFBlock[] BlockEntry { get; private set; }
+        public byte[]                   VersionSignature  { get; private set; }
+        public int[]                    Version           { get; private set; }
+        public bool                     IsMeta            { get; }
+        public string                   BlockDirectory    { get => FolderPath; }
+        public XMFBlock[]               BlockEntry        { get; private set; }
 
         public uint BlockCount
         {
@@ -57,8 +54,7 @@ namespace Hi3Helper.EncTool.Parser
         {
             get
             {
-                if (BlockEntry == null) return 0;
-                return BlockEntry.Sum(x => x.Size);
+                return BlockEntry?.Sum(x => x.Size) ?? 0;
             }
         }
     }

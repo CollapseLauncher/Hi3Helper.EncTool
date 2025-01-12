@@ -1,17 +1,18 @@
 using Hi3Helper.Data;
 using System.Text.Json.Serialization;
+// ReSharper disable InconsistentNaming
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
     [JsonConverter(typeof(JsonStringEnumConverter<AudioLanguageType>))]
-    public enum AudioLanguageType : int // TypeDefIndex: 33475
+    public enum AudioLanguageType // TypeDefIndex: 33475
     {
         Common = 0,
         Chinese = 1,
         Japanese = 2
     }
 
-    public enum AudioPCKType : int // TypeDefIndex: 33474
+    public enum AudioPCKType // TypeDefIndex: 33474
     {
         MustHave = 0,       // 0
         MapBtn,             // 1

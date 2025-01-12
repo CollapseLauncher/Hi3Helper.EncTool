@@ -14,22 +14,22 @@ namespace Hi3Helper.EncTool.WindowTool
 {
     public class ResizableWindowHook
     {
-        const int refreshRateMs = 250;  // Loop refresh rate = 250ms
+        private const int RefreshRateMs = 250;  // Loop refresh rate = 250ms
 
-        public unsafe void StartHook(string processName, int? height, int? width,
-                                    CancellationToken token = default,
-                                    bool isNeedResetOnInit = false,
-                                    ILogger? logger = null,
-                                    string? checkProcessFromDir = null)
+        public void StartHook(string            processName, int? height, int? width,
+                              CancellationToken token               = default,
+                              bool              isNeedResetOnInit   = false,
+                              ILogger?          logger              = null,
+                              string?           checkProcessFromDir = null)
         {
             try
             {
-                // Try get the window property from the process
+                // Try to get the window property from the process
                 WindowProperty targetWindow = GetProcessWindowProperty(processName, checkProcessFromDir, token, logger);
 
                 // Assign the current style and initial pos + size of the window to old variable
-                WS_STYLE oldStyle = targetWindow.initialStyle;
-                WindowRect oldPos = targetWindow.initialPos;
+                WS_STYLE oldStyle = targetWindow.InitialStyle;
+                WindowRect oldPos = targetWindow.InitialPos;
 
                 // Always set the window border and resizable flag to true
                 targetWindow.ToggleBorder(true);
@@ -45,8 +45,8 @@ namespace Hi3Helper.EncTool.WindowTool
                     targetWindow.RefreshCurrentPosition();
 
                     // Get the current style and pos + size of the window
-                    WS_STYLE curStyle = targetWindow.currentStyle;
-                    WindowRect curPos = targetWindow.currentPos;
+                    WS_STYLE curStyle = targetWindow.CurrentStyle;
+                    WindowRect curPos = targetWindow.CurrentPos;
 
                     // Check if the window is in a borderless fullscreen (by checking if it doesn't have SYS_MENU flag)
                     // and the style is changed, then reset the style and pos + size to the last state.
@@ -84,17 +84,17 @@ namespace Hi3Helper.EncTool.WindowTool
                                 targetWindow.ChangePosition(oldPos.X, oldPos.Y, oldPos.Width, oldPos.Height);
                             }
 
-                            curStyle = targetWindow.currentStyle;
-                            curPos = targetWindow.currentPos;
+                            curStyle = targetWindow.CurrentStyle;
+                            curPos   = targetWindow.CurrentPos;
                         }
 
                         // Assign the old style and pos + size variable to the current one.
                         oldStyle = curStyle;
-                        oldPos = curPos;
+                        oldPos   = curPos;
                     }
 
                     // Do the delay before running the next loop iteration.
-                    Thread.Sleep(refreshRateMs);
+                    Thread.Sleep(RefreshRateMs);
                 }
             }
             catch (Exception e)
@@ -110,7 +110,7 @@ namespace Hi3Helper.EncTool.WindowTool
             }
         }
 
-        private bool IsStyleChanged(WS_STYLE oldStyle, WS_STYLE newStyle)
+        private static bool IsStyleChanged(WS_STYLE oldStyle, WS_STYLE newStyle)
         {
             // Get the mask by OR the WS_MINIMIZE and WS_MAXIMIZE flag
             const WS_STYLE ignoreMinimizeMaximizeStyleMask = WS_STYLE.WS_MINIMIZE | WS_STYLE.WS_MAXIMIZE;
@@ -123,19 +123,19 @@ namespace Hi3Helper.EncTool.WindowTool
             return oldStyle != newStyle;
         }
 
-        private unsafe WindowProperty GetProcessWindowProperty(string processName, string? checkProcessFromDir, CancellationToken token, ILogger? logger)
+        private static unsafe WindowProperty GetProcessWindowProperty(string processName, string? checkProcessFromDir, CancellationToken token, ILogger? logger)
         {
             logger?.LogDebug($"Waiting for process handle: {processName}");
 
             // Do the loop to try getting the process
             while (!token.IsCancellationRequested)
             {
-                // Try get the process detail
+                // Try to get the process detail
                 bool isProcessExist = ProcessChecker.IsProcessExist(processName, out int processId, out nint hwnd, checkProcessFromDir ?? "", true, logger);
                 // If the return process is null (not found), then delay and redo the loop
                 if (!isProcessExist)
                 {
-                    Thread.Sleep(refreshRateMs);
+                    Thread.Sleep(RefreshRateMs);
                     continue;
                 }
 

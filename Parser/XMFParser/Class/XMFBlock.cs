@@ -3,20 +3,23 @@ using Hi3Helper.UABT.Binary;
 using System;
 using System.Collections.Generic;
 using System.IO;
+// ReSharper disable CommentTypo
+// ReSharper disable InconsistentNaming
 
 namespace Hi3Helper.EncTool.Parser
 {
     public class XMFBlock
     {
-        private const byte _uniqueIDLength = 3;
-        private const byte _hashLength = 16;
-        private bool _isMeta;
+        private const    byte UniqueIDLength = 3;
+        private const    byte HashLength     = 16;
+        private readonly bool _isMeta;
 
         /// <summary>
-        /// This initialize the read process of the block information
-        /// inside of the XMF file.
+        /// This initializes the read process of the block information
+        /// inside the XMF file.
         /// </summary>
-        /// <param name="reader">The Endianess-aware BinaryReader of the XMF file.</param>
+        /// <param name="reader">The Endianness-aware BinaryReader of the XMF file.</param>
+        /// <param name="isMeta">Determine whether the XMF file is a metadata-kind.</param>
         internal XMFBlock(EndianBinaryReader reader, bool isMeta)
         {
             _isMeta = isMeta;
@@ -27,13 +30,13 @@ namespace Hi3Helper.EncTool.Parser
         private void LoadBlockInfoHeader(EndianBinaryReader reader)
         {
             // Read Hash and UniqueID of the block file in XMF metadata.
-            Hash = reader.ReadBytes(_hashLength);
-            UniqueID = new int[_uniqueIDLength];
+            Hash     = reader.ReadBytes(HashLength);
+            UniqueID = new int[UniqueIDLength];
 
-            for (int i = 0; i < _uniqueIDLength; i++)
+            for (int i = 0; i < UniqueIDLength; i++)
             {
                 UniqueID[i] = reader.ReadInt32();
-            } 
+            }
 
             // Read size of the block file and allocate the AssetEntry based on the
             // count in XMF metadata.
@@ -43,12 +46,12 @@ namespace Hi3Helper.EncTool.Parser
 
         private void LoadBlockInfoMetadata(EndianBinaryReader reader)
         {
-            // Read the block information inside of the metadata section.
+            // Read the block information inside the metadata section.
             for (uint i = 0; i < AssetCount; i++)
             {
-                short namelength = reader.ReadInt16();
-                ReadOnlySpan<char> name = reader.ReadChars(namelength);
-                uint offset = reader.ReadUInt32();
+                short              nameLength = reader.ReadInt16();
+                ReadOnlySpan<char> name       = reader.ReadChars(nameLength);
+                uint               offset     = reader.ReadUInt32();
 
                 // Initialize the AssetEntry array.
                 AssetEntry[i] = new XMFAsset(name.ToString(), 0, offset, Hash);
@@ -56,7 +59,7 @@ namespace Hi3Helper.EncTool.Parser
 
             // Get the size information for the block assets.
             // This unfortunately cannot be done directly by reading the XMF file
-            // directly since the size information is not included inside of the
+            // directly since the size information is not included inside the
             // XMF file. To solve this, we need to subtract the numbers of End
             // and Start Offset.
             LoadBlockInfoAssetSize(AssetCount);
@@ -96,12 +99,12 @@ namespace Hi3Helper.EncTool.Parser
         /// <exception cref="KeyNotFoundException"></exception>
         public XMFAsset GetAssetByName(string name)
         {
-            if (!AssetIndexCatalog.ContainsKey(name))
+            if (!AssetIndexCatalog.TryGetValue(name, out var value))
             {
                 throw new KeyNotFoundException($"Asset \"{name}\" in block: {HashString} doesn't exist!");
             }
 
-            return AssetEntry[AssetIndexCatalog[name]];
+            return AssetEntry[value];
         }
 
         /// <summary>
@@ -158,7 +161,7 @@ namespace Hi3Helper.EncTool.Parser
         /// <summary>
         /// The absolute file path of the block file.
         /// </summary>
-        public string FilePath { get => Path.Combine(XMFParser._folderPath, HashString + ".wmv"); }
+        public string FilePath { get => Path.Combine(XMFParser.FolderPath, HashString + ".wmv"); }
 
         /// <summary>
         /// Gets a status whether the file exist or not.
