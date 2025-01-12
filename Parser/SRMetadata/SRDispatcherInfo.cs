@@ -196,7 +196,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 Console.WriteLine($"    NativeDataRefUrl: {localNativeDataRefUrl}");
                 Console.WriteLine($"    NativeDataRefPath: {localNativeDataRefPath}");
 #endif
-                await DownloadArchiveInfo(downloadClient, downloadProgressDelegate, localNativeDataRefUrl, localNativeDataRefName);
+                await DownloadArchiveInfo(downloadClient, downloadProgressDelegate, localNativeDataRefUrl, localNativeDataRefPath);
 
                 string localNativeDataResName = NativeDataDataDictKey + nativeDataArchiveInfo.ContentHash + ".bytes";
                 string localNativeDataResUrl = ConverterTool.CombineURLFromString(nativeDataArchiveInfo.FullAssetsDownloadUrl, localNativeDataResName);
