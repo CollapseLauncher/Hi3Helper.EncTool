@@ -1,4 +1,5 @@
-﻿using Hi3Helper.Data;
+﻿using System;
+using Hi3Helper.Data;
 using Hi3Helper.UABT.Binary;
 // ReSharper disable InconsistentNaming
 // ReSharper disable PartialTypeWithSinglePart

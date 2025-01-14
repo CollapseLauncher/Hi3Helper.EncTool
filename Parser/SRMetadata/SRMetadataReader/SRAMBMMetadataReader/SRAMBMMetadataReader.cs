@@ -1,5 +1,6 @@
 ﻿using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
+using System;
 using System.Collections.Generic;
 // ReSharper disable IdentifierTypo
 // ReSharper disable SwitchStatementMissingSomeEnumCasesNoDefault
