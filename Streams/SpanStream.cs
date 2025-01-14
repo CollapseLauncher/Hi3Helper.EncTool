@@ -1,10 +1,11 @@
 ﻿using System;
 using System.IO;
 // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool
 {
-    public class SpanStream(Memory<byte> @base) : Stream
+    public sealed partial class SpanStream(Memory<byte> @base) : Stream
     {
         private          long         _position;
 

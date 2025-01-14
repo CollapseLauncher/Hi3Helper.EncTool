@@ -6,10 +6,11 @@ using System.IO;
 // ReSharper disable IdentifierTypo
 // ReSharper disable InconsistentNaming
 // ReSharper disable StringLiteralTypo
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal sealed class SRMIMetadataReader : SRMetadataBase
+    internal sealed partial class SRMIMetadataReader : SRMetadataBase
     {
         protected override string          ParentRemotePath { get; set; }
         protected override string          MetadataPath     { get; set; }

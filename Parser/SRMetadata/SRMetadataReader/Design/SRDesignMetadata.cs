@@ -1,7 +1,8 @@
 ﻿// ReSharper disable InconsistentNaming
+// ReSharper disable PartialTypeWithSinglePart
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal sealed class SRDesignMetadata : SRLuaMetadata
+    internal sealed partial class SRDesignMetadata : SRLuaMetadata
     {
         private SRDesignMetadata(string baseURL) : base(baseURL)
         {

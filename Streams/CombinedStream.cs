@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Linq;
 // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool
 {
@@ -21,7 +22,7 @@ namespace Hi3Helper.EncTool
     /// streams which are considered to be chained together to one large stream. Only reading
     /// and seeking is allowed, writing will throw exceptions.
     /// </summary>
-    public sealed class CombinedStream : Stream
+    public sealed partial class CombinedStream : Stream
     {
         private readonly Stream[] _underlyingStreams;
         private readonly long[]   _underlyingStartingPositions;

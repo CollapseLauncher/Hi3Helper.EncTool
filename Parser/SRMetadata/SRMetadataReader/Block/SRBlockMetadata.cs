@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 // ReSharper disable InconsistentNaming
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal sealed class SRBlockMetadata : SRAsbMetadata
+    internal sealed partial class SRBlockMetadata : SRAsbMetadata
     {
         private SRBlockMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
         {

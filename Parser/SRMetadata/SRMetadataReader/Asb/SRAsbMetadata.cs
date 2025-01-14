@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRAsbMetadata : SRMetadataBase
+    internal partial class SRAsbMetadata : SRMetadataBase
     {
         private readonly Dictionary<string, SRDispatchArchiveInfo> _dispatchArchiveInfo;
         private          SRAMBMMetadataStruct                      _structSRAMData;

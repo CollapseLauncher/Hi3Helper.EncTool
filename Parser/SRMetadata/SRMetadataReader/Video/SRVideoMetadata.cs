@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
 // ReSharper disable IdentifierTypo
 // ReSharper disable InconsistentNaming
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal sealed class SRVideoMetadata : SRAudioMetadata
+    internal sealed partial class SRVideoMetadata : SRAudioMetadata
     {
         private SRVideoMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(dictArchiveInfo, baseURL)
         {

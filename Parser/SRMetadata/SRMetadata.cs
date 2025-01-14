@@ -4,10 +4,11 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable InconsistentNaming
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
-    public sealed class SRMetadata(
+    public sealed partial class SRMetadata(
         string dispatchURL,
         string dispatchSeed,
         string dispatchFormatTemplate,

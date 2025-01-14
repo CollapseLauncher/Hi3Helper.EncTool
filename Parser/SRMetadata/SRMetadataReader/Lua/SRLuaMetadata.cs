@@ -1,11 +1,11 @@
 ﻿using Hi3Helper.Data;
 using Hi3Helper.UABT.Binary;
-using System;
 // ReSharper disable InconsistentNaming
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
-    internal class SRLuaMetadata : SRIFixMetadata
+    internal partial class SRLuaMetadata : SRIFixMetadata
     {
         protected SRAssetType InheritedAssetType { get; set; }
 

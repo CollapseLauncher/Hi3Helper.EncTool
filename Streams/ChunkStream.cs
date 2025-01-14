@@ -2,10 +2,11 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool
 {
-    public sealed class ChunkStream : Stream
+    public sealed partial class ChunkStream : Stream
     {
         private readonly Stream _stream;
         private          long   Start       { get; }

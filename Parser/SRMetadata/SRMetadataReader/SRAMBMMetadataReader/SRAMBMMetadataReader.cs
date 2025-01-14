@@ -1,11 +1,11 @@
 ﻿using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
-using System;
 using System.Collections.Generic;
 // ReSharper disable IdentifierTypo
 // ReSharper disable SwitchStatementMissingSomeEnumCasesNoDefault
 // ReSharper disable StringLiteralTypo
 // ReSharper disable InconsistentNaming
+// ReSharper disable PartialTypeWithSinglePart
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
@@ -32,7 +32,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         JSON
     }
 
-    internal sealed class SRAMBMMetadataReader : SRMetadataBase
+    internal sealed partial class SRAMBMMetadataReader : SRMetadataBase
     {
         internal           List<SRAMBMMetadataStruct> StructList             { get; set; }
         internal           SRAMBMMetadataType         StructType             { get; set; }
