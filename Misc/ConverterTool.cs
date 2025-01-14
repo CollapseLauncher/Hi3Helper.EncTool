@@ -217,12 +217,21 @@ namespace Hi3Helper.Data
             => Math.Round(fromProgress / toProgress * 100, decimalDigits, MidpointRounding.ToEven);
 
         private static readonly SpanAction<char, nint> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
-        public static unsafe string NormalizePath(ReadOnlySpan<char> source)
+        public static unsafe string NormalizePath(ReadOnlySpan<char> source, bool trimStart = true)
         {
-            ReadOnlySpan<char> sourceTrimmed = source.TrimStart('/');
+            ReadOnlySpan<char> sourceTrimmed = trimStart ? source.TrimStart('/') : source;
             fixed (char* ptr = &MemoryMarshal.GetReference(sourceTrimmed))
             {
                 return string.Create(sourceTrimmed.Length, (nint)ptr, s_normalizePathReplaceCore);
+            }
+        }
+
+        public static unsafe void NormalizePathInplaceNoTrim(ReadOnlySpan<char> source)
+        {
+            fixed (char* ptr = &MemoryMarshal.GetReference(source))
+            {
+                Span<char> unlockedSource = new(ptr, source.Length);
+                s_normalizePathReplaceCore(unlockedSource, (nint)ptr);
             }
         }
 
