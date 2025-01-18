@@ -3,14 +3,12 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.IO.Hashing;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Security.AccessControl;
-using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
@@ -24,36 +22,7 @@ namespace Hi3Helper.Data
 
     public static class ConverterTool
     {
-        private static readonly MD5 MD5Hash = MD5.Create();
-        private static readonly Crc32 crc32 = new Crc32();
         public static string[] SizeSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
-
-        public static string BytesToCRC32Simple(Stream buffer)
-        {
-            crc32.Append(buffer);
-            byte[] arrayResult = crc32.GetHashAndReset();
-            Array.Reverse(arrayResult);
-
-            return HexTool.BytesToHexUnsafe(arrayResult);
-        }
-
-        public static string BytesToCRC32Simple(string str)
-        {
-            byte[] strBytes = Encoding.UTF8.GetBytes(str);
-            byte[] hashSpan = Crc32.Hash(strBytes);
-            Array.Reverse(hashSpan);
-
-            return HexTool.BytesToHexUnsafe(hashSpan);
-        }
-
-        public static int BytesToCRC32Int(Stream buffer)
-        {
-            crc32.Append(buffer);
-            byte[] arrayResult = crc32.GetHashAndReset();
-            Array.Reverse(arrayResult);
-
-            return BitConverter.ToInt32(arrayResult);
-        }
 
         public static bool TrySerializeStruct<T>(T[] input, byte[] output, out int read)
         {
@@ -148,22 +117,6 @@ namespace Hi3Helper.Data
             }
 
             return newArray;
-        }
-
-        public static int BytesToCRC32Int(string str)
-        {
-            byte[] strBytes = Encoding.UTF8.GetBytes(str);
-            byte[] hashSpan = Crc32.Hash(strBytes);
-            Array.Reverse(hashSpan);
-
-            return BitConverter.ToInt32(hashSpan);
-        }
-
-        public static string CreateMD5Shared(Stream fs)
-        {
-            MD5Hash.Initialize();
-            ReadOnlySpan<byte> res = MD5Hash.ComputeHash(fs);
-            return HexTool.BytesToHexUnsafe(res);
         }
 
         /// <summary>
