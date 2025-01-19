@@ -53,7 +53,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             while (!streamReader.EndOfStream)
             {
                 string line = streamReader.ReadLine()!;
-                versionList.Add((PkgVersionProperties)JsonSerializer.Deserialize(line, typeof(PkgVersionProperties), JSONContext.Default)!);
+                versionList.Add((PkgVersionProperties)JsonSerializer.Deserialize(line, typeof(PkgVersionProperties), JsonContext.Default)!);
             }
 
             // Serialize the list into binary format
