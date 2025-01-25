@@ -65,7 +65,7 @@ namespace Hi3Helper.EncTool.WindowTool
             const WS_STYLE toggleWinButtonStyle = WS_STYLE.WS_SYSMENU;
             CurrentStyle = isEnable ?
                 CurrentStyle | toggleWinButtonStyle
-              : CurrentStyle & ~(toggleWinButtonStyle);
+              : CurrentStyle & ~toggleWinButtonStyle;
         }
 
         public void ChangePosition(int? x = null, int? y = null, int? width = null, int? height = null)

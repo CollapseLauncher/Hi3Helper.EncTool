@@ -52,5 +52,5 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
     }
 
     [JsonSerializable(typeof(PkgVersionProperties))]
-    internal partial class JsonContext : JsonSerializerContext { }
+    internal partial class JsonContext : JsonSerializerContext;
 }

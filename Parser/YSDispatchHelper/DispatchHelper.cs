@@ -22,7 +22,7 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
 {
     [JsonSerializable(typeof(DispatchInfo))]
     [JsonSerializable(typeof(PkgVersionProperties))]
-    internal partial class DispatchHelperContext : JsonSerializerContext { }
+    internal partial class DispatchHelperContext : JsonSerializerContext;
 
     public sealed class DispatchHelper
     {

@@ -32,7 +32,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
     [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true)]
     [JsonSerializable(typeof(SRDispatchArchiveInfo))]
-    internal sealed partial class SRDispatchArchiveInfoContext : JsonSerializerContext { }
+    internal sealed partial class SRDispatchArchiveInfoContext : JsonSerializerContext;
 
     internal sealed partial class SRDispatcherInfo : IDisposable
     {

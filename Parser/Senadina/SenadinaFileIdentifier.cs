@@ -159,7 +159,7 @@ namespace Hi3Helper.EncTool.Parser.Senadina
         public async Task<Stream?> GetOriginalFileStream(HttpClient client, CancellationToken token = default)
         {
             const string dictKey = "origUrl";
-            if (!this.TryReadStringStoreAs(dictKey, out string? result))
+            if (!TryReadStringStoreAs(dictKey, out string? result))
             {
                 throw new
                     KeyNotFoundException("origUrl from pustaka's store is not exist. Please report this issue to our Discord Server!");

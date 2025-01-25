@@ -8,7 +8,5 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
     [JsonSerializable(typeof(SleepyFileInfo))]
     [JsonSerializable(typeof(SleepyGateway))]
     [JsonSerializable(typeof(SleepyGatewayRegionContent))]
-    internal partial class SleepyContext : JsonSerializerContext
-    {
-    }
+    internal partial class SleepyContext : JsonSerializerContext;
 }

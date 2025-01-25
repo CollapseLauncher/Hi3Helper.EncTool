@@ -22,7 +22,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
     [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true)]
     [JsonSerializable(typeof(SRJSONAssetInfo))]
-    internal sealed partial class SRJSONAssetInfoContext : JsonSerializerContext { }
+    internal sealed partial class SRJSONAssetInfoContext : JsonSerializerContext;
 
     internal partial class SRAudioMetadata : SRAsbMetadata
     {
@@ -62,14 +62,14 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                     AssetType = AssetType,
                     Hash      = HexTool.HexToBytesUnsafe(assetInfo?.Md5 ?? ""),
                     LocalName = assetInfo?.Path,
-                    RemoteURL = ((assetInfo?.Patch ?? false) ? BaseURL + ParentRemotePath : AssetProperty.BaseURL) + '/' + assetInfo?.Path,
+                    RemoteURL = (assetInfo?.Patch ?? false ? BaseURL + ParentRemotePath : AssetProperty.BaseURL) + '/' + assetInfo?.Path,
                     Size      = assetInfo?.Size ?? 0,
                     IsPatch   = assetInfo?.Patch ?? false
                 };
             #nullable restore
 
 #if DEBUG
-                Console.WriteLine($"    {index} {assetInfo.Path} -> {assetInfo.Md5} | {assetInfo.Size} bytes | IsPatch: {assetInfo.Patch}");
+                Console.WriteLine($"    {index} {assetInfo?.Path} -> {assetInfo?.Md5} | {assetInfo?.Size} bytes | IsPatch: {assetInfo?.Patch}");
 #endif
 
                 AssetProperty.AssetList.Add(asset);

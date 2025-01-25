@@ -304,7 +304,7 @@ namespace Hi3Helper.Data
             _ => null
         };
 
-        public static float ConvertRangeValue(float sMin, float sMax, float sValue, float tMin, float tMax) => ((sValue - sMin) * (tMax - tMin) / (sMax - sMin)) + tMin;
+        public static float ConvertRangeValue(float sMin, float sMax, float sValue, float tMin, float tMax) => (sValue - sMin) * (tMax - tMin) / (sMax - sMin) + tMin;
 
         public static string CombineURLFromString(ReadOnlySpan<char> baseURL, params string[] segments)
         {
