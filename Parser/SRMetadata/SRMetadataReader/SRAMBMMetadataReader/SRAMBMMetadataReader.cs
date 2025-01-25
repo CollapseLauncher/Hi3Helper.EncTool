@@ -1,6 +1,8 @@
 ﻿using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
+#if DEBUG
 using System;
+#endif
 using System.Collections.Generic;
 // ReSharper disable IdentifierTypo
 // ReSharper disable SwitchStatementMissingSomeEnumCasesNoDefault
@@ -83,9 +85,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             uint structCount;
             uint structSize;
 
-        #if DEBUG
+#if DEBUG
             Console.WriteLine($"{Magic} Parsed Info: ({reader.BaseStream.Length} bytes) ({(StructType == SRAMBMMetadataType.SRAM ? count : 1)} structs)");
-        #endif
+#endif
 
             switch (StructType)
             {
@@ -128,16 +130,16 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         {
             for (int a = 0; a < assetList.Count; a++)
             {
-            #if DEBUG
+#if DEBUG
                 Console.WriteLine($"    Struct: {a} -> offset: {assetList[a].Offset} | count: {assetList[a].StructCount} | size: {assetList[a].StructSize} bytes | toSize: {assetList[a].StructSize * assetList[a].StructCount} bytes");
-            #endif
+#endif
                 reader.Position = assetList[a].Offset;
 
                 if (a > 0)
                 {
-                #if DEBUG
+#if DEBUG
                     Console.WriteLine($"    Skipping struct index: {a} info");
-                #endif
+#endif
                     continue;
                 }
 

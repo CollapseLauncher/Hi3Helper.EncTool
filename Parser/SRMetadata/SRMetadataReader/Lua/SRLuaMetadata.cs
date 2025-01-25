@@ -1,4 +1,6 @@
-﻿using System;
+﻿#if DEBUG
+using System;
+#endif
 using Hi3Helper.Data;
 using Hi3Helper.UABT.Binary;
 
@@ -50,27 +52,47 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             {
                 _                = reader.ReadUInt32(); // version
                 count            = reader.ReadUInt32();
-                childAssetsCount = reader.ReadUInt32();
+#if DEBUG
+                childAssetsCount
+#else
+                _
+#endif
+                    = reader.ReadUInt32();
                 toSeekPos        = 12;
-            #if DEBUG
+#if DEBUG
                 Console.WriteLine($"Switching to read new {InheritedAssetType} metadata format! -> parentAsset: {count} childAsset: {childAssetsCount}");
-            #endif
+#endif
             }
 
-        #if DEBUG
+#if DEBUG
             Console.WriteLine($"{InheritedAssetType} Assets Parsed Info: ({reader.BaseStream.Length} bytes) ({count} assets)");
-        #endif
+#endif
 
+#if DEBUG
             uint sanityChildAssetsCount = 0;
+#endif
             for (int i = 0; i < count; i++)
             {
-                long   lastPos = reader.Position;
-                byte[] assetID = reader.ReadBytes(4);
+            #if DEBUG
+                long   lastPos
+            #else
+                _
+            #endif
+                    = reader.Position;
+            #if DEBUG
+                byte[] assetID
+            #else
+                _
+                #endif
+                    = reader.ReadBytes(4);
                 byte[] hash    = reader.ReadBytes(16);
                 _ = reader.ReadUInt32(); // type
                 uint size        = reader.ReadUInt32();
                 uint insideCount = reader.ReadUInt32();
+
+#if DEBUG
                 sanityChildAssetsCount += insideCount;
+#endif
 
                 // toSeekPos        = Number of bytes to read the asset's content
                 // insideCount      = Number of content count inside the asset
@@ -88,17 +110,17 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                     RemoteURL = BaseURL + ParentRemotePath + '/' + assetName,
                     Size      = size
                 });
-            #if DEBUG
+#if DEBUG
                 Console.WriteLine($"    Mark: {HexTool.BytesToHexUnsafe(assetID)} {hashName} -> Size: {size} Pos: {lastPos} Seek: {toSeek} Count: {insideCount}");
-            #endif
+#endif
             }
 
-        #if DEBUG
+#if DEBUG
             if (count == 255 && sanityChildAssetsCount != childAssetsCount) throw new IndexOutOfRangeException("SANITY CHECK: childAssetsCount is not equal as sanityChildAssetsCount. There might be another additional data here");
-        #endif
-        #if DEBUG
+#endif
+#if DEBUG
             if (reader.Position < reader.BaseStream.Length) throw new IndexOutOfRangeException("SANITY CHECK: reader.Position is not equal as reader.BaseStream.Length. There might be another additional data here");
-        #endif
+#endif
         }
     }
 }

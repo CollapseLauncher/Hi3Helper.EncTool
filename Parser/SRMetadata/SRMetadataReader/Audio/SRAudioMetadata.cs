@@ -1,5 +1,7 @@
 ﻿using Hi3Helper.Data;
+#if DEBUG
 using System;
+#endif
 using System.Collections.Generic;
 using System.IO;
 using System.Text;

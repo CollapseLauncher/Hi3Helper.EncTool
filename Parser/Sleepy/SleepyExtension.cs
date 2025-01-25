@@ -2,6 +2,7 @@
 using System.Buffers.Text;
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 // ReSharper disable PartialTypeWithSinglePart
@@ -200,6 +201,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
         /// Used when writing to buffers not guaranteed to fit the unescaped result.
         /// </summary>
         [DebuggerNonUserCode]
+        [SuppressMessage("ReSharper", "All")]
         private static bool TryUnescape(ReadOnlySpan<byte> source, Span<byte> destination, int idx, out int written)
         {
             Debug.Assert(idx >= 0 && idx < source.Length);
