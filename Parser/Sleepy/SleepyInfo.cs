@@ -13,6 +13,7 @@ using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Hi3Helper.EncTool.Parser.Sleepy
 {
     public enum FileInfoKind
@@ -26,16 +27,15 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
     public class SleepyInfo
     {
-        private SleepyProperty Property         { get; }
-        private RSA            RsaInstance      { get; }
-        private HttpClient     Client           { get; }
-        private SleepyDispatch ResponseDispatch { get; set; }
-        private SleepyGateway  ResponseGateway  { get; set; }
+        private SleepyProperty Property        { get; }
+        private RSA            RsaInstance     { get; }
+        private HttpClient     Client          { get; }
+        private SleepyGateway? ResponseGateway { get; set; }
 
         private SleepyInfo(HttpClient httpClient, RSA rsaInstance, SleepyProperty property)
         {
-            Client = httpClient;
-            Property = property;
+            Client      = httpClient;
+            Property    = property;
             RsaInstance = rsaInstance;
         }
 
@@ -44,17 +44,16 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
         public async Task Initialize(CancellationToken token = default)
         {
-            // TODO: Add queries to the request header
-            Uri dispatchUrl = CreateDispatchUri(out Dictionary<string, string> dispatchUrlQueries);
-            ResponseDispatch = (await GetJsonFromUrl(dispatchUrl, dispatchUrlQueries, SleepyContext.Default.SleepyDispatch, token)).ThrowIfUnsuccessful();
+            // Get the primary gateway name
+            SleepyDispatchRegionInfo? regionInfo = await GetRegionInfoFromGatewayName(Property.GatewayName, token);
+            // Re-assign and get the fallback if regionInfo is still null
+            regionInfo ??= await GetRegionInfoFromGatewayName(Property.GatewayNameFallback, token);
 
-            SleepyDispatchRegionInfo regionInfo = ResponseDispatch.RegionList
-                .FirstOrDefault(x => x.GatewayName
-                    .Equals(Property.GatewayName, StringComparison.OrdinalIgnoreCase));
-
+            // If the region info is still null, throw
             if (regionInfo == null)
                 throw new NullReferenceException($"Content does not contain region: {Property.GatewayName}");
 
+            // Get the gateway region URL
             Uri gatewayRegionUrl = CreateGatewayRegionUri(regionInfo, out Dictionary<string, string> gatewayRegionUrlQueries); // TODO: Add queries to the request header
             SleepyGatewayRegionContent gatewayRegionContentResponse = await GetJsonFromUrl(gatewayRegionUrl, gatewayRegionUrlQueries, SleepyContext.Default.SleepyGatewayRegionContent, token);
 
@@ -73,6 +72,25 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                 string baseFileRevision = await Client.GetStringAsync(baseFileUrl, token);
                 ResponseGateway.CdnConfig.GameResConfig.BaseRevision = baseFileRevision;
             }
+        }
+
+        private async Task<SleepyDispatchRegionInfo?> GetRegionInfoFromGatewayName(string gatewayName, CancellationToken cancellationToken)
+        {
+            // TODO: Add queries to the request header
+            Uri dispatchUrl = CreateDispatchUri(out Dictionary<string, string> dispatchUrlQueries);
+            SleepyDispatch dispatcher = (await GetJsonFromUrl(
+                                                              dispatchUrl,
+                                                              dispatchUrlQueries,
+                                                              SleepyContext.Default.SleepyDispatch,
+                                                              cancellationToken)).ThrowIfUnsuccessful();
+
+            // Find the region info and return whether it's found or not (null)
+            SleepyDispatchRegionInfo? regionInfo = dispatcher
+                                                  .RegionList
+                                                  .FirstOrDefault(x => x.GatewayName.Equals(gatewayName, StringComparison.OrdinalIgnoreCase));
+
+            // Return the region info
+            return regionInfo;
         }
 
         private SleepyGateway ParseGatewayFromGatewayContent(SleepyGatewayRegionContent gatewayResponse)
@@ -116,7 +134,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                 Property.SeedString);
 
             string fullUrl = ConverterTool.CombineURLFromString(regionInfo.GatewayUrl, formattedQuery);
-            if (!Uri.TryCreate(fullUrl, UriKind.RelativeOrAbsolute, out Uri result))
+            if (!Uri.TryCreate(fullUrl, UriKind.RelativeOrAbsolute, out Uri? result))
             {
                 throw new InvalidDataException($"Gateway url: {fullUrl} is not a valid Url!");
             }
@@ -131,7 +149,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             string formattedQuery = string.Format(Property.DispatchQuery, Property.ChannelString, Property.VersionString);
 
             string fullUrl = ConverterTool.CombineURLFromString(Property.DispatchUrl, formattedQuery);
-            if (!Uri.TryCreate(fullUrl, UriKind.RelativeOrAbsolute, out Uri result))
+            if (!Uri.TryCreate(fullUrl, UriKind.RelativeOrAbsolute, out Uri? result))
             {
                 throw new InvalidDataException($"Dispatch url: {fullUrl} is not a valid Url!");
             }
@@ -163,7 +181,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             }
         }
 
-        private async Task<T> GetJsonFromUrl<T>(Uri url, Dictionary<string, string> httpHeader, JsonTypeInfo<T> typeInfo, CancellationToken token = default)
+        private async Task<T?> GetJsonFromUrl<T>(Uri url, Dictionary<string, string> httpHeader, JsonTypeInfo<T> typeInfo, CancellationToken token = default)
         {
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
             foreach (KeyValuePair<string, string> headerKvp in httpHeader)
@@ -177,34 +195,34 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             return await responseMessage.Content.ReadFromJsonAsync(typeInfo, token);
         }
 
-        public (string BaseUrl, SleepyFileInfo ReferenceFileInfo, string RevisionStamp) GetFileInfo(FileInfoKind kind)
+        public (string BaseUrl, SleepyFileInfo ReferenceFileInfo, string? RevisionStamp) GetFileInfo(FileInfoKind kind)
         {
-            SleepyGatewayMetadataConfig metadataConfig = kind switch
+            SleepyGatewayMetadataConfig? metadataConfig = kind switch
             {
-                FileInfoKind.Res or FileInfoKind.Audio or FileInfoKind.Base => ResponseGateway.CdnConfig.GameResConfig,
-                FileInfoKind.Data => ResponseGateway.CdnConfig.DesignDataConfig,
-                FileInfoKind.Silence => ResponseGateway.CdnConfig.SilenceDataConfig,
+                FileInfoKind.Res or FileInfoKind.Audio or FileInfoKind.Base => ResponseGateway?.CdnConfig.GameResConfig,
+                FileInfoKind.Data => ResponseGateway?.CdnConfig.DesignDataConfig,
+                FileInfoKind.Silence => ResponseGateway?.CdnConfig.SilenceDataConfig,
                 _ => throw new NotImplementedException($"FileInfoKind.{kind} is not supported!")
             };
 
             string findKeyName = $"{kind}_";
             string baseUrl = ConverterTool.CombineURLFromString(
-                metadataConfig.BaseUrl,
+                metadataConfig?.BaseUrl,
                 Property.BuildProperty.BuildIdentity,
                 Property.BuildProperty.BuildArea
                 );
 
-            SleepyFileInfo fileInfo = metadataConfig.FileInfoList.FirstOrDefault(x => x.FileName.StartsWith(findKeyName, StringComparison.OrdinalIgnoreCase));
+            SleepyFileInfo? fileInfo = metadataConfig?.FileInfoList.FirstOrDefault(x => x.FileName.StartsWith(findKeyName, StringComparison.OrdinalIgnoreCase));
             if (fileInfo == null)
                 throw new KeyNotFoundException("File information is not found inside of the gateway response!");
 
-            string revisionStamp = kind switch
+            string? revisionStamp = kind switch
             {
-                FileInfoKind.Res => $"{ResponseGateway.CdnConfig.GameResConfig.ResRevision}",
-                FileInfoKind.Base => ResponseGateway.CdnConfig.GameResConfig.BaseRevision,
-                FileInfoKind.Silence => $"{ResponseGateway.CdnConfig.SilenceDataConfig.SilenceRevision}",
-                FileInfoKind.Data => $"{ResponseGateway.CdnConfig.DesignDataConfig.DataRevision}",
-                FileInfoKind.Audio => $"{ResponseGateway.CdnConfig.GameResConfig.AudioRevision}",
+                FileInfoKind.Res => $"{ResponseGateway?.CdnConfig.GameResConfig.ResRevision}",
+                FileInfoKind.Base => ResponseGateway?.CdnConfig.GameResConfig.BaseRevision,
+                FileInfoKind.Silence => $"{ResponseGateway?.CdnConfig.SilenceDataConfig.SilenceRevision}",
+                FileInfoKind.Data => $"{ResponseGateway?.CdnConfig.DesignDataConfig.DataRevision}",
+                FileInfoKind.Audio => $"{ResponseGateway?.CdnConfig.GameResConfig.AudioRevision}",
                 _ => throw new NotImplementedException($"FileInfoKind.{kind} is not supported!")
             };
 
