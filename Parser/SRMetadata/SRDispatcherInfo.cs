@@ -235,9 +235,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private async Task ParseArchiveInfoFromStream(Stream stream, string gatewayDictKey, CancellationToken token)
         {
             using StreamReader reader = new StreamReader(stream);
-            while (!reader.EndOfStream)
+            while (await reader.ReadLineAsync(token) is { } line)
             {
-                string                line        = await reader.ReadLineAsync(token);
                 SRDispatchArchiveInfo archiveInfo = JsonSerializer.Deserialize(line, SRDispatchArchiveInfoContext.Default.SRDispatchArchiveInfo);
                 string baseUrl = string.IsNullOrEmpty(archiveInfo.BaseAssetsDownloadUrl) ?
                     RegionGateway.ValuePairs[gatewayDictKey] :

@@ -54,8 +54,13 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                 throw new NullReferenceException($"Content does not contain region: {Property.GatewayName}");
 
             // Get the gateway region URL
-            Uri gatewayRegionUrl = CreateGatewayRegionUri(regionInfo, out Dictionary<string, string> gatewayRegionUrlQueries); // TODO: Add queries to the request header
-            SleepyGatewayRegionContent gatewayRegionContentResponse = await GetJsonFromUrl(gatewayRegionUrl, gatewayRegionUrlQueries, SleepyContext.Default.SleepyGatewayRegionContent, token);
+            Uri gatewayRegionUrl =
+                CreateGatewayRegionUri(regionInfo,
+                                       out Dictionary<string, string>
+                                           gatewayRegionUrlQueries); // TODO: Add queries to the request header
+            SleepyGatewayRegionContent? gatewayRegionContentResponse =
+                await GetJsonFromUrl(gatewayRegionUrl,                                 gatewayRegionUrlQueries,
+                                     SleepyContext.Default.SleepyGatewayRegionContent, token);
 
             if (gatewayRegionContentResponse == null || gatewayRegionContentResponse.Content.Length < 32)
                 throw new NullReferenceException("Gateway content is empty!");
@@ -66,26 +71,24 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                 throw new NullReferenceException("Gateway response is empty!");
 
             var baseFileInfo = GetFileInfo(FileInfoKind.Base);
-            string baseFileUrl = ConverterTool.CombineURLFromString(baseFileInfo.BaseUrl, baseFileInfo.ReferenceFileInfo.FileName);
-            if (Client != null)
-            {
-                string baseFileRevision = await Client.GetStringAsync(baseFileUrl, token);
-                ResponseGateway.CdnConfig.GameResConfig.BaseRevision = baseFileRevision;
-            }
+            string baseFileUrl =
+                ConverterTool.CombineURLFromString(baseFileInfo.BaseUrl, baseFileInfo.ReferenceFileInfo.FileName);
+            string baseFileRevision = await Client.GetStringAsync(baseFileUrl, token);
+            ResponseGateway.CdnConfig.GameResConfig.BaseRevision = baseFileRevision;
         }
 
         private async Task<SleepyDispatchRegionInfo?> GetRegionInfoFromGatewayName(string gatewayName, CancellationToken cancellationToken)
         {
             // TODO: Add queries to the request header
             Uri dispatchUrl = CreateDispatchUri(out Dictionary<string, string> dispatchUrlQueries);
-            SleepyDispatch dispatcher = (await GetJsonFromUrl(
-                                                              dispatchUrl,
-                                                              dispatchUrlQueries,
-                                                              SleepyContext.Default.SleepyDispatch,
-                                                              cancellationToken)).ThrowIfUnsuccessful();
+            SleepyDispatch? dispatcher = (await GetJsonFromUrl(
+                                                               dispatchUrl,
+                                                               dispatchUrlQueries,
+                                                               SleepyContext.Default.SleepyDispatch,
+                                                               cancellationToken)).ThrowIfUnsuccessful();
 
             // Find the region info and return whether it's found or not (null)
-            SleepyDispatchRegionInfo? regionInfo = dispatcher
+            SleepyDispatchRegionInfo? regionInfo = dispatcher?
                                                   .RegionList
                                                   .FirstOrDefault(x => x.GatewayName.Equals(gatewayName, StringComparison.OrdinalIgnoreCase));
 
@@ -93,8 +96,13 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             return regionInfo;
         }
 
-        private SleepyGateway ParseGatewayFromGatewayContent(SleepyGatewayRegionContent gatewayResponse)
+        private SleepyGateway? ParseGatewayFromGatewayContent(SleepyGatewayRegionContent? gatewayResponse)
         {
+            if (gatewayResponse == null)
+            {
+                return null;
+            }
+
             byte[] gatewayResponseOutBuff = ArrayPool<byte>.Shared.Rent(gatewayResponse.Content.Length);
             try
             {
