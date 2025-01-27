@@ -1,4 +1,7 @@
-﻿/*
+﻿// ReSharper disable CommentTypo
+// ReSharper disable CheckNamespace
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+/*
  * Original Code by lassevk
  * https://raw.githubusercontent.com/lassevk/Streams/master/Streams/CombinedStream.cs
  */

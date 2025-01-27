@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 // ReSharper disable UnusedMember.Local
 // ReSharper disable CheckNamespace
 // ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace Hi3Helper.EncTool.Parser.Cache
 {

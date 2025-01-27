@@ -5,8 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
+// ReSharper disable CheckNamespace
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable InconsistentNaming
+
 namespace Hi3Helper.EncTool.Parser
 {
     public sealed partial class XMFParser

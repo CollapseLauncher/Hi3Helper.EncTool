@@ -6,6 +6,7 @@ using System.IO;
 // ReSharper disable InconsistentNaming
 // ReSharper disable CheckNamespace
 // ReSharper disable UnusedMember.Global
+// ReSharper disable CollectionNeverQueried.Global
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {

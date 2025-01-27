@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 // ReSharper disable CommentTypo
 // ReSharper disable InconsistentNaming
+// ReSharper disable CheckNamespace
+// ReSharper disable CollectionNeverQueried.Global
 
 namespace Hi3Helper.EncTool.Parser
 {
