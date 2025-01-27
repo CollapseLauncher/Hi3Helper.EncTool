@@ -46,7 +46,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
             if (MetadataType != SRAMBMMetadataType.JSON)
             {
-                using (SRAMBMMetadataReader _SRAMReader = new SRAMBMMetadataReader(BaseURL, ParentRemotePath, MetadataPath, MetadataType))
+                using (SRAMBMMetadataReader _SRAMReader = new(BaseURL, ParentRemotePath, MetadataPath, MetadataType))
                 {
                     await _SRAMReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, token, "Asb\\Windows");
                     _SRAMReader.Deserialize();
@@ -62,7 +62,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 AssetProperty.MetadataStartLocalName = MetadataStartPath.TrimStart('/');
                 AssetProperty.StartBaseURL           = BaseURL + ParentRemotePath;
 
-                using (SRAMBMMetadataReader _SRAMReader = new SRAMBMMetadataReader(BaseURL, ParentRemotePath, MetadataStartPath, MetadataType))
+                using (SRAMBMMetadataReader _SRAMReader = new(BaseURL, ParentRemotePath, MetadataStartPath, MetadataType))
                 {
                     await _SRAMReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, token, "Asb\\Windows");
                 }
@@ -100,7 +100,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             for (int index = 0; index < refStruct.StructData.Length; index++)
             {
                 ReadOnlySpan<byte> bufferSpan = refStruct.StructData[index];
-                ReadOnlySpan<byte> hashBuffer = bufferSpan.Slice(0,  16);
+                ReadOnlySpan<byte> hashBuffer = bufferSpan[..16];
                 ReadOnlySpan<byte> assetID    = bufferSpan.Slice(16, 4);
                 uint               size       = BitConverter.ToUInt32(bufferSpan.Slice(20, 4));
 
@@ -114,7 +114,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 Console.WriteLine($"    Mark: {HexTool.BytesToHexUnsafe(assetID)} {hashName} -> Size: {size} Pos: {index} IsStart: {isStart}");
 #endif
 
-                SRAsset asset = new SRAsset
+                SRAsset asset = new()
                 {
                     AssetType = AssetType,
                     Hash      = hash.ToArray(),

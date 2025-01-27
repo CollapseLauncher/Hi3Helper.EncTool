@@ -43,10 +43,12 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Deserialize()
         {
-            using EndianBinaryReader reader           = new EndianBinaryReader(AssetProperty.MetadataStream);
+            using EndianBinaryReader reader           = new(AssetProperty.MetadataStream);
             uint                     toSeekPos        = 20;
             uint                     count            = reader.ReadUInt32();
-            uint                     childAssetsCount = 0;
+        #if DEBUG
+            uint childAssetsCount = 0;
+        #endif
 
             if (count == 255)
             {
@@ -57,7 +59,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 #else
                 _
 #endif
-                    = reader.ReadUInt32();
+                   = reader.ReadUInt32();
                 toSeekPos        = 12;
 #if DEBUG
                 Console.WriteLine($"Switching to read new {InheritedAssetType} metadata format! -> parentAsset: {count} childAsset: {childAssetsCount}");

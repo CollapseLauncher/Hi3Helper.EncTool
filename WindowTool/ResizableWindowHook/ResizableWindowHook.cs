@@ -140,7 +140,7 @@ namespace Hi3Helper.EncTool.WindowTool
                 }
 
                 // If the return process is assigned, then get the initial size + position and style of the window
-                WindowRect initialRect = new WindowRect();
+                WindowRect  initialRect    = new();
                 WindowRect* initialRectPtr = (WindowRect*)Unsafe.AsPointer(ref initialRect);
 
                 PInvoke.GetWindowRect(hwnd, initialRectPtr);

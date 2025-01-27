@@ -26,7 +26,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         {
             try
             {
-                using EndianBinaryReader reader = new EndianBinaryReader(xmfFs, EndianType.LittleEndian, true);
+                using EndianBinaryReader reader = new(xmfFs, EndianType.LittleEndian, true);
                 _ = reader.BaseStream.Read(new byte[XMFParser.SignatureLength + 4]);
                 int[] versionXMF = XMFParser.ReadVersion(reader);
                 return versionXMF;
@@ -40,7 +40,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         private static int[]? GetXMFVersion(string xmfPath)
         {
-            FileInfo xmf = new FileInfo(xmfPath);
+            FileInfo xmf = new(xmfPath);
             if (!xmf.Exists || xmf is { Exists: true, Length: < 0xFF }) return null;
 
             using FileStream xmfFS = xmf.OpenRead();

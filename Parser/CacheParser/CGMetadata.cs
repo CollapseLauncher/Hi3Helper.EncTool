@@ -123,10 +123,10 @@ namespace Hi3Helper.EncTool.Parser.Cache
             try
             {
                 ReadGroupIDAndOffset_Label:
-                int groupID = BinaryPrimitives.ReadInt32LittleEndian(bufferGroupID.Slice(readOffset));
-                int offsets = BinaryPrimitives.ReadInt32LittleEndian(bufferOffset.Slice(readOffset));
+                int groupID = BinaryPrimitives.ReadInt32LittleEndian(bufferGroupID[readOffset..]);
+                int offsets = BinaryPrimitives.ReadInt32LittleEndian(bufferOffset[readOffset..]);
                 readOffset += 4;
-                CgGroupID groupIdStruct = new CgGroupID { ID = groupID, FileOffset = offsets };
+                CgGroupID groupIdStruct = new() { ID = groupID, FileOffset = offsets };
                 _groupID.Add(groupIdStruct);
                 if (readOffset < toRead)
                     goto ReadGroupIDAndOffset_Label;
@@ -140,7 +140,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
 
         private static CGMetadata Deserialize(Stream stream, int groupIDIndex)
         {
-            CGMetadata entry = new CGMetadata();
+            CGMetadata entry = new();
 
             stream.Position = _groupID[groupIDIndex].FileOffset;
             entry.CgID = _groupID[groupIDIndex].FileOffset;
@@ -152,7 +152,7 @@ namespace Hi3Helper.EncTool.Parser.Cache
             _ = stream.Read(unk1_2);
             entry.Unk1 = BinaryPrimitives.ReadInt32LittleEndian(unk1_2);
             entry.Unk2 = BinaryPrimitives.ReadInt16LittleEndian(unk1_2);
-            entry.Unk3 = BinaryPrimitives.ReadInt16LittleEndian(unk1_2.Slice(2));
+            entry.Unk3 = BinaryPrimitives.ReadInt16LittleEndian(unk1_2[2..]);
 
             entry.UnlockType      = ReadByte(stream);
             entry.UnlockCondition = ReadUInt32(stream);

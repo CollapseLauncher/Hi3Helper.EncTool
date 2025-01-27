@@ -96,7 +96,7 @@ namespace Hi3Helper.EncTool.Parser.Senadina
         private static T ReadTInner<T>(ReadOnlySpan<byte> span, int structSizeOf, ref int offset)
             where T : struct
         {
-            T value = MemoryMarshal.Read<T>(span.Slice(offset));
+            T value = MemoryMarshal.Read<T>(span[offset..]);
             offset += structSizeOf;
             return value;
         }
@@ -111,7 +111,7 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             if (!Encoding.UTF8.TryGetBytes(input, nameBuffer, out int written))
                 throw new InvalidDataException($"Failed while getting hash name for input: {input}");
 
-            SHA256.HashData(nameBuffer.Slice(0, written), data);
+            SHA256.HashData(nameBuffer[..written], data);
             return HexTool.BytesToHexUnsafe(data) ?? "";
         }
 
@@ -125,9 +125,9 @@ namespace Hi3Helper.EncTool.Parser.Senadina
 
         private static byte[] GenerateMothAngkaDadoe(int seed)
         {
-            Random random = new Random(seed);
-            long randomLong1 = random.NextInt64();
-            long randomLong2 = random.NextInt64();
+            Random random      = new(seed);
+            long   randomLong1 = random.NextInt64();
+            long   randomLong2 = random.NextInt64();
 
             randomLong1 ^= randomLong1 << 16;
             randomLong2 |= randomLong2 >> 32 | randomLong1;

@@ -191,7 +191,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
         private async Task<T?> GetJsonFromUrl<T>(Uri url, Dictionary<string, string> httpHeader, JsonTypeInfo<T> typeInfo, CancellationToken token = default)
         {
-            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+            using HttpRequestMessage requestMessage = new(HttpMethod.Get, url);
             foreach (KeyValuePair<string, string> headerKvp in httpHeader)
             {
                 requestMessage.Headers.Add(headerKvp.Key, headerKvp.Value);

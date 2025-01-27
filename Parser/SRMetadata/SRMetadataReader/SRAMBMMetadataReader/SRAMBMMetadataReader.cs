@@ -69,7 +69,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Deserialize()
         {
-            using EndianBinaryReader reader = new EndianBinaryReader(AssetProperty.MetadataStream, EndianType.BigEndian, true);
+            using EndianBinaryReader reader = new(AssetProperty.MetadataStream, EndianType.BigEndian, true);
             StructList = [];
             EnsureMagicIsValid(reader);
 

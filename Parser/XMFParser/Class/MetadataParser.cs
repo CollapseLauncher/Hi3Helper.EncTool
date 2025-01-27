@@ -38,7 +38,7 @@ namespace Hi3Helper.EncTool.Parser
         private void ParseMetadata(Stream xmfStream, bool isMeta)
         {
             // Read XMF with Endianess-aware BinaryReader
-            using EndianBinaryReader reader = new EndianBinaryReader(xmfStream);
+            using EndianBinaryReader reader = new(xmfStream);
             // Start read the header of the XMF file.
             ReadHeader(reader);
 

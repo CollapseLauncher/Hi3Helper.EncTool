@@ -300,7 +300,7 @@ namespace Hi3Helper.EncTool
             while (count > 0)
             {
                 _underlyingStreams[_index].Position = _position - _underlyingStartingPositions[_index];
-                int bytesRead = _underlyingStreams[_index].Read(buffer.Slice(offset));
+                int bytesRead = _underlyingStreams[_index].Read(buffer[offset..]);
                 result += bytesRead;
                 offset += bytesRead;
                 count -= bytesRead;

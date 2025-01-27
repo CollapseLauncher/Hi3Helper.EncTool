@@ -103,7 +103,7 @@ namespace Hi3Helper.EncTool.Parser
         {
             using Stream             fs  = new FileStream(ParentHashFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
             using Stream             cs  = new ChunkStream(fs, OffsetStart, OffsetEnd);
-            using EndianBinaryReader s   = new EndianBinaryReader(cs, EndianType.LittleEndian);
+            using EndianBinaryReader s   = new(cs, EndianType.LittleEndian);
             long                     sig = s.ReadInt64();
             if (sig != exSig)
             {

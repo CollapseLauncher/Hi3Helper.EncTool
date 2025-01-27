@@ -46,7 +46,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Deserialize()
         {
-            using StreamReader reader = new StreamReader(AssetProperty.MetadataStream, Encoding.UTF8, true, -1, false);
+            using StreamReader reader = new(AssetProperty.MetadataStream, Encoding.UTF8, true, -1, false);
 #if DEBUG
             Console.WriteLine($"{AssetType} Assets Parsed Info: ({AssetProperty.MetadataStream.Length} bytes)");
 #endif
@@ -59,7 +59,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 string           line      = reader.ReadLine() ?? "";
                 SRJSONAssetInfo? assetInfo = JsonSerializer.Deserialize(line, SRJSONAssetInfoContext.Default.SRJSONAssetInfo);
 
-                SRAsset asset = new SRAsset
+                SRAsset asset = new()
                 {
                     AssetType = AssetType,
                     Hash      = HexTool.HexToBytesUnsafe(assetInfo?.Md5 ?? ""),

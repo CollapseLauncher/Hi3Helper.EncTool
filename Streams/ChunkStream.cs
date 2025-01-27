@@ -46,7 +46,7 @@ namespace Hi3Helper.EncTool
 
             int toSlice = (int)(buffer.Length > Remain ? Remain : buffer.Length);
             _stream.Position = Start + CurPos;
-            int read = _stream.Read(buffer.Slice(0, toSlice));
+            int read = _stream.Read(buffer[..toSlice]);
             CurPos += read;
 
             return read;
@@ -58,7 +58,7 @@ namespace Hi3Helper.EncTool
 
             int toSlice = (int)(buffer.Length > Remain ? Remain : buffer.Length);
             _stream.Position = Start + CurPos;
-            int read = await _stream.ReadAsync(buffer.Slice(0, toSlice), token);
+            int read = await _stream.ReadAsync(buffer[..toSlice], token);
             CurPos += read;
 
             return read;
@@ -93,7 +93,7 @@ namespace Hi3Helper.EncTool
             int toSlice = (int)(buffer.Length > Remain ? Remain : buffer.Length);
             CurPos += toSlice;
 
-            _stream.Write(buffer.Slice(0, toSlice));
+            _stream.Write(buffer[..toSlice]);
         }
 
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken token = default)
@@ -103,7 +103,7 @@ namespace Hi3Helper.EncTool
             int toSlice = (int)(buffer.Length > Remain ? Remain : buffer.Length);
             CurPos += toSlice;
 
-            await _stream.WriteAsync(buffer.Slice(0, toSlice), token);
+            await _stream.WriteAsync(buffer[..toSlice], token);
         }
 
         public override void Write(byte[] buffer, int offset, int count)

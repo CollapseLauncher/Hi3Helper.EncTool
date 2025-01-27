@@ -131,7 +131,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             if (!dictArchiveInfo.ContainsKey(key)) throw new KeyNotFoundException($"Key: {key} in ArchiveInfo dictionary does not exist!");
 
             SRDispatchArchiveInfo archiveInfo = dictArchiveInfo[key];
-            ReadOnlySpan<char> baseName = archiveInfo.FileName.AsSpan().Slice(2);
+            ReadOnlySpan<char> baseName = archiveInfo.FileName.AsSpan()[2..];
 
             return '/' + string.Concat(baseName, ['_'], archiveInfo.ContentHash, ".bytes");
         }

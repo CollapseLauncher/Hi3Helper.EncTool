@@ -46,7 +46,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         public BlockPatchManifest(string filePath)
         {
-            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             Initialize(fs);
         }
 
@@ -63,7 +63,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private void Initialize(Stream stream)
         {
             // Initialize the stream into the endian reader
-            EndianBinaryReader reader = new EndianBinaryReader(stream);
+            EndianBinaryReader reader = new(stream);
 
             // Start deserializing
             PatchAsset = DeserializeManifest(reader);
@@ -96,7 +96,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 if (!isKeyExist)
                 {
                     // Initialize the patch info
-                    BlockPatchInfo info = new BlockPatchInfo
+                    BlockPatchInfo info = new()
                     {
                         NewHashStr = newHash,
                         PatchPairs =

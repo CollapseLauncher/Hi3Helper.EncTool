@@ -32,9 +32,9 @@ namespace Hi3Helper.EncTool
             Marshal.StructureToPtr(to, bufferPtr + sizeOfTFrom, true);
 
             // Assign as a span and compare the buffer
-            ReadOnlySpan<byte> spanSelf = new ReadOnlySpan<byte>((byte*)bufferPtr, sizeOfTFrom);
-            ReadOnlySpan<byte> spanTo = new ReadOnlySpan<byte>((byte*)bufferPtr + sizeOfTFrom, sizeOfTTo);
-            bool isRawDataEqual = spanSelf.SequenceEqual(spanTo);
+            ReadOnlySpan<byte> spanSelf       = new((byte*)bufferPtr, sizeOfTFrom);
+            ReadOnlySpan<byte> spanTo         = new((byte*)bufferPtr + sizeOfTFrom, sizeOfTTo);
+            bool               isRawDataEqual = spanSelf.SequenceEqual(spanTo);
 
             // Free the HGlobal buffer pointer
             Marshal.FreeHGlobal(bufferPtr);

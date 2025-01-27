@@ -46,7 +46,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         public void Serialize(Stream input, Stream output, CompressionFlag compressionType)
         {
             // Assign the JSON input stream into stream reader
-            using StreamReader streamReader = new StreamReader(input, Encoding.UTF8, true, -1, true);
+            using StreamReader streamReader = new(input, Encoding.UTF8, true, -1, true);
 
             // Deserialize lines of the JSON into the list
             List<PkgVersionProperties> versionList = [];
@@ -62,7 +62,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
         private void SerializeToBinary(Stream outputStream, List<PkgVersionProperties> versionList, CompressionFlag compressionType)
         {
-            using BinaryWriter rawBinaryWriter = new BinaryWriter(outputStream);
+            using BinaryWriter rawBinaryWriter = new(outputStream);
 
             // Writing out basic header properties (Header magic and the version)
             rawBinaryWriter.Write(HeaderMagic);
@@ -93,7 +93,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 CompressionFlag.GZip => new GZipStream(outputStream, CompressionLevel.SmallestSize),
                 _ => outputStream
             };
-            using BinaryWriter binaryWriter = new BinaryWriter(writeOutStream);
+            using BinaryWriter binaryWriter = new(writeOutStream);
 
             // Write the count of the versionList (AssetProperty struct)
             binaryWriter.Write(versionList.Count);
@@ -133,7 +133,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 int pos = 0;
                 foreach (string path in paths)
                 {
-                    Encoding.UTF8.GetBytes(path, stringBuffer.Slice(pos));
+                    Encoding.UTF8.GetBytes(path, stringBuffer[pos..]);
                     pos += (path?.Length ?? 0) + 1;
                 }
 
@@ -157,7 +157,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         public List<PkgVersionProperties> Deserialize(Stream stream, out DateTime timestamp)
         {
             // Assign the stream into raw binary reader
-            using BinaryReader rawBinaryReader = new BinaryReader(stream);
+            using BinaryReader rawBinaryReader = new(stream);
 
             // Get the magic and check if the value is match
             ulong magic = rawBinaryReader.ReadUInt64();
@@ -211,7 +211,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 CompressionFlag.Brotli => new BrotliStream(fileStream, CompressionMode.Decompress),
                 _ => fileStream
             };
-            using BinaryReader binaryReader = new BinaryReader(streamInput);
+            using BinaryReader binaryReader = new(streamInput);
 
             // Read the asset count
             int assetCount = binaryReader.ReadInt32();

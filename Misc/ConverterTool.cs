@@ -268,13 +268,13 @@ namespace Hi3Helper.Data
             if (!isFileType)
             {
                 // Get directory ACL
-                DirectoryInfo directoryInfo = new DirectoryInfo(input);
+                DirectoryInfo directoryInfo = new(input);
                 pathSecurity = directoryInfo.GetAccessControl();
             }
             else
             {
                 // Get file ACL
-                FileInfo fileInfo = new FileInfo(input);
+                FileInfo fileInfo = new(input);
                 pathSecurity = fileInfo.GetAccessControl();
             }
 
@@ -282,7 +282,7 @@ namespace Hi3Helper.Data
             AuthorizationRuleCollection pathAcl = pathSecurity.GetAccessRules(true, true, typeof(NTAccount));
 
             // Get current Windows User Identity principal
-            WindowsPrincipal principal = new WindowsPrincipal(CurrentWindowsIdentity);
+            WindowsPrincipal principal = new(CurrentWindowsIdentity);
 
             // Do LINQ to check across available ACLs and ensure that the exact user has the rights to
             // access the file

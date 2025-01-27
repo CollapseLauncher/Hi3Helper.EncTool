@@ -92,7 +92,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #endif
 
             // Get the dispatch content
-            using MemoryStream stream = new MemoryStream();
+            using MemoryStream stream = new();
             await downloadClient.DownloadAsync(dispatchURL, stream, false, downloadProgressDelegate, cancelToken: ThreadToken);
             stream.Position = 0;
             string response = Encoding.UTF8.GetString(stream.ToArray());
@@ -120,7 +120,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         #endif
 
             // Get the dispatch content
-            using MemoryStream stream = new MemoryStream();
+            using MemoryStream stream = new();
             await downloadClient.DownloadAsync(gatewayURL, stream, false, downloadProgressDelegate, cancelToken: ThreadToken);
             stream.Position = 0;
             string response = Encoding.UTF8.GetString(stream.ToArray());
@@ -212,14 +212,14 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private async Task DownloadArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string archiveURL, string localPath)
         {
             EnsureDirectoryExistence(localPath);
-            await using FileStream stream = new FileStream(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+            await using FileStream stream = new(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
             await downloadClient.DownloadAsync(archiveURL, stream, false, downloadProgressDelegate, cancelToken: ThreadToken);
         }
 
         private async Task DownloadAndParseArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string gatewayDictKey, string archiveURL, string localPath)
         {
             EnsureDirectoryExistence(localPath);
-            await using FileStream stream = new FileStream(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
+            await using FileStream stream = new(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
             await downloadClient.DownloadAsync(archiveURL, stream, false, downloadProgressDelegate, cancelToken: ThreadToken);
             stream.Position = 0;
             await ParseArchiveInfoFromStream(stream, gatewayDictKey, ThreadToken);
@@ -234,7 +234,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         private async Task ParseArchiveInfoFromStream(Stream stream, string gatewayDictKey, CancellationToken token)
         {
-            using StreamReader reader = new StreamReader(stream);
+            using StreamReader reader = new(stream);
             while (await reader.ReadLineAsync(token) is { } line)
             {
                 SRDispatchArchiveInfo archiveInfo = JsonSerializer.Deserialize(line, SRDispatchArchiveInfoContext.Default.SRDispatchArchiveInfo);

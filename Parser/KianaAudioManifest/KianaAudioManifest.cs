@@ -21,7 +21,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         public KianaAudioManifest(string filePath, string key, int[] gameVersion)
         {
             _gameVersion = gameVersion;
-            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             Initialize(fs, key);
         }
 
@@ -50,7 +50,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private void Initialize(Stream stream)
         {
             // Initialize the Raw Stream and reader
-            EndianBinaryReader reader = new EndianBinaryReader(stream);
+            EndianBinaryReader reader = new(stream);
 
             // Start deserializing
             DeserializeManifest(reader);
@@ -60,7 +60,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         {
             // Initialize the CryptoStream and reader
             Stream cryptStream = GetCryptoStream(stream, key);
-            EndianBinaryReader reader = new EndianBinaryReader(cryptStream);
+            EndianBinaryReader reader = new(cryptStream);
 
             // Start deserializing
             DeserializeManifest(reader);
@@ -69,7 +69,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private static Stream GetCryptoStream(Stream stream, string key)
         {
             // Initialize endian reader
-            EndianBinaryReader endianReader = new EndianBinaryReader(stream);
+            EndianBinaryReader endianReader = new(stream);
 
             // Get ICryptoTransform instance
             ICryptoTransform transform = GetAesInstance(endianReader, key);
@@ -124,7 +124,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             ];
 
             // Check if the game version and manifest version is match. If not, then throw
-            if (!ManifestVersion.AsSpan().Slice(0, 2).SequenceEqual(_gameVersion.AsSpan().Slice(0, 2)))
+            if (!ManifestVersion.AsSpan()[..2].SequenceEqual(_gameVersion.AsSpan()[..2]))
             {
                 throw new FormatException($"Manifest version is not the same as game version! Game Version: {string.Join('.', _gameVersion)} <--> Manifest Version: {string.Join('.', ManifestVersion)}");
             }
