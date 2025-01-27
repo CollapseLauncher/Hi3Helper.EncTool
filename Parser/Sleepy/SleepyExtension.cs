@@ -37,7 +37,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                 if (!TryUnescape(data, bufferOut, indexOfFirstEscape, out int written))
                 {
                     throw new
-                        InvalidOperationException($"String data contains invalid character data and unescape is failed!");
+                        InvalidOperationException("String data contains invalid character data and unescape is failed!");
                 }
 
                 string outString = Encoding.UTF8.GetString(bufferOut.AsSpan(0, written));

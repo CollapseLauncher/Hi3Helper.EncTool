@@ -14,6 +14,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable IdentifierTypo
+// ReSharper disable UnusedMember.Global
+// ReSharper disable CheckNamespace
 
 namespace Hi3Helper.Data
 {

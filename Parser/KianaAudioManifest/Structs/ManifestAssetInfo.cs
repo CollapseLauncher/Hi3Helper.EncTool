@@ -1,6 +1,8 @@
 using Hi3Helper.Data;
 using System.Text.Json.Serialization;
 // ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
+// ReSharper disable CheckNamespace
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {

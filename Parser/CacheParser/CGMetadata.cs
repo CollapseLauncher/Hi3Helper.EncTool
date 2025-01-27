@@ -9,6 +9,8 @@ using System.Text.Json.Serialization;
 // ReSharper disable InconsistentNaming
 // ReSharper disable CommentTypo
 // ReSharper disable UnusedMember.Local
+// ReSharper disable CheckNamespace
+// ReSharper disable UnusedMember.Global
 
 namespace Hi3Helper.EncTool.Parser.Cache
 {

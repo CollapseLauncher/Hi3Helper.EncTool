@@ -1,4 +1,8 @@
-﻿// Added since v6.9 (nice) changes
+﻿// ReSharper disable UnusedMember.Global
+// ReSharper disable CommentTypo
+// ReSharper disable InconsistentNaming
+
+// Added since v6.9 (nice) changes
 // :teri_copium:
 
 using System.Text.Json.Serialization;

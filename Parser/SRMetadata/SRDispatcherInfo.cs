@@ -151,7 +151,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             string localPath = Path.Combine(PersistentDirectory, @"Archive\Windows\M_ArchiveV_cache.bytes");
 
 #if DEBUG
-            Console.WriteLine($"Parsing Archive -----");
+            Console.WriteLine("Parsing Archive -----");
             Console.WriteLine($"    URL: {archiveURL}");
             Console.WriteLine($"    LocalPath: {localPath}");
 #endif
@@ -166,7 +166,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             archiveURL = (IsUseLegacy ? RegionGatewayLegacy.DesignDataBundleVersionUpdateUrl : RegionGateway.ValuePairs["DesignDataBundleVersionUpdateUrl"]) + "/client/Windows/M_Design_ArchiveV.bytes";
 
 #if DEBUG
-            Console.WriteLine($"Parsing Design Archive -----");
+            Console.WriteLine("Parsing Design Archive -----");
             Console.WriteLine($"    URL: {archiveURL}");
 #endif
             // Get HttpClient and response

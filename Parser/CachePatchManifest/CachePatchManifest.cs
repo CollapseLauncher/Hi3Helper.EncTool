@@ -3,6 +3,9 @@ using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
 using System.Collections.Generic;
 using System.IO;
+// ReSharper disable InconsistentNaming
+// ReSharper disable CheckNamespace
+// ReSharper disable UnusedMember.Global
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
@@ -24,10 +27,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         public CachePatchManifest(string filePath)
         {
-            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
-                Initialize(fs);
-            }
+            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            Initialize(fs);
         }
 
         public CachePatchManifest(Stream stream, bool disposeStream = false)
@@ -43,10 +44,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private void Initialize(Stream stream)
         {
             // Initialize patch asset
-            PatchAsset = new List<CachePatchInfo>();
+            PatchAsset = [];
 
             // Initialize the stream into the endian reader
-            EndianBinaryReader reader = new EndianBinaryReader(stream, EndianType.BigEndian, true);
+            EndianBinaryReader reader = new(stream, EndianType.BigEndian, true);
 
             // Start deserializing
             DeserializeManifest(reader);

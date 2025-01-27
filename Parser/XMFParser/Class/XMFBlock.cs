@@ -132,7 +132,7 @@ namespace Hi3Helper.EncTool.Parser
         {
             if (IsExist && !isCreateFile)
             {
-                throw new FileNotFoundException($"The block file doesn't exist!");
+                throw new FileNotFoundException("The block file doesn't exist!");
             }
 
             return new FileStream(FilePath, isCreateFile ? FileMode.Create : FileMode.Open, fileAccess, FileShare.ReadWrite);

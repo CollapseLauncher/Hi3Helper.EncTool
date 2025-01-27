@@ -2,6 +2,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
+// ReSharper disable UnusedMember.Global
+// ReSharper disable CheckNamespace
 
 namespace Hi3Helper.EncTool
 {

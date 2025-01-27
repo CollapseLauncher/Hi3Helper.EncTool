@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 // ReSharper disable PartialTypeWithSinglePart
 // ReSharper disable InconsistentNaming
 // ReSharper disable StringLiteralTypo
+// ReSharper disable UnusedMember.Global
 #nullable enable
 namespace Hi3Helper.EncTool.Parser.Senadina
 {

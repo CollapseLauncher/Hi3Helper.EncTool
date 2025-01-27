@@ -76,7 +76,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal override void Deserialize()
         {
-            if (_structSRAMData.StructData == null) throw new InvalidOperationException($"Struct data is empty! Please initialize it using GetRemoteMetadata()");
+            if (_structSRAMData.StructData == null) throw new InvalidOperationException("Struct data is empty! Please initialize it using GetRemoteMetadata()");
             try
             {
                 DeserializeAsset();
