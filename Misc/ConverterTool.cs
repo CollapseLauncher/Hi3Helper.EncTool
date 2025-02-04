@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -16,6 +17,7 @@ using System.Threading.Tasks;
 // ReSharper disable IdentifierTypo
 // ReSharper disable UnusedMember.Global
 // ReSharper disable CheckNamespace
+// ReSharper disable ForCanBeConvertedToForeach
 
 namespace Hi3Helper.Data
 {
@@ -308,24 +310,115 @@ namespace Hi3Helper.Data
 
         public static float ConvertRangeValue(float sMin, float sMax, float sValue, float tMin, float tMax) => (sValue - sMin) * (tMax - tMin) / (sMax - sMin) + tMin;
 
-        public static string CombineURLFromString(ReadOnlySpan<char> baseURL, params string[] segments)
+#nullable enable
+        public static unsafe string CombineURLFromString(ReadOnlySpan<char> baseUrl, params ReadOnlySpan<string?> segments)
         {
-            StringBuilder builder = new StringBuilder().Append(baseURL.TrimEnd('/'));
+            // Assign the size of a char as constant
+            const uint sizeOfChar = sizeof(char);
 
-            foreach (ReadOnlySpan<char> a in segments)
+            // Get the base URL length and decrement by 1 if the end of the index (^1)
+            // is a '/' character. Otherwise, nothing to decrement.
+            // 
+            // Once we get a length of the base URL, get a sum of all lengths
+            // of the segment's span.
+            int baseUrlLen = baseUrl.Length - (baseUrl[^1] == '/' ? 1 : 0);
+            int bufferLen = baseUrlLen + SumSegmentsLength(segments);
+            uint toWriteBase = (uint)baseUrlLen;
+
+            // Allocate temporary buffer from the shared ArrayPool<T>
+            char[] buffer = ArrayPool<char>.Shared.Rent(bufferLen);
+
+            // Here we start to do something UNSAFE >:)
+            // Get the base and last (to written position) pointers of the buffer array.
+            char* bufferPtr = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffer));
+            char* bufferWrittenPtr = bufferPtr;
+
+            // Get a base pointer of the baseUrl span
+            char* baseUrlPtr = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(baseUrl));
+
+            // Perform intrinsic copy for the specific block of memory from baseUrlPtr
+            // into the buffer pointer.
+            Unsafe.CopyBlock(bufferWrittenPtr, baseUrlPtr, toWriteBase * sizeOfChar);
+            bufferWrittenPtr += toWriteBase;
+            try
             {
-                if (a.Length == 0) continue;
+                // Set the initial position of the segment index
+                int i = 0;
 
-                bool isMacros = a.StartsWith("?");
-                if (!isMacros)
-                {
-                    builder.Append('/');
-                }
-                builder.Append(a.Trim('/'));
+            // Perform the segment copy loop routine
+            CopySegments:
+                // If the index is equal to the length of the segment, which means...
+                // due to i being 0, it should expect the length of the segments span as well.
+                // Means, if 0 == 0, then quit from CopySegments routine and jump right
+                // into CreateStringFast routine.
+                if (i == segments.Length)
+                    goto CreateStringFast;
+
+                // Get a span of the current segment while in the meantime, trim '/' character
+                // from the start and the end of the span. In the meantime, increment
+                // the index of the segments span.
+                ReadOnlySpan<char> segment = segments[i++].AsSpan().Trim('/');
+                // If the segment span is actually empty, (means either the initial value or
+                // after it's getting trimmed [for example, "//"]), then move to another
+                // segment to merge.
+                if (segment.IsEmpty) goto CopySegments;
+
+                // Check if the segment starts with '?' character (means the segment is a query
+                // and not a relative path), then write a '/' character into the buffer and moving
+                // by 1 byte of the index.
+                bool isQuery = segment[0] == '?';
+                if (!isQuery)
+                    *bufferWrittenPtr++ = '/';
+
+                // Get a base pointer of the current segment and get its length.
+                void* segmentPtr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(segment));
+                uint segmentLen = (uint)segment.Length;
+
+                // Perform the intrinsic copy for the specific block of memory from the
+                // current segment pointer into the buffer pointer.
+                Unsafe.CopyBlock(bufferWrittenPtr, segmentPtr, segmentLen * sizeOfChar);
+                // Move the position of the written buffer pointer
+                bufferWrittenPtr += segmentLen;
+                // Back to the start of the loop routine
+                goto CopySegments;
+
+            CreateStringFast:
+                // Perform a return string creation by how much data being written into the buffer by decrementing
+                // bufferWrittenPtr with initial base pointer, bufferPtr.
+                string returnString = new string(bufferPtr, 0, (int)(bufferWrittenPtr - bufferPtr));
+                // Then return the string
+                return returnString;
+            }
+            finally
+            {
+                // Return the write buffer to save memory from being unnecessarily allocated.
+                ArrayPool<char>.Shared.Return(buffer);
             }
 
-            return builder.ToString();
+            static int SumSegmentsLength(ReadOnlySpan<string?> segmentsInner)
+            {
+                // If the span is empty, then return 0 (as no segments to be merged)
+                if (segmentsInner.IsEmpty)
+                    return 0;
+
+                // Start incrementing sum in backward
+                int sum = 0;
+                int i = segmentsInner.Length;
+
+            // Do the loop.
+            LenSum:
+                // ?? as means if the current index of span is null, nothing to increment (0).
+                // Also, decrement the index as we are summing the length backwards.
+                sum += segmentsInner[--i]?.Length ?? 0;
+                if (i > 0)
+                    // Back to the loop if the index is not yet zero.
+                    goto LenSum;
+
+                // If no routines left, return the total sum.
+                return sum;
+            }
         }
+#nullable restore
 
         // Reference:
         // https://stackoverflow.com/questions/3702216/how-to-convert-integer-to-binary-string-in-c#:~:text=Simple%20.NET%208%2B%20Version
