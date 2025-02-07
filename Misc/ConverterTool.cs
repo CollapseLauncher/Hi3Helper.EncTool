@@ -173,6 +173,7 @@ namespace Hi3Helper.Data
         public static double ToPercentage(double toProgress, double fromProgress, int decimalDigits = 2)
             => Math.Round(fromProgress / toProgress * 100, decimalDigits, MidpointRounding.ToEven);
 
+        // ReSharper disable once InconsistentNaming
         private static readonly SpanAction<char, nint> s_normalizePathReplaceCore = NormalizePathUnsafeCore;
         public static unsafe string NormalizePath(ReadOnlySpan<char> source, bool trimStart = true)
         {
@@ -205,14 +206,14 @@ namespace Hi3Helper.Data
 
                 if (Sse41.IsSupported && n >= Vector128<ushort>.Count)
                 {
-                    var vecPlus = Vector128.Create((ushort)'/');
-                    var vecSpace = Vector128.Create((ushort)'\\');
+                    Vector128<ushort> vecPlus  = Vector128.Create((ushort)'/');
+                    Vector128<ushort> vecSpace = Vector128.Create((ushort)'\\');
 
                     do
                     {
-                        var vec = Sse2.LoadVector128(input + i);
-                        var mask = Sse2.CompareEqual(vec, vecPlus);
-                        var res = Sse41.BlendVariable(vec, vecSpace, mask);
+                        Vector128<ushort> vec  = Sse2.LoadVector128(input + i);
+                        Vector128<ushort> mask = Sse2.CompareEqual(vec, vecPlus);
+                        Vector128<ushort> res  = Sse41.BlendVariable(vec, vecSpace, mask);
 
                         Sse2.Store(output + i, res);
 
@@ -311,6 +312,9 @@ namespace Hi3Helper.Data
         public static float ConvertRangeValue(float sMin, float sMax, float sValue, float tMin, float tMax) => (sValue - sMin) * (tMax - tMin) / (sMax - sMin) + tMin;
 
 #nullable enable
+        public static string CombineURLFromString(this string baseUrl, params ReadOnlySpan<string?> segments)
+            => CombineURLFromString(baseUrl.AsSpan(), segments);
+
         public static unsafe string CombineURLFromString(ReadOnlySpan<char> baseUrl, params ReadOnlySpan<string?> segments)
         {
             // Assign the size of a char as constant
