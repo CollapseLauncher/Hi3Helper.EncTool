@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "net9.0-windows10.0.22621": {
+    "net9.0-windows10.0.26100": {
       "Google.Protobuf": {
         "type": "Direct",
         "requested": "[3.29.3, )",
