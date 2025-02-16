@@ -184,21 +184,21 @@ namespace Hi3Helper.Data
             }
         }
 
-        public static unsafe void NormalizePathInplaceNoTrim(ReadOnlySpan<char> source)
+        public static unsafe void NormalizePathInplaceNoTrim(ReadOnlySpan<char> source, char replaceFrom = '/', char replaceTo = '\\')
         {
             fixed (char* ptr = &MemoryMarshal.GetReference(source))
             {
                 Span<char> unlockedSource = new(ptr, source.Length);
-                s_normalizePathReplaceCore(unlockedSource, (nint)ptr);
+                NormalizePathUnsafeCore(unlockedSource, replaceFrom, replaceTo, (nint)ptr);
             }
         }
 
         // Reference: https://github.com/dotnet/aspnetcore/blob/c65dac77cf6540c81860a42fff41eb11b9804367/src/Shared/QueryStringEnumerable.cs#L169
-        private static unsafe void NormalizePathUnsafeCore(Span<char> buffer, nint state)
+        private static unsafe void NormalizePathUnsafeCore(Span<char> buffer, char replaceFrom, char replaceTo, nint state)
         {
             fixed (char* ptr = buffer)
             {
-                var input = (ushort*)state.ToPointer();
+                var input  = (ushort*)state.ToPointer();
                 var output = (ushort*)ptr;
 
                 var i = (nint)0;
@@ -206,8 +206,8 @@ namespace Hi3Helper.Data
 
                 if (Sse41.IsSupported && n >= Vector128<ushort>.Count)
                 {
-                    Vector128<ushort> vecPlus  = Vector128.Create((ushort)'/');
-                    Vector128<ushort> vecSpace = Vector128.Create((ushort)'\\');
+                    Vector128<ushort> vecPlus  = Vector128.Create((ushort)replaceFrom);
+                    Vector128<ushort> vecSpace = Vector128.Create((ushort)replaceTo);
 
                     do
                     {
@@ -224,17 +224,20 @@ namespace Hi3Helper.Data
 
                 for (; i < n; ++i)
                 {
-                    if (input[i] != '/')
+                    if (input[i] != replaceFrom)
                     {
                         output[i] = input[i];
                     }
                     else
                     {
-                        output[i] = '\\';
+                        output[i] = replaceTo;
                     }
                 }
             }
         }
+
+        private static void NormalizePathUnsafeCore(Span<char> buffer, nint state)
+            => NormalizePathUnsafeCore(buffer, '/', '\\', state);
 
         public static string SummarizeSizeSimple(double value, int decimalPlaces = 2)
         {
