@@ -13,7 +13,6 @@ using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable InconsistentNaming
 // ReSharper disable PartialTypeWithSinglePart
-#pragma warning disable CA1068, CA1822
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
