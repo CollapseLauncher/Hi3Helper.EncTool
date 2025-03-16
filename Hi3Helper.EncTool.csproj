@@ -14,7 +14,7 @@
         <Description>Data parsing tools used in Collapse project</Description>
         <Company>Collapse Launcher Team</Company>
         <Authors>$(Company). neon-nyan, Cry0, bagusnl, shatyuka, gablm.</Authors>
-        <Copyright>Copyright 2022-2024 $(Company)</Copyright>
+        <Copyright>Copyright 2022-2025 $(Company)</Copyright>
 		<IsAotCompatible>true</IsAotCompatible>
 	</PropertyGroup>
 
