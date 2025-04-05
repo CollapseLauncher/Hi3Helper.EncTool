@@ -212,15 +212,17 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                 FileInfoKind.Silence => ResponseGateway?.CdnConfig.SilenceDataConfig,
                 _ => throw new NotImplementedException($"FileInfoKind.{kind} is not supported!")
             };
+            
+            ArgumentException.ThrowIfNullOrEmpty(metadataConfig?.BaseUrl, nameof(metadataConfig.BaseUrl));
 
             string findKeyName = $"{kind}_";
             string baseUrl = ConverterTool.CombineURLFromString(
-                metadataConfig?.BaseUrl,
+                metadataConfig.BaseUrl!,
                 Property.BuildProperty.BuildIdentity,
                 Property.BuildProperty.BuildArea
                 );
 
-            SleepyFileInfo? fileInfo = metadataConfig?.FileInfoList.FirstOrDefault(x => x.FileName.StartsWith(findKeyName, StringComparison.OrdinalIgnoreCase));
+            SleepyFileInfo? fileInfo = metadataConfig.FileInfoList.FirstOrDefault(x => x.FileName.StartsWith(findKeyName, StringComparison.OrdinalIgnoreCase));
             if (fileInfo == null)
                 throw new KeyNotFoundException("File information is not found inside of the gateway response!");
 

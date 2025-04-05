@@ -155,6 +155,8 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
 
         private async Task ParseAudioAssetsURL(QueryProperty valProp)
         {
+            ArgumentException.ThrowIfNullOrEmpty(valProp.ClientGameResURL, nameof(valProp.ClientGameResURL));
+            
             byte[] byteData = await _httpClient
                .GetByteArrayAsync(
                                   ConverterTool.CombineURLFromString(valProp.ClientGameResURL,
