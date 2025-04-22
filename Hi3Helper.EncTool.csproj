@@ -34,6 +34,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" />
 		<PackageReference Include="Google.Protobuf" Version="3.30.0" />
 		<PackageReference Include="Google.Protobuf.Tools" Version="3.30.0">
 			<PrivateAssets>all</PrivateAssets>

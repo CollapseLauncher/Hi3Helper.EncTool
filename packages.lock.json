@@ -14,6 +14,12 @@
         "resolved": "3.30.0",
         "contentHash": "x1oSZEg1oDgQjXQwLvXMBfdFh9/sNw8B0eOjM1DZxpYxsBoHy5Nk0qz7J0m7lJgOG/bolyCnc42DeBJYndRtwQ=="
       },
+      "Hi3Helper.ZstdNet": {
+        "type": "Direct",
+        "requested": "[1.6.4, )",
+        "resolved": "1.6.4",
+        "contentHash": "/0HO97NquyAeu67BznsPG3Bitb2RweDlRd39Dm0N70pIb6ETjsQI/ysnwGrygxrPwwE25oDNoueAaJfOZTrACg=="
+      },
       "Microsoft.NET.ILLink.Tasks": {
         "type": "Direct",
         "requested": "[9.0.3, )",
