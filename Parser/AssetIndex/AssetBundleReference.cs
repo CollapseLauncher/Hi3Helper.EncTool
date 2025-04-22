@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO.Compression;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -55,8 +57,9 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct AssetBundleReferenceKVPData
     {
-        public fixed char               Keys[32];
-        public AssetBundleReferenceData Value;
+        public fixed char Keys[24];
+        public int        DataSize;
+        public int        DataCount;
     }
 
     [StructLayout(LayoutKind.Explicit, Pack = 8)]
@@ -80,11 +83,49 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
     {
         internal const ulong CollapseHeader = 7310310183885631299;
 
-        public static unsafe (AssetBundleReferenceHeader Header, AssetBundleReferenceKVPData[] Data)
+        public static unsafe AssetBundleReferenceData[] CreateData(Dictionary<string, List<AssetBundleReferenceData>> dictionary)
+        {
+            return Enumerate(dictionary).ToArray();
+
+            IEnumerable<AssetBundleReferenceData> Enumerate(Dictionary<string, List<AssetBundleReferenceData>> dictionary)
+            {
+                foreach (var item in dictionary)
+                {
+                    foreach (var data in item.Value)
+                    {
+                        yield return data;
+                    }
+                }
+            }
+        }
+
+        public static unsafe AssetBundleReferenceKVPData[] CreateKVP(Dictionary<string, List<AssetBundleReferenceData>> dictionary)
+        {
+            AssetBundleReferenceKVPData[] kvp = new AssetBundleReferenceKVPData[dictionary.Count];
+            int dataSize = sizeof(AssetBundleReferenceData);
+
+            foreach (var kvpItem in dictionary.Index())
+            {
+                int index = kvpItem.Index;
+                string key = kvpItem.Item.Key;
+                AssetBundleReferenceKVPData kvpData = new AssetBundleReferenceKVPData
+                {
+                    DataCount = kvpItem.Item.Value.Count,
+                    DataSize = dataSize
+                };
+
+                kvpItem.Item.Key.AsSpan().CopyTo(new Span<char>(kvpData.Keys, key.Length));
+                kvp[index] = kvpData;
+            }
+
+            return kvp;
+        }
+
+        public static unsafe (AssetBundleReferenceHeader Header, AssetBundleReferenceKVPData[] KVP, AssetBundleReferenceData[] Data)
             ReadAssetBundleReference(Stream stream)
         {
             // Read header buffer
-            AssetBundleReferenceHeader header = new AssetBundleReferenceHeader();
+            AssetBundleReferenceHeader header = new();
             Span<byte> headerBuffer = AsBytesSpan(ref header);
             stream.ReadExactly(headerBuffer);
 
@@ -99,28 +140,47 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             // Create input stream (as create decompression stream if any)
             using Stream inputStream = CreateDecompressionStream(stream, ref header);
 
-            // Get expected data length and create return array for the data
-            int expectedDataLength = header.DataStructCount * header.DataStructSize;
-            AssetBundleReferenceKVPData[] kvpData = new AssetBundleReferenceKVPData[header.DataStructCount];
-            Span<byte> dataAsBytes = new(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(kvpData)), expectedDataLength);
+            // Get KVP struct array
+            AssetBundleReferenceKVPData[] kvpData = ReadStructFromStream<AssetBundleReferenceKVPData>(inputStream, header.DataStructCount, header.DataStructSize);
+
+            // Get actual data struct array
+            int actualDataCount = 0;
+            int actualDataSize = 0;
+            for (int i = 0; i < kvpData.Length; i++)
+            {
+                actualDataSize = kvpData[i].DataSize;
+                actualDataCount += kvpData[i].DataCount;
+            }
+            AssetBundleReferenceData[] actualData = ReadStructFromStream<AssetBundleReferenceData>(inputStream, actualDataCount, actualDataSize);
+
+            // Return the header and the Key-value pair data
+            return (header, kvpData, actualData);
+        }
+
+        private static unsafe T[] ReadStructFromStream<T>(Stream inputStream, int dataCount, int structSize)
+            where T : unmanaged
+        {
+            T[] structData = new T[dataCount];
+            int expectedDataLength = dataCount * structSize;
+            Span<byte> dataAsBytes = new(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(structData)), expectedDataLength);
 
             // Read the data struct from stream
             int read;
             int offset = 0;
-            while ((read = stream.Read(dataAsBytes[offset..])) > 0)
+            while ((read = inputStream.Read(dataAsBytes[offset..])) > 0)
             {
                 offset += read;
                 if (offset >= expectedDataLength)
                     throw new Exception($"AssetBundleReference's read data is larger than expected: {expectedDataLength} bytes");
             }
 
-            // Return the header and the Key-value pair data
-            return (header, kvpData);
+            return structData;
         }
 
         public static void WriteAssetBundleReference(Stream stream,
                                                      ref AssetBundleReferenceHeader header,
-                                                     ReadOnlySpan<AssetBundleReferenceKVPData> referenceKvpData)
+                                                     ReadOnlySpan<AssetBundleReferenceKVPData> referenceKvpData,
+                                                     ReadOnlySpan<AssetBundleReferenceData> referenceData)
         {
             // Read header struct as header and write into the stream
             ReadOnlySpan<byte> headerSpan = AsBytesReadOnlySpan(ref header);
@@ -128,10 +188,16 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
             // Create the decompression stream
             using Stream outputStream = CreateCompressionStream(stream, ref header);
+            WriteStructToStream(referenceKvpData, outputStream);
+            WriteStructToStream(referenceData, outputStream);
+        }
 
+        private static void WriteStructToStream<T>(ReadOnlySpan<T> referenceKvpData, Stream outputStream)
+            where T : unmanaged
+        {
             // Get a reference of start and end of the data struct span
-            ref AssetBundleReferenceKVPData dataStart = ref MemoryMarshal.GetReference(referenceKvpData);
-            ref AssetBundleReferenceKVPData dataEnd = ref Unsafe.Add(ref dataStart, referenceKvpData.Length);
+            ref T dataStart = ref MemoryMarshal.GetReference(referenceKvpData);
+            ref T dataEnd = ref Unsafe.Add(ref dataStart, referenceKvpData.Length);
 
             // Do a loop and write the data struct into the stream
             while (Unsafe.IsAddressLessThan(ref dataStart, ref dataEnd))
@@ -164,55 +230,76 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         private static Stream CreateCompressionStream(Stream stream, ref AssetBundleReferenceHeader header)
         {
             bool isCompressed = header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.IsCompressed);
-            switch (header.HeaderFlag)
+
+            if (!isCompressed)
             {
-                case AssetBundleReferenceHeaderFlag.Compression_Brotli:
-                    return new BrotliStream(stream, new BrotliCompressionOptions
-                    {
-                        Quality = 11,
-                    }, true);
-                case AssetBundleReferenceHeaderFlag.Compression_Zstd:
-                    return new ZstdCompressionStream(stream, new ZstdCompressionOptions(22));
-                case AssetBundleReferenceHeaderFlag.Compression_Deflate:
-                    return new DeflateStream(stream, new ZLibCompressionOptions
-                    {
-                        CompressionLevel = 9,
-                        CompressionStrategy = ZLibCompressionStrategy.Default
-                    }, true);
-                case AssetBundleReferenceHeaderFlag.Compression_Gzip:
-                    return new GZipStream(stream, new ZLibCompressionOptions
-                    {
-                        CompressionLevel = 9,
-                        CompressionStrategy = ZLibCompressionStrategy.Default
-                    }, true);
-                default:
-                    if (isCompressed)
-                        throw new NotSupportedException("Unsupported compression type!");
-                    else
-                        return stream;
+                return stream;
             }
+
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Brotli))
+            {
+                return new BrotliStream(stream, new BrotliCompressionOptions
+                {
+                    Quality = 11,
+                }, true);
+            }
+
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Zstd))
+            {
+                return new ZstdCompressionStream(stream, new ZstdCompressionOptions(22));
+            }
+
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Deflate))
+            {
+                return new DeflateStream(stream, new ZLibCompressionOptions
+                {
+                    CompressionLevel = 9,
+                    CompressionStrategy = ZLibCompressionStrategy.Default
+                }, true);
+            }
+
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Gzip))
+            {
+                return new GZipStream(stream, new ZLibCompressionOptions
+                {
+                    CompressionLevel = 9,
+                    CompressionStrategy = ZLibCompressionStrategy.Default
+                }, true);
+            }
+
+            throw new NotSupportedException("Unsupported compression type!");
         }
 
         private static Stream CreateDecompressionStream(Stream stream, ref AssetBundleReferenceHeader header)
         {
             bool isCompressed = header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.IsCompressed);
 
-            switch (header.HeaderFlag)
+            if (!isCompressed)
             {
-                case AssetBundleReferenceHeaderFlag.Compression_Brotli:
-                    return new BrotliStream(stream, CompressionMode.Decompress, true);
-                case AssetBundleReferenceHeaderFlag.Compression_Zstd:
-                    return new ZstdDecompressionStream(stream);
-                case AssetBundleReferenceHeaderFlag.Compression_Deflate:
-                    return new DeflateStream(stream, CompressionMode.Decompress, true);
-                case AssetBundleReferenceHeaderFlag.Compression_Gzip:
-                    return new GZipStream(stream, CompressionMode.Decompress, true);
-                default:
-                    if (isCompressed)
-                        throw new NotSupportedException("Unsupported compression type!");
-                    else
-                        return stream;
+                return stream;
             }
+
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Brotli))
+            {
+                return new BrotliStream(stream, CompressionMode.Decompress, true);
+            }
+
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Zstd))
+            {
+                return new ZstdDecompressionStream(stream);
+            }
+
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Deflate))
+            {
+                return new DeflateStream(stream, CompressionMode.Decompress, true);
+            }
+
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Gzip))
+            {
+                return new GZipStream(stream, CompressionMode.Decompress, true);
+            }
+
+            throw new NotSupportedException("Unsupported compression type!");
         }
     }
 }
