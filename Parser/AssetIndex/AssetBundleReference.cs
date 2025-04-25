@@ -44,6 +44,19 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         Compression_Gzip    = 0b_00001000_00000000
     }
 
+    public enum AssetBundleReferenceReadOp
+    {
+        Success = 0,
+        NeedMoreBuffer = 1,
+        StreamTooShort = 2,
+        StreamDecompressInitFail = 3,
+        DataStructSizeOnKVPRefNotSame = 4,
+        DataCountOnKVPRefIsEmpty = 5,
+        HeaderMagicInvalid = 32,
+        HeaderVersionUnsupported = 33,
+        UnknownCreateSpanFailure = int.MinValue
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct AssetBundleReferenceData
     {
@@ -79,15 +92,33 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         }
     }
 
+    public readonly unsafe ref struct AssetBundleReferenceSpan
+    {
+        public readonly ref AssetBundleReferenceHeader                Header;
+        public readonly     ReadOnlySpan<AssetBundleReferenceKVPData> KeyValuePair;
+        public readonly     ReadOnlySpan<AssetBundleReferenceData>    Data;
+
+        public AssetBundleReferenceSpan(void* header,
+                                        void* keyValuePair,
+                                        int keyValuePairCount,
+                                        void* data,
+                                        int dataCount)
+        {
+            Header       = ref Unsafe.AsRef<AssetBundleReferenceHeader>(header);
+            KeyValuePair = new ReadOnlySpan<AssetBundleReferenceKVPData>(keyValuePair, keyValuePairCount);
+            Data         = new ReadOnlySpan<AssetBundleReferenceData>(data, dataCount);
+        }
+    }
+
     public static class AssetBundleReference
     {
         internal const ulong CollapseHeader = 7310310183885631299;
 
-        public static unsafe AssetBundleReferenceData[] CreateData(Dictionary<string, List<AssetBundleReferenceData>> dictionary)
+        public static unsafe AssetBundleReferenceData[] CreateData(IDictionary<string, ICollection<AssetBundleReferenceData>> dictionary)
         {
-            return Enumerate(dictionary).ToArray();
+            return [.. Enumerate(dictionary)];
 
-            IEnumerable<AssetBundleReferenceData> Enumerate(Dictionary<string, List<AssetBundleReferenceData>> dictionary)
+            static IEnumerable<AssetBundleReferenceData> Enumerate(IDictionary<string, ICollection<AssetBundleReferenceData>> dictionary)
             {
                 foreach (var item in dictionary)
                 {
@@ -99,7 +130,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             }
         }
 
-        public static unsafe AssetBundleReferenceKVPData[] CreateKVP(Dictionary<string, List<AssetBundleReferenceData>> dictionary)
+        public static unsafe AssetBundleReferenceKVPData[] CreateKVP(IDictionary<string, ICollection<AssetBundleReferenceData>> dictionary)
         {
             AssetBundleReferenceKVPData[] kvp = new AssetBundleReferenceKVPData[dictionary.Count];
             int dataSize = sizeof(AssetBundleReferenceData);
@@ -121,6 +152,158 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             return kvp;
         }
 
+        public static unsafe AssetBundleReferenceReadOp TryReadAssetBundleReference(Stream stream,
+                                                                                    Span<byte> buffer,
+                                                                                    out AssetBundleReferenceSpan assetBundleReferenceSpan)
+        {
+            Unsafe.SkipInit(out assetBundleReferenceSpan);
+
+            int offset = 0;
+            int sizeOfHeader = sizeof(AssetBundleReferenceHeader);
+            if (buffer.Length < sizeOfHeader)
+            {
+                return AssetBundleReferenceReadOp.NeedMoreBuffer;
+            }
+
+            // Start read header data
+            Span<byte> headerRefOnSpan = buffer[offset..sizeOfHeader];
+            offset += sizeOfHeader;
+            ref AssetBundleReferenceHeader headerRefOnBuffer = ref AsBytesStruct<AssetBundleReferenceHeader>(headerRefOnSpan);
+            if (Unsafe.IsNullRef(ref headerRefOnBuffer))
+                return AssetBundleReferenceReadOp.NeedMoreBuffer;
+            if (!TryReadToBuffer(stream, headerRefOnSpan))
+                return AssetBundleReferenceReadOp.StreamTooShort;
+            if (headerRefOnBuffer.Header != CollapseHeader)
+                return AssetBundleReferenceReadOp.HeaderMagicInvalid;
+            if (headerRefOnBuffer.Version != 1)
+                return AssetBundleReferenceReadOp.HeaderVersionUnsupported;
+
+            // Try get the decompression stream
+            if (!TryCreateDecompressionStream(stream, ref headerRefOnBuffer, out Stream decompressionStream, out bool isCompressed))
+                return AssetBundleReferenceReadOp.StreamDecompressInitFail;
+
+            try
+            {
+                // Start read kvp span
+                int kvpCount = headerRefOnBuffer.DataStructCount;
+                int kvpStructSize = headerRefOnBuffer.DataStructSize;
+                AssetBundleReferenceReadOp kvpReadOp =
+                    TryGetSpanOfStruct(decompressionStream,
+                                       buffer,
+                                       ref offset,
+                                       kvpCount,
+                                       kvpStructSize,
+                                       out Span<AssetBundleReferenceKVPData> kvpSpan);
+                if (kvpReadOp != AssetBundleReferenceReadOp.Success)
+                    return kvpReadOp;
+
+                // Start read data span
+                int dataCount = 0;
+                int dataStructSize = sizeof(AssetBundleReferenceData);
+                for (int i = 0; i < kvpCount; i++)
+                {
+                    dataCount += kvpSpan[i].DataCount;
+                    if (kvpSpan[i].DataSize != dataStructSize)
+                        return AssetBundleReferenceReadOp.DataStructSizeOnKVPRefNotSame;
+                }
+                if (dataCount == 0)
+                    return AssetBundleReferenceReadOp.DataCountOnKVPRefIsEmpty;
+                AssetBundleReferenceReadOp dataReadOp =
+                    TryGetSpanOfStruct(decompressionStream,
+                                       buffer,
+                                       ref offset,
+                                       dataCount,
+                                       dataStructSize,
+                                       out Span<AssetBundleReferenceData> dataSpan);
+                if (dataReadOp != AssetBundleReferenceReadOp.Success)
+                    return dataReadOp;
+
+                // Create refs and pass it to create span struct
+                ref AssetBundleReferenceKVPData kvpSpanRef = ref MemoryMarshal.GetReference(kvpSpan);
+                ref AssetBundleReferenceData dataSpanRef = ref MemoryMarshal.GetReference(dataSpan);
+                assetBundleReferenceSpan = new AssetBundleReferenceSpan(Unsafe.AsPointer(ref headerRefOnBuffer),
+                                                                        Unsafe.AsPointer(ref kvpSpanRef),
+                                                                        kvpSpan.Length,
+                                                                        Unsafe.AsPointer(ref dataSpanRef),
+                                                                        dataSpan.Length);
+
+                // Return as success
+                return AssetBundleReferenceReadOp.Success;
+            }
+            catch
+            {
+                return AssetBundleReferenceReadOp.UnknownCreateSpanFailure;
+            }
+            finally
+            {
+                if (isCompressed)
+                {
+                    decompressionStream?.Dispose();
+                }
+            }
+        }
+
+        private static unsafe AssetBundleReferenceReadOp
+            TryGetSpanOfStruct<T>(Stream decompressionStream,
+                                  Span<byte> buffer,
+                                  ref int offset,
+                                  int dataCount,
+                                  int dataStructSize,
+                                  out Span<T> outStructSpan)
+            where T : struct
+        {
+            Unsafe.SkipInit(out outStructSpan);
+
+            int sizeOfDataSpan = dataCount * dataStructSize;
+            if (buffer.Length - offset < sizeOfDataSpan)
+                return AssetBundleReferenceReadOp.NeedMoreBuffer;
+
+            Span<byte> dataRefOnSpan = buffer.Slice(offset, sizeOfDataSpan);
+            offset += sizeOfDataSpan;
+            outStructSpan = MemoryMarshal.Cast<byte, T>(dataRefOnSpan);
+            if (!TryReadToBuffer(decompressionStream, dataRefOnSpan))
+                return AssetBundleReferenceReadOp.StreamTooShort;
+
+            return AssetBundleReferenceReadOp.Success;
+        }
+
+        private static bool TryCreateDecompressionStream(Stream stream, ref AssetBundleReferenceHeader header, out Stream decompressionStream, out bool isCompressed)
+        {
+            Unsafe.SkipInit(out decompressionStream);
+            isCompressed = false;
+
+            try
+            {
+                // Try create the decompression stream. If successful, return true
+                decompressionStream = CreateDecompressionStream(stream, ref header, out isCompressed);
+                return true;
+            }
+            catch
+            {
+                // Otherwise, dispose the decompression stream and return false
+                if (isCompressed)
+                {
+                    decompressionStream?.Dispose();
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryReadToBuffer(Stream stream, Span<byte> buffer)
+        {
+            int read;
+            int offset = 0;
+            int remained = buffer.Length;
+            while ((read = stream.Read(buffer[offset..])) > 0)
+            {
+                remained -= read;
+                offset += read;
+            }
+
+            return remained == 0;
+        }
+
         public static unsafe (AssetBundleReferenceHeader Header, AssetBundleReferenceKVPData[] KVP, AssetBundleReferenceData[] Data)
             ReadAssetBundleReference(Stream stream)
         {
@@ -137,24 +320,36 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             if (header.Version != 1)
                 throw new NotSupportedException($"AssetBundleReference version is not supported: {header.Version}");
 
-            // Create input stream (as create decompression stream if any)
-            using Stream inputStream = CreateDecompressionStream(stream, ref header);
-
-            // Get KVP struct array
-            AssetBundleReferenceKVPData[] kvpData = ReadStructFromStream<AssetBundleReferenceKVPData>(inputStream, header.DataStructCount, header.DataStructSize);
-
-            // Get actual data struct array
-            int actualDataCount = 0;
-            int actualDataSize = 0;
-            for (int i = 0; i < kvpData.Length; i++)
+            bool isCompressed = false;
+            Stream inputStream = null;
+            try
             {
-                actualDataSize = kvpData[i].DataSize;
-                actualDataCount += kvpData[i].DataCount;
-            }
-            AssetBundleReferenceData[] actualData = ReadStructFromStream<AssetBundleReferenceData>(inputStream, actualDataCount, actualDataSize);
+                // Create input stream (as create decompression stream if any)
+                inputStream = CreateDecompressionStream(stream, ref header, out isCompressed);
 
-            // Return the header and the Key-value pair data
-            return (header, kvpData, actualData);
+                // Get KVP struct array
+                AssetBundleReferenceKVPData[] kvpData = ReadStructFromStream<AssetBundleReferenceKVPData>(inputStream, header.DataStructCount, header.DataStructSize);
+
+                // Get actual data struct array
+                int actualDataCount = 0;
+                int actualDataSize = 0;
+                for (int i = 0; i < kvpData.Length; i++)
+                {
+                    actualDataSize = kvpData[i].DataSize;
+                    actualDataCount += kvpData[i].DataCount;
+                }
+                AssetBundleReferenceData[] actualData = ReadStructFromStream<AssetBundleReferenceData>(inputStream, actualDataCount, actualDataSize);
+
+                // Return the header and the Key-value pair data
+                return (header, kvpData, actualData);
+            }
+            finally
+            {
+                if (isCompressed)
+                {
+                    inputStream?.Dispose();
+                }
+            }
         }
 
         private static unsafe T[] ReadStructFromStream<T>(Stream inputStream, int dataCount, int structSize)
@@ -170,7 +365,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             while ((read = inputStream.Read(dataAsBytes[offset..])) > 0)
             {
                 offset += read;
-                if (offset >= expectedDataLength)
+                if (offset > expectedDataLength)
                     throw new Exception($"AssetBundleReference's read data is larger than expected: {expectedDataLength} bytes");
             }
 
@@ -187,9 +382,22 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             stream.Write(headerSpan);
 
             // Create the decompression stream
-            using Stream outputStream = CreateCompressionStream(stream, ref header);
-            WriteStructToStream(referenceKvpData, outputStream);
-            WriteStructToStream(referenceData, outputStream);
+            bool isCompressed = false;
+            Stream outputStream = null;
+            try
+            {
+                outputStream = CreateCompressionStream(stream, ref header, out isCompressed);
+                WriteStructToStream(referenceKvpData, outputStream);
+                WriteStructToStream(referenceData, outputStream);
+            }
+            finally
+            {
+                if (isCompressed)
+                {
+                    // Flush compression stream if used
+                    outputStream?.Dispose();
+                }
+            }
         }
 
         private static void WriteStructToStream<T>(ReadOnlySpan<T> referenceKvpData, Stream outputStream)
@@ -207,6 +415,19 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
                 dataStart = ref Unsafe.Add(ref dataStart, 1);
             }
+        }
+
+        private unsafe static ref T AsBytesStruct<T>(Span<byte> buffer)
+            where T : unmanaged
+        {
+            // If buffer size is sufficient, return ref of struct in the buffer
+            if (buffer.Length >= sizeof(T))
+            {
+                return ref MemoryMarshal.AsRef<T>(buffer);
+            }
+
+            // If fails, return as null ref
+            return ref Unsafe.NullRef<T>();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -227,9 +448,9 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             return dataSpan;
         }
 
-        private static Stream CreateCompressionStream(Stream stream, ref AssetBundleReferenceHeader header)
+        private static Stream CreateCompressionStream(Stream stream, ref AssetBundleReferenceHeader header, out bool isCompressed)
         {
-            bool isCompressed = header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.IsCompressed);
+            isCompressed = header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.IsCompressed);
 
             if (!isCompressed)
             {
@@ -270,9 +491,9 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             throw new NotSupportedException("Unsupported compression type!");
         }
 
-        private static Stream CreateDecompressionStream(Stream stream, ref AssetBundleReferenceHeader header)
+        private static Stream CreateDecompressionStream(Stream stream, ref AssetBundleReferenceHeader header, out bool isCompressed)
         {
-            bool isCompressed = header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.IsCompressed);
+            isCompressed = header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.IsCompressed);
 
             if (!isCompressed)
             {
