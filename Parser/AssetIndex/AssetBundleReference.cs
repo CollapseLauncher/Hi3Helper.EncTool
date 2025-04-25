@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.IO;
@@ -116,11 +117,11 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
     {
         internal const ulong CollapseHeader = 7310310183885631299;
 
-        public static unsafe AssetBundleReferenceData[] CreateData(IDictionary<string, ICollection<AssetBundleReferenceData>> dictionary)
+        public static unsafe AssetBundleReferenceData[] CreateData(IDictionary<string, ConcurrentBag<AssetBundleReferenceData>> dictionary)
         {
             return [.. Enumerate(dictionary)];
 
-            static IEnumerable<AssetBundleReferenceData> Enumerate(IDictionary<string, ICollection<AssetBundleReferenceData>> dictionary)
+            static IEnumerable<AssetBundleReferenceData> Enumerate(IDictionary<string, ConcurrentBag<AssetBundleReferenceData>> dictionary)
             {
                 foreach (var item in dictionary)
                 {
@@ -132,7 +133,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             }
         }
 
-        public static unsafe AssetBundleReferenceKVPData[] CreateKVP(IDictionary<string, ICollection<AssetBundleReferenceData>> dictionary)
+        public static unsafe AssetBundleReferenceKVPData[] CreateKVP(IDictionary<string, ConcurrentBag<AssetBundleReferenceData>> dictionary)
         {
             AssetBundleReferenceKVPData[] kvp = new AssetBundleReferenceKVPData[dictionary.Count];
             int dataSize = sizeof(AssetBundleReferenceData);
