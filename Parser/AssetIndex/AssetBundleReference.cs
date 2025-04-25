@@ -6,9 +6,11 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#if USEZSTD
 using ZstdCompressionStream = ZstdNet.CompressionStream;
 using ZstdCompressionOptions = ZstdNet.CompressionOptions;
 using ZstdDecompressionStream = ZstdNet.DecompressionStream;
+#endif
 
 namespace Hi3Helper.EncTool.Parser.AssetIndex
 {
@@ -465,10 +467,12 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 }, true);
             }
 
+#if USEZSTD
             if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Zstd))
             {
                 return new ZstdCompressionStream(stream, new ZstdCompressionOptions(22));
             }
+#endif
 
             if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Deflate))
             {
@@ -505,10 +509,12 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 return new BrotliStream(stream, CompressionMode.Decompress, true);
             }
 
+#if USEZSTD
             if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Zstd))
             {
                 return new ZstdDecompressionStream(stream);
             }
+#endif
 
             if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Deflate))
             {
