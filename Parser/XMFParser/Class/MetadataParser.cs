@@ -56,7 +56,7 @@ namespace Hi3Helper.EncTool.Parser
             BlockIndexCatalog = new Dictionary<string, uint>();
             for (uint i = 0; i < count; i++)
             {
-                BlockIndexCatalog.Add(BlockEntry[i].HashString, i);
+                BlockIndexCatalog.Add(BlockEntry[i].BlockName, i);
             }
         }
 
@@ -64,7 +64,7 @@ namespace Hi3Helper.EncTool.Parser
         {
             // Switch to Little-endian on reading the header.
             reader.Endian = EndianType.LittleEndian;
-            return reader.ReadBytes(SignatureLength);
+            return XMFBlock.TryReadMD5HashOrOther64(reader);
         }
 
         internal static int[] ReadVersion(EndianBinaryReader reader)
@@ -139,45 +139,6 @@ namespace Hi3Helper.EncTool.Parser
 
             // If found, then return the block entry.
             return BlockEntry[value];
-        }
-
-        /// <summary>
-        /// Get the enumeration of the block hashes in a string form.
-        /// </summary>
-        /// <returns>Enumeration of the block hashes.</returns>
-        public IEnumerable<string> EnumerateBlockHashString()
-        {
-            uint count = BlockCount;
-            for (uint i = 0; i < count; i++)
-            {
-                yield return BlockEntry[i].HashString;
-            }
-        }
-
-        /// <summary>
-        /// Get the enumeration of the block file path.
-        /// </summary>
-        /// <returns>Enumeration of the block hashes.</returns>
-        public IEnumerable<string> EnumerateBlockPath()
-        {
-            uint count = BlockCount;
-            for (uint i = 0; i < count; i++)
-            {
-                yield return Path.Combine(FolderPath, BlockEntry[i].HashString + ".wmv");
-            }
-        }
-
-        /// <summary>
-        /// Get the enumeration of the block hashes in a byte array.
-        /// </summary>
-        /// <returns>Enumeration of the block hashes in byte array form.</returns>
-        public IEnumerable<byte[]> EnumerateBlockHash()
-        {
-            uint count = BlockCount;
-            for (uint i = 0; i < count; i++)
-            {
-                yield return BlockEntry[i].Hash;
-            }
         }
     }
 }

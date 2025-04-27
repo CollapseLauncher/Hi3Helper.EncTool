@@ -95,6 +95,45 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         }
     }
 
+    public static class AssetBundleReferenceExtensions
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe ReadOnlySpan<char> GetKeyFromKvp(this ref AssetBundleReferenceKVPData kvp)
+        {
+            fixed (char* ptr = kvp.Keys)
+            {
+                return GetSpanFromCharPtr(ptr, 24);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe ReadOnlySpan<char> GetDataNameSpan(this ref AssetBundleReferenceData data)
+        {
+            fixed (char* ptr = data.Name)
+            {
+                return GetSpanFromCharPtr(ptr, 64);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe ReadOnlySpan<char> GetSpanFromCharPtr(char* ptr, int maxLen)
+        {
+            if (maxLen == 0)
+            {
+                return ReadOnlySpan<char>.Empty;
+            }
+
+            // If the key is maxLen chars and has no null termination, return the whole ptr to span
+            if (*(ptr + maxLen - 1) != '\0')
+            {
+                return new ReadOnlySpan<char>(ptr, maxLen);
+            }
+
+            // Otherwise, return the null terminated ptr to span
+            return MemoryMarshal.CreateReadOnlySpanFromNullTerminated(ptr);
+        }
+    }
+
     public readonly unsafe ref struct AssetBundleReferenceSpan
     {
         public readonly ref AssetBundleReferenceHeader                Header;
@@ -110,6 +149,39 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             Header       = ref Unsafe.AsRef<AssetBundleReferenceHeader>(header);
             KeyValuePair = new ReadOnlySpan<AssetBundleReferenceKVPData>(keyValuePair, keyValuePairCount);
             Data         = new ReadOnlySpan<AssetBundleReferenceData>(data, dataCount);
+        }
+
+        public unsafe ref AssetBundleReferenceKVPData TryGetKVPFromKey(ReadOnlySpan<char> key, StringComparison stringComparison = StringComparison.OrdinalIgnoreCase)
+        {
+            // WARNING: Inefficient
+            ref AssetBundleReferenceKVPData startIndex = ref MemoryMarshal.GetReference(KeyValuePair);
+            ref AssetBundleReferenceKVPData endIndex = ref Unsafe.Add(ref startIndex, KeyValuePair.Length);
+            while (Unsafe.IsAddressLessThan(ref startIndex, ref endIndex))
+            {
+                if (AssetBundleReferenceExtensions.GetKeyFromKvp(ref startIndex)
+                    .StartsWith(key, stringComparison))
+                {
+                    return ref startIndex;
+                }
+                startIndex = ref Unsafe.Add(ref startIndex, 1);
+            }
+
+            return ref Unsafe.NullRef<AssetBundleReferenceKVPData>();
+        }
+
+        public unsafe ReadOnlySpan<AssetBundleReferenceData> TryGetDataSpanFromKVP(ref AssetBundleReferenceKVPData kvpRef)
+        {
+            int start = 0;
+
+            // WARNING: Inefficient
+            ref AssetBundleReferenceKVPData startIndex = ref MemoryMarshal.GetReference(KeyValuePair);
+            while (Unsafe.IsAddressLessThan(ref startIndex, ref kvpRef))
+            {
+                start += startIndex.DataCount;
+                startIndex = ref Unsafe.Add(ref startIndex, 1);
+            }
+
+            return Data.Slice(start, kvpRef.DataCount);
         }
     }
 

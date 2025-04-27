@@ -9,11 +9,7 @@ namespace Hi3Helper.EncTool.Parser
 {
     public class XMFAsset
     {
-        private byte[] ParentHash         { get; }
-        private string ParentHashString   { get => HexTool.BytesToHexUnsafe(ParentHash); }
-        private string ParentHashFilePath { get => Path.Combine(XMFParser.FolderPath, ParentHashString + ".wmv"); }
-        private long   ParentHashFileSize { get => new FileInfo(ParentHashFilePath).Length; }
-        private bool   IsParentFileExist  { get => File.Exists(ParentHashFilePath); }
+        private XMFBlock Parent { get; set; }
 
         /// <summary>
         /// This class contains some information about the asset inside the block file,
@@ -23,9 +19,9 @@ namespace Hi3Helper.EncTool.Parser
         /// <param name="end"></param>
         /// <param name="start"></param>
         /// <param name="parentBlockIndex"></param>
-        internal XMFAsset(string name, uint end, uint start, byte[] parentBlockIndex)
+        internal XMFAsset(string name, uint end, uint start, XMFBlock parent)
         {
-            ParentHash  = parentBlockIndex;
+            Parent      = parent;
             Name        = name;
             OffsetEnd   = end;
             OffsetStart = start;
@@ -43,9 +39,7 @@ namespace Hi3Helper.EncTool.Parser
             CheckParentFileAndThrow();
 
             if (!skipHeaderCheck) IsUnityFsHeaderValid();
-
-            Stream fs = new FileStream(ParentHashFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            return new ChunkStream(fs, OffsetStart, OffsetEnd);
+            return new ChunkStream(Parent.GetBlockStream(FileAccess.Read), OffsetStart, OffsetEnd);
         }
 
         /// <summary>
@@ -61,9 +55,7 @@ namespace Hi3Helper.EncTool.Parser
             CheckParentFileAndThrow();
 
             if (!skipHeaderCheck) IsUnityFsHeaderValid();
-
-            Stream fs = new FileStream(ParentHashFilePath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
-            return new ChunkStream(fs, OffsetStart, OffsetEnd);
+            return new ChunkStream(Parent.GetBlockStream(FileAccess.Write), OffsetStart, OffsetEnd);
         }
 
         /// <summary>
@@ -79,29 +71,27 @@ namespace Hi3Helper.EncTool.Parser
             CheckParentFileAndThrow();
 
             if (!skipHeaderCheck) IsUnityFsHeaderValid();
-
-            Stream fs = new FileStream(ParentHashFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-            return new ChunkStream(fs, OffsetStart, OffsetEnd);
+            return new ChunkStream(Parent.GetBlockStream(FileAccess.ReadWrite), OffsetStart, OffsetEnd);
         }
 
         internal void SetOffsetEnd(long offsetEnd) => OffsetEnd = offsetEnd;
 
         private void CheckParentFileAndThrow()
         {
-            if (!IsParentFileExist)
+            if (!Parent.IsExist)
             {
-                throw new FileNotFoundException($"Cannot create a stream because parent block file with hash: {ParentHashString} doesn't exist!");
+                throw new FileNotFoundException($"Cannot create a stream because parent block file: {Parent.BlockName} doesn't exist!");
             }
-            if (OffsetStart > ParentHashFileSize || ParentHashFileSize < OffsetEnd)
+            if (OffsetStart > Parent.Size || Parent.Size < OffsetEnd)
             {
                 throw new FileLoadException($"Cannot create a stream because parent block file with hash: " +
-                                            $"{ParentHashString} doesn't have a correct size or maybe corrupted!");
+                                            $"{Parent.BlockName} doesn't have a correct size or maybe corrupted!");
             }
         }
 
         private void IsUnityFsHeaderValid(long exSig = 0x53467974696E55)
         {
-            using Stream             fs  = new FileStream(ParentHashFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            using Stream             fs  = Parent.GetBlockStream(FileAccess.ReadWrite);
             using Stream             cs  = new ChunkStream(fs, OffsetStart, OffsetEnd);
             using EndianBinaryReader s   = new(cs, EndianType.LittleEndian);
             long                     sig = s.ReadInt64();

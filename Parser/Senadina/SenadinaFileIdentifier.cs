@@ -171,7 +171,6 @@ namespace Hi3Helper.EncTool.Parser.Senadina
 
             Stream networkStream = await HttpResponseInputStream.CreateStreamAsync(client, result, 0, null, token);
             return networkStream;
-
         }
     }
 }

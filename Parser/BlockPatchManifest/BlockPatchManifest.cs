@@ -6,42 +6,38 @@ using System.IO;
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
-    public struct BlockOldPatchInfo
+    public class BlockOldPatchInfo
     {
-        private byte[] _oldHash;
-        private byte[] _patchHash;
-        public  byte[] OldHash       { get => _oldHash ??= HexTool.HexToBytesUnsafe(OldHashStr); }
-        public  string OldHashStr    { get; set; }
-        public  byte[] PatchHash     { get => _patchHash ??= HexTool.HexToBytesUnsafe(PatchHashStr); }
-        public  string PatchHashStr  { get; set; }
+        public  byte[] OldHash       { get; set; }
+        public  string OldName       { get; set; }
+        public  byte[] PatchHash     { get; set; }
+        public  string PatchName     { get; set; }
         public  int[]  OldVersion    { get; set; }
         public  uint   PatchSize     { get; set; }
         public  string OldVersionDir { get => $"{string.Join('_', OldVersion)}"; }
 
         public BlockOldPatchInfo Copy() => new()
         {
-            _oldHash     = _oldHash,
-            _patchHash   = _patchHash,
-            OldHashStr   = OldHashStr,
-            PatchHashStr = PatchHashStr,
-            OldVersion   = OldVersion,
-            PatchSize    = PatchSize
+            OldHash    = OldHash,
+            OldName    = OldName,
+            PatchHash  = PatchHash,
+            PatchName  = PatchName,
+            OldVersion = OldVersion,
+            PatchSize  = PatchSize
         };
     }
 
-    public struct BlockPatchInfo
+    public class BlockPatchInfo
     {
-        private byte[]                  _newHash;
-        public  byte[]                  NewHash      { get => _newHash ??= HexTool.HexToBytesUnsafe(NewHashStr); }
-        public  string                  NewHashStr   { get; set; }
-        public  List<BlockOldPatchInfo> PatchPairs   { get; set; }
-        public  string                  NewBlockName { get => HexTool.BytesToHexUnsafe(NewHash); }
+        public  byte[]                  NewHash    { get; set; }
+        public  string                  NewName    { get; set; }
+        public  List<BlockOldPatchInfo> PatchPairs { get; set; }
     }
 
     public class BlockPatchManifest
     {
 
-        public Dictionary<string, int> NewBlockCatalog = new();
+        public Dictionary<string, int> NewBlockCatalog = [];
         public List<BlockPatchInfo>    PatchAsset { get; private set; }
 
         public BlockPatchManifest(string filePath)
@@ -92,43 +88,47 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
                 // Check if the patch info reference already exist. If not, then
                 // add it as a new one.
-                bool isKeyExist = NewBlockCatalog.ContainsKey(newHash);
-                if (!isKeyExist)
+                string newHashKey = newHash + ".wmv";
+                if (NewBlockCatalog.TryAdd(newHashKey, ret.Count))
                 {
                     // Initialize the patch info
                     BlockPatchInfo info = new()
                     {
-                        NewHashStr = newHash,
+                        NewName    = newHash + ".wmv",
+                        NewHash    = HexTool.HexToBytesUnsafe(newHash),
                         PatchPairs =
                         [
                             new BlockOldPatchInfo
                             {
-                                OldHashStr   = oldHash,
-                                PatchHashStr = patchHash,
-                                OldVersion   = version,
-                                PatchSize    = patchSize
+                                OldName    = oldHash + ".wmv",
+                                OldHash    = HexTool.HexToBytesUnsafe(oldHash),
+                                PatchName  = patchHash + ".wmv",
+                                PatchHash  = HexTool.HexToBytesUnsafe(patchHash),
+                                OldVersion = version,
+                                PatchSize  = patchSize
                             }
                         ]
                     };
 
                     // Add the index references and patch info
-                    NewBlockCatalog.Add(newHash, ret.Count);
                     ret.Add(info);
                 }
                 // Otherwise, try to add the old reference
                 else
                 {
                     // Get the index of the patch info
-                    int index = NewBlockCatalog[newHash];
+                    int index = NewBlockCatalog[newHashKey];
 
                     // Get the reference and add another old patch info pairs
                     BlockPatchInfo info = ret[index];
                     info.PatchPairs.Add(new BlockOldPatchInfo
                     {
-                        OldHashStr   = oldHash,
-                        PatchHashStr = patchHash,
-                        OldVersion   = version,
-                        PatchSize    = patchSize
+                        OldName    = oldHash + ".wmv",
+                        OldHash    = HexTool.HexToBytesUnsafe(oldHash),
+                        PatchName  = patchHash + ".wmv",
+                        PatchHash  = HexTool.HexToBytesUnsafe(patchHash),
+                        OldVersion = version,
+                        PatchSize  = patchSize
                     });
                 }
             }

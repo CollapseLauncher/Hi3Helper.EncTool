@@ -3,6 +3,7 @@ using Hi3Helper.UABT.Binary;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 // ReSharper disable CommentTypo
 // ReSharper disable InconsistentNaming
 // ReSharper disable CheckNamespace
@@ -32,8 +33,9 @@ namespace Hi3Helper.EncTool.Parser
         private void LoadBlockInfoHeader(EndianBinaryReader reader)
         {
             // Read Hash and UniqueID of the block file in XMF metadata.
-            Hash     = reader.ReadBytes(HashLength);
-            UniqueID = new int[UniqueIDLength];
+            Hash      = TryReadMD5HashOrOther64(reader);
+            BlockName = HexTool.BytesToHexUnsafe(Hash) + ".wmv";
+            UniqueID  = new int[UniqueIDLength];
 
             for (int i = 0; i < UniqueIDLength; i++)
             {
@@ -46,6 +48,21 @@ namespace Hi3Helper.EncTool.Parser
             if (!_isMeta) AssetEntry = new XMFAsset[reader.ReadUInt32()];
         }
 
+        internal static byte[] TryReadMD5HashOrOther64(EndianBinaryReader reader)
+        {
+            Span<byte> buffer = stackalloc byte[HashLength];
+            _ = reader.BaseStream.Read(buffer);
+
+            ref ulong lowBytes = ref MemoryMarshal.AsRef<ulong>(buffer[8..]);
+            bool isOnly64Bit = lowBytes == 0;
+
+            int returnBytesLen = isOnly64Bit ? 8 : HashLength;
+            byte[] returnBytes = new byte[returnBytesLen];
+            buffer[0..returnBytesLen].CopyTo(returnBytes);
+
+            return returnBytes;
+        }
+
         private void LoadBlockInfoMetadata(EndianBinaryReader reader)
         {
             // Read the block information inside the metadata section.
@@ -56,7 +73,7 @@ namespace Hi3Helper.EncTool.Parser
                 uint               offset     = reader.ReadUInt32();
 
                 // Initialize the AssetEntry array.
-                AssetEntry[i] = new XMFAsset(name.ToString(), 0, offset, Hash);
+                AssetEntry[i] = new XMFAsset(name.ToString(), 0, offset, this);
             }
 
             // Get the size information for the block assets.
@@ -103,7 +120,7 @@ namespace Hi3Helper.EncTool.Parser
         {
             if (!AssetIndexCatalog.TryGetValue(name, out var value))
             {
-                throw new KeyNotFoundException($"Asset \"{name}\" in block: {HashString} doesn't exist!");
+                throw new KeyNotFoundException($"Asset \"{name}\" in block: {BlockName} doesn't exist!");
             }
 
             return AssetEntry[value];
@@ -137,7 +154,7 @@ namespace Hi3Helper.EncTool.Parser
                 throw new FileNotFoundException("The block file doesn't exist!");
             }
 
-            return new FileStream(FilePath, isCreateFile ? FileMode.Create : FileMode.Open, fileAccess, FileShare.ReadWrite);
+            return new FileStream(FullFilePath, isCreateFile ? FileMode.Create : FileMode.Open, fileAccess, FileShare.ReadWrite);
         }
 
         /// <summary>
@@ -156,19 +173,19 @@ namespace Hi3Helper.EncTool.Parser
         public byte[] Hash { get; private set; }
 
         /// <summary>
-        /// The MD5 Hash of the block file in a string form.
+        /// The filename of the block file.
         /// </summary>
-        public string HashString { get => Hash == null ? null : HexTool.BytesToHexUnsafe(Hash); }
+        public string BlockName { get; set; }
 
         /// <summary>
         /// The absolute file path of the block file.
         /// </summary>
-        public string FilePath { get => Path.Combine(XMFParser.FolderPath, HashString + ".wmv"); }
+        public string FullFilePath { get => Path.Combine(XMFParser.FolderPath, BlockName); }
 
         /// <summary>
         /// Gets a status whether the file exist or not.
         /// </summary>
-        public bool IsExist { get => File.Exists(FilePath); }
+        public bool IsExist { get => File.Exists(FullFilePath); }
 
         /// <summary>
         /// Entries of the Asset file defined as an array of <c>XMFAsset</c> class.
