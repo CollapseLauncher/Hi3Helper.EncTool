@@ -35,17 +35,18 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         All = 100           // 100
     }
 
+#nullable enable
     public class ManifestAssetInfo
     {
-        public string Name { get; set; } // 0x10
-        public string Path { get; set; } // 0x18
-        public byte[] Hash { get; set; } // 0x20
-        public string HashString { get => HexTool.BytesToHexUnsafe(Hash); }
+        public string? Name { get; set; } // 0x10
+        public string? Path { get; set; } // 0x18
+        public byte[]? Hash { get; set; } // 0x20
+        public string? HashString { get => HexTool.BytesToHexUnsafe(Hash); }
         public int Size { get; set; } // 0x30
         public AudioLanguageType Language { get; set; } // 0x34
         public AudioPCKType PckType { get; set; } // 0x38
         public bool NeedMap { get; set; } // 0x3C
-        public bool IsHasPatch { get => PatchInfo.HasValue; }
+        public bool IsHasPatch { get => PatchInfo != null; }
         public ManifestAudioPatchInfo? PatchInfo { get; private set; }
 
         public void AddPatchInfo(ManifestAudioPatchInfo? patchInfo)

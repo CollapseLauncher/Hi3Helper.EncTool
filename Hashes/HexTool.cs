@@ -153,7 +153,8 @@ namespace Hi3Helper.Data
         public static byte[] HexToBytesUnsafe(ReadOnlySpan<char> source)
         {
             if (source.IsEmpty) return [];
-            if (source.Length % 2 == 1) throw new IndexOutOfRangeException($"The length of the {nameof(source)} must be even!");
+            if (source.Length % 2 == 1)
+                throw new IndexOutOfRangeException($"The length of the {nameof(source)} must be even!");
 
 #if NET9_0_OR_GREATER
             int    returnLen   = source.Length / 2;

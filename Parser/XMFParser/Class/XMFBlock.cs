@@ -51,7 +51,7 @@ namespace Hi3Helper.EncTool.Parser
         internal static byte[] TryReadMD5HashOrOther64(EndianBinaryReader reader)
         {
             Span<byte> buffer = stackalloc byte[HashLength];
-            _ = reader.BaseStream.Read(buffer);
+            reader.BaseStream.ReadExactly(buffer);
 
             ref ulong lowBytes = ref MemoryMarshal.AsRef<ulong>(buffer[8..]);
             bool isOnly64Bit = lowBytes == 0;

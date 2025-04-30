@@ -167,8 +167,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             string name = reader.ReadString();
             string path = reader.ReadString();
 
-            byte[] hash = new byte[16];
-            reader.BaseStream.ReadExactly(hash);
+            byte[] hash = XMFBlock.TryReadMD5HashOrOther64(reader);
 
             int               size        = reader.ReadInt32();
             int               languageInt = reader.ReadInt32();
@@ -231,9 +230,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #if DEBUG
             // Print the patch info
             Console.WriteLine($"    Asset: {name}");
-            Console.WriteLine($"        Asset MD5: {fileMd5}");
-            Console.WriteLine($"        New Patched Asset MD5: {newFileMd5}");
-            Console.WriteLine($"        Patch Filename (also as MD5): {patchFileMd5}.patch");
+            Console.WriteLine($"        Asset Hash: {fileMd5}");
+            Console.WriteLine($"        New Patched Asset Hash: {newFileMd5}");
+            Console.WriteLine($"        Patch Filename (also as Hash): {patchFileMd5}.patch");
             Console.WriteLine($"        Patch File Size: {patchFileSize}");
 #endif
 
@@ -252,7 +251,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 // Get the name and try to get the ManifestAudioPatchInfo
                 string name = AudioAssets[i].Name + ".pck";
                 ManifestAudioPatchInfo info = _audioPatches.FirstOrDefault(x => x.AudioFilename.Equals(name));
-                AudioAssets[i].AddPatchInfo(info.AudioFilename == null ? null : info);
+                AudioAssets[i].AddPatchInfo(info?.AudioFilename == null ? null : info);
             }
 
             // Clean-up PatchInfo
