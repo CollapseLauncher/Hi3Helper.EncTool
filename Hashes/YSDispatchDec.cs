@@ -1,12 +1,13 @@
 ﻿using System;
 using System.IO;
 using System.Security.Cryptography;
+// ReSharper disable InconsistentNaming
 
 namespace Hi3Helper.EncTool
 {
     public class YSDispatchDec : mhyEncTool
     {
-        public byte[] DecryptYSDispatch(string contentBase64, int encBitLength, string encKey)
+        public static byte[] DecryptYSDispatch(string contentBase64, int encBitLength, string encKey)
         {
             RSA rsa = RSA.Create();
             rsa.FromXmlString(encKey);

@@ -72,7 +72,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
             var baseFileInfo = GetFileInfo(FileInfoKind.Base);
             string baseFileUrl =
-                ConverterTool.CombineURLFromString(baseFileInfo.BaseUrl, baseFileInfo.ReferenceFileInfo.FileName);
+                baseFileInfo.BaseUrl.CombineURLFromString(baseFileInfo.ReferenceFileInfo.FileName);
             string baseFileRevision = await Client.GetStringAsync(baseFileUrl, token);
             ResponseGateway.CdnConfig.GameResConfig.BaseRevision = baseFileRevision;
         }
@@ -141,7 +141,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                 Property.VersionString,
                 Property.SeedString);
 
-            string fullUrl = ConverterTool.CombineURLFromString(regionInfo.GatewayUrl, formattedQuery);
+            string fullUrl = regionInfo.GatewayUrl.CombineURLFromString(formattedQuery);
             if (!Uri.TryCreate(fullUrl, UriKind.RelativeOrAbsolute, out Uri? result))
             {
                 throw new InvalidDataException($"Gateway url: {fullUrl} is not a valid Url!");
@@ -156,7 +156,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
         {
             string formattedQuery = string.Format(Property.DispatchQuery, Property.ChannelString, Property.VersionString);
 
-            string fullUrl = ConverterTool.CombineURLFromString(Property.DispatchUrl, formattedQuery);
+            string fullUrl = Property.DispatchUrl.CombineURLFromString(formattedQuery);
             if (!Uri.TryCreate(fullUrl, UriKind.RelativeOrAbsolute, out Uri? result))
             {
                 throw new InvalidDataException($"Dispatch url: {fullUrl} is not a valid Url!");
@@ -216,11 +216,9 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             ArgumentException.ThrowIfNullOrEmpty(metadataConfig?.BaseUrl, nameof(metadataConfig.BaseUrl));
 
             string findKeyName = $"{kind}_";
-            string baseUrl = ConverterTool.CombineURLFromString(
-                metadataConfig.BaseUrl!,
-                Property.BuildProperty.BuildIdentity,
-                Property.BuildProperty.BuildArea
-                );
+            string baseUrl = metadataConfig.BaseUrl!.CombineURLFromString(Property.BuildProperty.BuildIdentity,
+                                                                          Property.BuildProperty.BuildArea
+                                                                         );
 
             SleepyFileInfo? fileInfo = metadataConfig.FileInfoList.FirstOrDefault(x => x.FileName.StartsWith(findKeyName, StringComparison.OrdinalIgnoreCase));
             if (fileInfo == null)

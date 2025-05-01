@@ -31,9 +31,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         public SRAssetProperty()
         {
-            MetadataStream = new MemoryStream();
+            MetadataStream      = new MemoryStream();
             MetadataStartStream = new MemoryStream();
-            AssetList = new List<SRAsset>();
+            AssetList           = [];
         }
 
         public SRAssetProperty(string metadataPath, string metadataStartPath = null)
@@ -54,7 +54,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 }
                 MetadataStartStream = new FileStream(metadataStartPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
             }
-            AssetList = new List<SRAsset>();
+            AssetList = [];
         }
     }
 
@@ -129,11 +129,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         public SRAssetProperty GetAssets() => AssetProperty;
         public IEnumerable<SRAsset> EnumerateAssets() => AssetProperty.AssetList;
         internal abstract void Dispose(bool Disposing);
-        internal string GetMetadataPathFromArchiveInfo(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string key)
+        internal static string GetMetadataPathFromArchiveInfo(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string key)
         {
-            if (!dictArchiveInfo.ContainsKey(key)) throw new KeyNotFoundException($"Key: {key} in ArchiveInfo dictionary does not exist!");
+            if (!dictArchiveInfo.TryGetValue(key, out var archiveInfo)) throw new KeyNotFoundException($"Key: {key} in ArchiveInfo dictionary does not exist!");
 
-            SRDispatchArchiveInfo archiveInfo = dictArchiveInfo[key];
             ReadOnlySpan<char> baseName = archiveInfo.FileName.AsSpan()[2..];
 
             return '/' + string.Concat(baseName, ['_'], archiveInfo.ContentHash, ".bytes");
@@ -142,6 +141,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

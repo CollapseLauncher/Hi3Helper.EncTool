@@ -16,11 +16,15 @@ namespace Hi3Helper.EncTool.WindowTool
     {
         private const int RefreshRateMs = 250;  // Loop refresh rate = 250ms
 
-        public void StartHook(string            processName, int? height, int? width,
-                              CancellationToken token               = default,
-                              bool              isNeedResetOnInit   = false,
-                              ILogger?          logger              = null,
-                              string?           checkProcessFromDir = null)
+    #pragma warning disable CA1068
+        public static void StartHook(string            processName,
+    #pragma warning restore CA1068
+                                     int?              height,
+                                     int?              width,
+                                     CancellationToken token               = default,
+                                     bool              isNeedResetOnInit   = false,
+                                     ILogger?          logger              = null,
+                                     string?           checkProcessFromDir = null)
         {
             try
             {

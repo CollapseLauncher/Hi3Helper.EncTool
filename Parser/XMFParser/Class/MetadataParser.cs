@@ -6,6 +6,7 @@ using System.Linq;
 // ReSharper disable CommentTypo
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedMember.Global
 
 namespace Hi3Helper.EncTool.Parser
 {

@@ -42,12 +42,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected override string                     ParentRemotePath       { get; set; }
         protected override string                     MetadataPath           { get; set; }
         protected override SRAssetProperty            AssetProperty          { get; set; }
-        internal           uint                       RemoteRevisionID       { get; set; }
-        internal           uint                       MetadataInfoSize       { get; set; }
-        internal           string                     AssetListFilename      { get; set; }
-        internal           uint                       AssetListFilesize      { get; set; }
-        internal           ulong                      AssetListUnixTimestamp { get; set; }
-        internal           string                     AssetListRootPath      { get; set; }
 
         internal SRAMBMMetadataReader(string baseURL, string parentRemotePath, string metadataPath, SRAMBMMetadataType type) : base(baseURL)
         {
@@ -130,16 +124,16 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         {
             for (int a = 0; a < assetList.Count; a++)
             {
-#if DEBUG
+            #if DEBUG
                 Console.WriteLine($"    Struct: {a} -> offset: {assetList[a].Offset} | count: {assetList[a].StructCount} | size: {assetList[a].StructSize} bytes | toSize: {assetList[a].StructSize * assetList[a].StructCount} bytes");
-#endif
+            #endif
                 reader.Position = assetList[a].Offset;
 
                 if (a > 0)
                 {
-#if DEBUG
+                #if DEBUG
                     Console.WriteLine($"    Skipping struct index: {a} info");
-#endif
+                #endif
                     continue;
                 }
 

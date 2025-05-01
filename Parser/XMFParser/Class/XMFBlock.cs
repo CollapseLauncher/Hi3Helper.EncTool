@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 // ReSharper disable InconsistentNaming
 // ReSharper disable CheckNamespace
 // ReSharper disable CollectionNeverQueried.Global
+// ReSharper disable UnusedMember.Global
 
 namespace Hi3Helper.EncTool.Parser
 {
@@ -58,7 +59,7 @@ namespace Hi3Helper.EncTool.Parser
 
             int returnBytesLen = isOnly64Bit ? 8 : HashLength;
             byte[] returnBytes = new byte[returnBytesLen];
-            buffer[0..returnBytesLen].CopyTo(returnBytes);
+            buffer[..returnBytesLen].CopyTo(returnBytes);
 
             return returnBytes;
         }

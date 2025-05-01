@@ -42,7 +42,6 @@ namespace Hi3Helper.EncTool.Parser
         public byte[]                   VersionSignature  { get; private set; }
         public int[]                    Version           { get; private set; }
         public bool                     IsMeta            { get; }
-        public string                   BlockDirectory    { get => FolderPath; }
         public XMFBlock[]               BlockEntry        { get; private set; }
 
         public uint BlockCount

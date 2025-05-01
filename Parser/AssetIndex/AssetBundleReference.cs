@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+// ReSharper disable UnusedMember.Global
+// ReSharper disable IdentifierTypo
 
 #if USEZSTD
 using ZstdCompressionStream = ZstdNet.CompressionStream;
@@ -13,24 +15,25 @@ using ZstdCompressionOptions = ZstdNet.CompressionOptions;
 using ZstdDecompressionStream = ZstdNet.DecompressionStream;
 #endif
 
+#pragma warning disable CA1069
 namespace Hi3Helper.EncTool.Parser.AssetIndex
 {
     [Flags]
     public enum AssetBundleReferenceHashFlag : uint
     {
-        CRC32    = 0b_00000000_00000000_00000000_00000001,
-        CRC64    = 0b_00000000_00000000_00000000_00000010,
-        XXH32    = 0b_00000000_00000000_00000000_00000100,
-        XXH64    = 0b_00000000_00000000_00000000_00001000,
-        XXH3_64  = 0b_00000000_00000000_00000000_00010000,
-        XXH3_128 = 0b_00000000_00000000_00000000_00100000,
+        Crc32    = 0b_00000000_00000000_00000000_00000001,
+        Crc64    = 0b_00000000_00000000_00000000_00000010,
+        Xxh32    = 0b_00000000_00000000_00000000_00000100,
+        Xxh64    = 0b_00000000_00000000_00000000_00001000,
+        Xxh364   = 0b_00000000_00000000_00000000_00010000,
+        Xxh3128  = 0b_00000000_00000000_00000000_00100000,
         Murmur   = 0b_00000000_00000000_00000000_01000000,
         Murmur64 = 0b_00000000_00000000_00000000_10000000,
         MD5      = 0b_00000000_00000000_00000000_00000001,
-        SHA1     = 0b_00000000_00000000_00000000_00000010,
-        SHA256   = 0b_00000000_00000000_00000000_00000100,
+        Sha1     = 0b_00000000_00000000_00000000_00000010,
+        Sha256   = 0b_00000000_00000000_00000000_00000100,
 
-        HasHMAC  = 0b_00000000_00000001_00000000_00000000,
+        HasHmac  = 0b_00000000_00000001_00000000_00000000,
         HasSeed  = 0b_00000000_00000010_00000000_00000000,
         IsCrypto = 0b_00000001_00000000_00000000_00000000
     }
@@ -41,10 +44,10 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         IsCompressed = 0b_00000000_00000001,
         IsEncrypted  = 0b_00000000_00000010,
 
-        Compression_Brotli  = 0b_00000001_00000000,
-        Compression_Zstd    = 0b_00000010_00000000,
-        Compression_Deflate = 0b_00000100_00000000,
-        Compression_Gzip    = 0b_00001000_00000000
+        CompressionBrotli  = 0b_00000001_00000000,
+        CompressionZstd    = 0b_00000010_00000000,
+        CompressionDeflate = 0b_00000100_00000000,
+        CompressionGzip    = 0b_00001000_00000000
     }
 
     public enum AssetBundleReferenceReadOp
@@ -53,8 +56,8 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         NeedMoreBuffer = 1,
         StreamTooShort = 2,
         StreamDecompressInitFail = 3,
-        DataStructSizeOnKVPRefNotSame = 4,
-        DataCountOnKVPRefIsEmpty = 5,
+        DataStructSizeOnKvpRefNotSame = 4,
+        DataCountOnKvpRefIsEmpty = 5,
         HeaderMagicInvalid = 32,
         HeaderVersionUnsupported = 33,
         UnknownCreateSpanFailure = int.MinValue
@@ -71,7 +74,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct AssetBundleReferenceKVPData
+    public unsafe struct AssetBundleReferenceKvpData
     {
         public fixed char Keys[24];
         public int        DataSize;
@@ -79,26 +82,20 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
     }
 
     [StructLayout(LayoutKind.Explicit, Pack = 8)]
-    public unsafe struct AssetBundleReferenceHeader
+    public unsafe struct AssetBundleReferenceHeader()
     {
-        [FieldOffset(0)]  public ulong                          Header; // Expected value should be "Collapse"
-        [FieldOffset(8)]  public short                          Version;
-        [FieldOffset(16)] public AssetBundleReferenceHeaderFlag HeaderFlag;
-        [FieldOffset(20)] public int                            DataStructSize;
-        [FieldOffset(12)] public int                            DataStructCount;
-        [FieldOffset(64)] public fixed byte                     AdditionalMetadata[192];
-
-        public AssetBundleReferenceHeader()
-        {
-            Header = AssetBundleReference.CollapseHeader;
-            Version = 1;
-        }
+        [FieldOffset(0)]  public       ulong                          Header  = AssetBundleReference.CollapseHeader; // Expected value should be "Collapse"
+        [FieldOffset(8)]  public       short                          Version = 1;
+        [FieldOffset(16)] public       AssetBundleReferenceHeaderFlag HeaderFlag;
+        [FieldOffset(20)] public       int                            DataStructSize;
+        [FieldOffset(12)] public       int                            DataStructCount;
+        [FieldOffset(64)] public fixed byte                           AdditionalMetadata[192];
     }
 
     public static class AssetBundleReferenceExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ReadOnlySpan<char> GetKeyFromKvp(this ref AssetBundleReferenceKVPData kvp)
+        public static unsafe ReadOnlySpan<char> GetKeyFromKvp(this ref AssetBundleReferenceKvpData kvp)
         {
             fixed (char* ptr = kvp.Keys)
             {
@@ -124,20 +121,16 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             }
 
             // If the key is maxLen chars and has no null termination, return the whole ptr to span
-            if (*(ptr + maxLen - 1) != '\0')
-            {
-                return new ReadOnlySpan<char>(ptr, maxLen);
-            }
-
-            // Otherwise, return the null terminated ptr to span
-            return MemoryMarshal.CreateReadOnlySpanFromNullTerminated(ptr);
+            return *(ptr + maxLen - 1) != '\0' ? new ReadOnlySpan<char>(ptr, maxLen) :
+                // Otherwise, return the null terminated ptr to span
+                MemoryMarshal.CreateReadOnlySpanFromNullTerminated(ptr);
         }
     }
 
     public readonly unsafe ref struct AssetBundleReferenceSpan
     {
         public readonly ref AssetBundleReferenceHeader                Header;
-        public readonly     ReadOnlySpan<AssetBundleReferenceKVPData> KeyValuePair;
+        public readonly     ReadOnlySpan<AssetBundleReferenceKvpData> KeyValuePair;
         public readonly     ReadOnlySpan<AssetBundleReferenceData>    Data;
 
         public AssetBundleReferenceSpan(void* header,
@@ -147,34 +140,34 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                                         int dataCount)
         {
             Header       = ref Unsafe.AsRef<AssetBundleReferenceHeader>(header);
-            KeyValuePair = new ReadOnlySpan<AssetBundleReferenceKVPData>(keyValuePair, keyValuePairCount);
+            KeyValuePair = new ReadOnlySpan<AssetBundleReferenceKvpData>(keyValuePair, keyValuePairCount);
             Data         = new ReadOnlySpan<AssetBundleReferenceData>(data, dataCount);
         }
 
-        public unsafe ref AssetBundleReferenceKVPData TryGetKVPFromKey(ReadOnlySpan<char> key, StringComparison stringComparison = StringComparison.OrdinalIgnoreCase)
+        public ref AssetBundleReferenceKvpData TryGetKvpFromKey(ReadOnlySpan<char> key, StringComparison stringComparison = StringComparison.OrdinalIgnoreCase)
         {
             // WARNING: Inefficient
-            ref AssetBundleReferenceKVPData startIndex = ref MemoryMarshal.GetReference(KeyValuePair);
-            ref AssetBundleReferenceKVPData endIndex = ref Unsafe.Add(ref startIndex, KeyValuePair.Length);
+            ref AssetBundleReferenceKvpData startIndex = ref MemoryMarshal.GetReference(KeyValuePair);
+            ref AssetBundleReferenceKvpData endIndex = ref Unsafe.Add(ref startIndex, KeyValuePair.Length);
             while (Unsafe.IsAddressLessThan(ref startIndex, ref endIndex))
             {
-                if (AssetBundleReferenceExtensions.GetKeyFromKvp(ref startIndex)
-                    .StartsWith(key, stringComparison))
+                if (startIndex.GetKeyFromKvp()
+                              .StartsWith(key, stringComparison))
                 {
                     return ref startIndex;
                 }
                 startIndex = ref Unsafe.Add(ref startIndex, 1);
             }
 
-            return ref Unsafe.NullRef<AssetBundleReferenceKVPData>();
+            return ref Unsafe.NullRef<AssetBundleReferenceKvpData>();
         }
 
-        public unsafe ReadOnlySpan<AssetBundleReferenceData> TryGetDataSpanFromKVP(ref AssetBundleReferenceKVPData kvpRef)
+        public ReadOnlySpan<AssetBundleReferenceData> TryGetDataSpanFromKvp(ref AssetBundleReferenceKvpData kvpRef)
         {
             int start = 0;
 
             // WARNING: Inefficient
-            ref AssetBundleReferenceKVPData startIndex = ref MemoryMarshal.GetReference(KeyValuePair);
+            ref AssetBundleReferenceKvpData startIndex = ref MemoryMarshal.GetReference(KeyValuePair);
             while (Unsafe.IsAddressLessThan(ref startIndex, ref kvpRef))
             {
                 start += startIndex.DataCount;
@@ -189,13 +182,13 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
     {
         internal const ulong CollapseHeader = 7310310183885631299;
 
-        public static unsafe AssetBundleReferenceData[] CreateData(IDictionary<string, ConcurrentBag<AssetBundleReferenceData>> dictionary)
+        public static AssetBundleReferenceData[] CreateData(IDictionary<string, ConcurrentBag<AssetBundleReferenceData>> dictionary)
         {
             return [.. Enumerate(dictionary)];
 
             static IEnumerable<AssetBundleReferenceData> Enumerate(IDictionary<string, ConcurrentBag<AssetBundleReferenceData>> dictionary)
             {
-                foreach (var item in dictionary)
+                foreach (KeyValuePair<string, ConcurrentBag<AssetBundleReferenceData>> item in dictionary)
                 {
                     foreach (var data in item.Value)
                     {
@@ -205,22 +198,20 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             }
         }
 
-        public static unsafe AssetBundleReferenceKVPData[] CreateKVP(IDictionary<string, ConcurrentBag<AssetBundleReferenceData>> dictionary)
+        public static unsafe AssetBundleReferenceKvpData[] CreateKvp(IDictionary<string, ConcurrentBag<AssetBundleReferenceData>> dictionary)
         {
-            AssetBundleReferenceKVPData[] kvp = new AssetBundleReferenceKVPData[dictionary.Count];
+            AssetBundleReferenceKvpData[] kvp = new AssetBundleReferenceKvpData[dictionary.Count];
             int dataSize = sizeof(AssetBundleReferenceData);
 
-            foreach (var kvpItem in dictionary.Index())
+            foreach ((var index, (var key, ConcurrentBag<AssetBundleReferenceData> value)) in dictionary.Index())
             {
-                int index = kvpItem.Index;
-                string key = kvpItem.Item.Key;
-                AssetBundleReferenceKVPData kvpData = new AssetBundleReferenceKVPData
+                AssetBundleReferenceKvpData kvpData = new AssetBundleReferenceKvpData
                 {
-                    DataCount = kvpItem.Item.Value.Count,
+                    DataCount = value.Count,
                     DataSize = dataSize
                 };
 
-                kvpItem.Item.Key.AsSpan().CopyTo(new Span<char>(kvpData.Keys, key.Length));
+                key.AsSpan().CopyTo(new Span<char>(kvpData.Keys, key.Length));
                 kvp[index] = kvpData;
             }
 
@@ -253,7 +244,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             if (headerRefOnBuffer.Version != 1)
                 return AssetBundleReferenceReadOp.HeaderVersionUnsupported;
 
-            // Try get the decompression stream
+            // Try to get the decompression stream
             if (!TryCreateDecompressionStream(stream, ref headerRefOnBuffer, out Stream decompressionStream, out bool isCompressed))
                 return AssetBundleReferenceReadOp.StreamDecompressInitFail;
 
@@ -268,7 +259,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                                        ref offset,
                                        kvpCount,
                                        kvpStructSize,
-                                       out Span<AssetBundleReferenceKVPData> kvpSpan);
+                                       out Span<AssetBundleReferenceKvpData> kvpSpan);
                 if (kvpReadOp != AssetBundleReferenceReadOp.Success)
                     return kvpReadOp;
 
@@ -279,10 +270,10 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 {
                     dataCount += kvpSpan[i].DataCount;
                     if (kvpSpan[i].DataSize != dataStructSize)
-                        return AssetBundleReferenceReadOp.DataStructSizeOnKVPRefNotSame;
+                        return AssetBundleReferenceReadOp.DataStructSizeOnKvpRefNotSame;
                 }
                 if (dataCount == 0)
-                    return AssetBundleReferenceReadOp.DataCountOnKVPRefIsEmpty;
+                    return AssetBundleReferenceReadOp.DataCountOnKvpRefIsEmpty;
                 AssetBundleReferenceReadOp dataReadOp =
                     TryGetSpanOfStruct(decompressionStream,
                                        buffer,
@@ -294,7 +285,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                     return dataReadOp;
 
                 // Create refs and pass it to create span struct
-                ref AssetBundleReferenceKVPData kvpSpanRef = ref MemoryMarshal.GetReference(kvpSpan);
+                ref AssetBundleReferenceKvpData kvpSpanRef = ref MemoryMarshal.GetReference(kvpSpan);
                 ref AssetBundleReferenceData dataSpanRef = ref MemoryMarshal.GetReference(dataSpan);
                 assetBundleReferenceSpan = new AssetBundleReferenceSpan(Unsafe.AsPointer(ref headerRefOnBuffer),
                                                                         Unsafe.AsPointer(ref kvpSpanRef),
@@ -318,7 +309,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             }
         }
 
-        private static unsafe AssetBundleReferenceReadOp
+        private static AssetBundleReferenceReadOp
             TryGetSpanOfStruct<T>(Stream decompressionStream,
                                   Span<byte> buffer,
                                   ref int offset,
@@ -336,10 +327,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             Span<byte> dataRefOnSpan = buffer.Slice(offset, sizeOfDataSpan);
             offset += sizeOfDataSpan;
             outStructSpan = MemoryMarshal.Cast<byte, T>(dataRefOnSpan);
-            if (!TryReadToBuffer(decompressionStream, dataRefOnSpan))
-                return AssetBundleReferenceReadOp.StreamTooShort;
-
-            return AssetBundleReferenceReadOp.Success;
+            return !TryReadToBuffer(decompressionStream, dataRefOnSpan) ? AssetBundleReferenceReadOp.StreamTooShort : AssetBundleReferenceReadOp.Success;
         }
 
         private static bool TryCreateDecompressionStream(Stream stream, ref AssetBundleReferenceHeader header, out Stream decompressionStream, out bool isCompressed)
@@ -349,7 +337,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
             try
             {
-                // Try create the decompression stream. If successful, return true
+                // Try to create the decompression stream. If successful, return true
                 decompressionStream = CreateDecompressionStream(stream, ref header, out isCompressed);
                 return true;
             }
@@ -379,7 +367,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             return remained == 0;
         }
 
-        public static unsafe (AssetBundleReferenceHeader Header, AssetBundleReferenceKVPData[] KVP, AssetBundleReferenceData[] Data)
+        public static (AssetBundleReferenceHeader Header, AssetBundleReferenceKvpData[] KVP, AssetBundleReferenceData[] Data)
             ReadAssetBundleReference(Stream stream)
         {
             // Read header buffer
@@ -403,7 +391,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 inputStream = CreateDecompressionStream(stream, ref header, out isCompressed);
 
                 // Get KVP struct array
-                AssetBundleReferenceKVPData[] kvpData = ReadStructFromStream<AssetBundleReferenceKVPData>(inputStream, header.DataStructCount, header.DataStructSize);
+                AssetBundleReferenceKvpData[] kvpData = ReadStructFromStream<AssetBundleReferenceKvpData>(inputStream, header.DataStructCount, header.DataStructSize);
 
                 // Get actual data struct array
                 int actualDataCount = 0;
@@ -449,7 +437,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
         public static void WriteAssetBundleReference(Stream stream,
                                                      ref AssetBundleReferenceHeader header,
-                                                     ReadOnlySpan<AssetBundleReferenceKVPData> referenceKvpData,
+                                                     ReadOnlySpan<AssetBundleReferenceKvpData> referenceKvpData,
                                                      ReadOnlySpan<AssetBundleReferenceData> referenceData)
         {
             // Read header struct as header and write into the stream
@@ -492,7 +480,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             }
         }
 
-        private unsafe static ref T AsBytesStruct<T>(Span<byte> buffer)
+        private static unsafe ref T AsBytesStruct<T>(Span<byte> buffer)
             where T : unmanaged
         {
             // If buffer size is sufficient, return ref of struct in the buffer
@@ -506,7 +494,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe static ReadOnlySpan<byte> AsBytesReadOnlySpan<T>(ref T data)
+        private static unsafe ReadOnlySpan<byte> AsBytesReadOnlySpan<T>(ref T data)
             where T : unmanaged
         {
             byte* asBytesPtr = (byte*)Unsafe.AsPointer(ref data);
@@ -515,7 +503,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe static Span<byte> AsBytesSpan<T>(ref T data)
+        private static unsafe Span<byte> AsBytesSpan<T>(ref T data)
             where T : unmanaged
         {
             byte* asBytesPtr = (byte*)Unsafe.AsPointer(ref data);
@@ -532,7 +520,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 return stream;
             }
 
-            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Brotli))
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.CompressionBrotli))
             {
                 return new BrotliStream(stream, new BrotliCompressionOptions
                 {
@@ -547,7 +535,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             }
 #endif
 
-            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Deflate))
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.CompressionDeflate))
             {
                 return new DeflateStream(stream, new ZLibCompressionOptions
                 {
@@ -556,7 +544,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 }, true);
             }
 
-            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Gzip))
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.CompressionGzip))
             {
                 return new GZipStream(stream, new ZLibCompressionOptions
                 {
@@ -577,7 +565,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 return stream;
             }
 
-            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Brotli))
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.CompressionBrotli))
             {
                 return new BrotliStream(stream, CompressionMode.Decompress, true);
             }
@@ -589,12 +577,12 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             }
 #endif
 
-            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Deflate))
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.CompressionDeflate))
             {
                 return new DeflateStream(stream, CompressionMode.Decompress, true);
             }
 
-            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.Compression_Gzip))
+            if (header.HeaderFlag.HasFlag(AssetBundleReferenceHeaderFlag.CompressionGzip))
             {
                 return new GZipStream(stream, CompressionMode.Decompress, true);
             }

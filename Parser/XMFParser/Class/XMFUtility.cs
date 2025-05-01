@@ -3,6 +3,7 @@ using Hi3Helper.UABT.Binary;
 using System;
 using System.IO;
 // ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
 
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {

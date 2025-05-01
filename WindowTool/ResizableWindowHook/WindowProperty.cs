@@ -7,6 +7,7 @@ using System;
 using System.Runtime.CompilerServices;
 // ReSharper disable CommentTypo
 // ReSharper disable IdentifierTypo
+// ReSharper disable UnusedMember.Global
 
 namespace Hi3Helper.EncTool.WindowTool
 {

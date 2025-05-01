@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 // ReSharper disable UnusedMember.Global
 // ReSharper disable CheckNamespace
 // ReSharper disable ForCanBeConvertedToForeach
+// ReSharper disable GrammarMistakeInComment
 
 namespace Hi3Helper.Data
 {
@@ -26,7 +27,9 @@ namespace Hi3Helper.Data
 
     public static class ConverterTool
     {
-        public static string[] SizeSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
+    #pragma warning disable CA2211
+        public static string[] SizeSuffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    #pragma warning restore CA2211
 
         public static bool TrySerializeStruct<T>(T[] input, byte[] output, out int read)
         {
@@ -60,7 +63,7 @@ namespace Hi3Helper.Data
             )] T>(byte[] data, int count, out T[] output)
         {
             int lenOfArrayT = Marshal.SizeOf<T>() * count;
-            output = default!;
+            output = null!;
             if (data.Length < lenOfArrayT) return false;
 
             output = new T[count];

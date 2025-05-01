@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+// ReSharper disable StringLiteralTypo
 
 namespace Hi3Helper.EncTool.Parser.Sleepy
 {

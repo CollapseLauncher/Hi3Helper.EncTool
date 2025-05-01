@@ -188,7 +188,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             // Run override method to read potential additional header information
             int readHeadInfo = ReadAdditionalHeaderInfo(fileStream);
 
-            // Seek the position of the fileStream and try get the data
+            // Seek the position of the fileStream and try to get the data
             if (fileStream.CanSeek)
                 fileStream.Position = dataPos;
             else

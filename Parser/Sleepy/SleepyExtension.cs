@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 // ReSharper disable PartialTypeWithSinglePart
+// ReSharper disable UnusedMember.Global
 
 namespace Hi3Helper.EncTool.Parser.Sleepy
 {
@@ -137,7 +138,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 #if NET6_0_OR_GREATER
                 1024 * 1024 * 1024; // ArrayPool limit increased in .NET 6
 #else
-            1024 * 1024;
+                1024 * 1024;
 #endif
 
             // The maximum number of characters allowed when writing raw UTF-16 JSON. This is the maximum length that we can guarantee can
@@ -205,7 +206,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             Debug.Assert(idx >= 0 && idx < source.Length);
             Debug.Assert(source[idx] == JsonConstants.BackSlash);
 
-            if (!source.Slice(0, idx).TryCopyTo(destination))
+            if (!source[..idx].TryCopyTo(destination))
             {
                 written = 0;
                 goto DestinationTooShort;
@@ -296,8 +297,8 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                                 + JsonConstants.UnicodePlane01StartValue;
                         }
 
-                        var rune = new Rune(scalar);
-                        bool success = rune.TryEncodeToUtf8(destination.Slice(written), out int bytesWritten);
+                        var  rune    = new Rune(scalar);
+                        bool success = rune.TryEncodeToUtf8(destination[written..], out int bytesWritten);
                         if (!success)
                         {
                             goto DestinationTooShort;
@@ -313,52 +314,54 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                     goto Success;
                 }
 
-                if (source[idx] != JsonConstants.BackSlash)
+                if (source[idx] == JsonConstants.BackSlash)
                 {
-                    ReadOnlySpan<byte> remaining = source.Slice(idx);
-                    int nextUnescapedSegmentLength = remaining.IndexOf(JsonConstants.BackSlash);
-                    if (nextUnescapedSegmentLength < 0)
-                    {
-                        nextUnescapedSegmentLength = remaining.Length;
-                    }
+                    continue;
+                }
 
-                    if ((uint)(written + nextUnescapedSegmentLength) >= (uint)destination.Length)
-                    {
-                        goto DestinationTooShort;
-                    }
+                ReadOnlySpan<byte> remaining                  = source[idx..];
+                int                nextUnescapedSegmentLength = remaining.IndexOf(JsonConstants.BackSlash);
+                if (nextUnescapedSegmentLength < 0)
+                {
+                    nextUnescapedSegmentLength = remaining.Length;
+                }
 
-                    Debug.Assert(nextUnescapedSegmentLength > 0);
-                    switch (nextUnescapedSegmentLength)
-                    {
-                        case 1:
-                            destination[written++] = source[idx++];
-                            break;
-                        case 2:
-                            destination[written++] = source[idx++];
-                            destination[written++] = source[idx++];
-                            break;
-                        case 3:
-                            destination[written++] = source[idx++];
-                            destination[written++] = source[idx++];
-                            destination[written++] = source[idx++];
-                            break;
-                        default:
-                            remaining.Slice(0, nextUnescapedSegmentLength).CopyTo(destination.Slice(written));
-                            written += nextUnescapedSegmentLength;
-                            idx += nextUnescapedSegmentLength;
-                            break;
-                    }
+                if ((uint)(written + nextUnescapedSegmentLength) >= (uint)destination.Length)
+                {
+                    goto DestinationTooShort;
+                }
 
-                    Debug.Assert(idx == source.Length || source[idx] == JsonConstants.BackSlash);
+                Debug.Assert(nextUnescapedSegmentLength > 0);
+                switch (nextUnescapedSegmentLength)
+                {
+                    case 1:
+                        destination[written++] = source[idx++];
+                        break;
+                    case 2:
+                        destination[written++] = source[idx++];
+                        destination[written++] = source[idx++];
+                        break;
+                    case 3:
+                        destination[written++] = source[idx++];
+                        destination[written++] = source[idx++];
+                        destination[written++] = source[idx++];
+                        break;
+                    default:
+                        remaining[..nextUnescapedSegmentLength].CopyTo(destination[written..]);
+                        written += nextUnescapedSegmentLength;
+                        idx     += nextUnescapedSegmentLength;
+                        break;
+                }
 
-                    if (idx == source.Length)
-                    {
-                        goto Success;
-                    }
+                Debug.Assert(idx == source.Length || source[idx] == JsonConstants.BackSlash);
+
+                if (idx == source.Length)
+                {
+                    goto Success;
                 }
             }
 
-        Success:
+            Success:
             return true;
 
         DestinationTooShort:

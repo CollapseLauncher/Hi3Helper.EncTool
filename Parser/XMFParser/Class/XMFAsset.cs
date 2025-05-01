@@ -1,15 +1,15 @@
-﻿using Hi3Helper.Data;
-using Hi3Helper.UABT;
+﻿using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
 using System;
 using System.IO;
 // ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
 
 namespace Hi3Helper.EncTool.Parser
 {
     public class XMFAsset
     {
-        private XMFBlock Parent { get; set; }
+        private XMFBlock Parent { get; }
 
         /// <summary>
         /// This class contains some information about the asset inside the block file,
@@ -18,7 +18,7 @@ namespace Hi3Helper.EncTool.Parser
         /// <param name="name"></param>
         /// <param name="end"></param>
         /// <param name="start"></param>
-        /// <param name="parentBlockIndex"></param>
+        /// <param name="parent"></param>
         internal XMFAsset(string name, uint end, uint start, XMFBlock parent)
         {
             Parent      = parent;

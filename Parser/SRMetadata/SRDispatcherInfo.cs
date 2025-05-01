@@ -189,8 +189,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             if (ArchiveInfo.TryGetValue(NativeDataRefDictKey, out SRDispatchArchiveInfo nativeDataArchiveInfo))
             {
                 const string localNativeDataRefName = NativeDataRefDictKey + ".bytes";
-                string localNativeDataRefUrl = ConverterTool.CombineURLFromString(nativeDataArchiveInfo.FullAssetsDownloadUrl, localNativeDataRefName);
-                string localNativeDataRefPath = Path.Combine(PersistentDirectory, "NativeData\\Windows", localNativeDataRefName);
+                string       localNativeDataRefUrl  = nativeDataArchiveInfo.FullAssetsDownloadUrl.CombineURLFromString(localNativeDataRefName);
+                string       localNativeDataRefPath = Path.Combine(PersistentDirectory, "NativeData\\Windows", localNativeDataRefName);
 #if DEBUG
                 Console.WriteLine($"    NativeDataRefUrl: {localNativeDataRefUrl}");
                 Console.WriteLine($"    NativeDataRefPath: {localNativeDataRefPath}");
@@ -198,7 +198,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 await DownloadArchiveInfo(downloadClient, downloadProgressDelegate, localNativeDataRefUrl, localNativeDataRefPath);
 
                 string localNativeDataResName = NativeDataDataDictKey + nativeDataArchiveInfo.ContentHash + ".bytes";
-                string localNativeDataResUrl = ConverterTool.CombineURLFromString(nativeDataArchiveInfo.FullAssetsDownloadUrl, localNativeDataResName);
+                string localNativeDataResUrl  = nativeDataArchiveInfo.FullAssetsDownloadUrl.CombineURLFromString(localNativeDataResName);
                 string localNativeDataResPath = Path.Combine(PersistentDirectory, "NativeData\\Windows", localNativeDataResName);
 #if DEBUG
                 Console.WriteLine($"    NativeDataResUrl: {localNativeDataResUrl}");
@@ -244,18 +244,16 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                                                 RegionGateway.ValuePairs[gatewayDictKey]
                                            );
                 archiveInfo.FullAssetsDownloadUrl = 
-                    ConverterTool.CombineURLFromString(
-                                                       baseUrl,
-                                                       archiveInfo.BaseAssetsDownloadUrl,
-                                                       archiveInfo.FileName switch
-                                                       {
-                                                           "M_AudioV" => "/client/Windows/AudioBlock",
-                                                           "M_VideoV" => "/client/Windows/Video",
-                                                           "M_DesignV" or "M_Design_PatchV" => "/client/Windows",
-                                                           "M_NativeDataV" => "/client/Windows/NativeData",
-                                                           _ => "/client/Windows/Block"
-                                                       }
-                                                      );
+                    baseUrl.CombineURLFromString(archiveInfo.BaseAssetsDownloadUrl,
+                                                 archiveInfo.FileName switch
+                                                 {
+                                                     "M_AudioV" => "/client/Windows/AudioBlock",
+                                                     "M_VideoV" => "/client/Windows/Video",
+                                                     "M_DesignV" or "M_Design_PatchV" => "/client/Windows",
+                                                     "M_NativeDataV" => "/client/Windows/NativeData",
+                                                     _ => "/client/Windows/Block"
+                                                 }
+                                                );
                 ArchiveInfo.Add(archiveInfo.FileName, archiveInfo);
             }
         }

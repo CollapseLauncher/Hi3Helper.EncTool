@@ -3,6 +3,6 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
 {
     public class DispatchInfo
     {
-        public string? content { get; set; }
+        public string? Content { get; set; }
     }
 }

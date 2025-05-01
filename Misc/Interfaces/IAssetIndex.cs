@@ -10,7 +10,7 @@
         void SetRemoteURL(string url);
     }
 
-    public interface IAssetIndexCloneable<T>
+    public interface IAssetIndexCloneable<out T>
     {
         T Clone();
     }

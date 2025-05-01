@@ -159,8 +159,7 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
             
             byte[] byteData = await _httpClient
                .GetByteArrayAsync(
-                                  ConverterTool.CombineURLFromString(valProp.ClientGameResURL,
-                                                                     "/StandaloneWindows64/base_revision"),
+                                  valProp.ClientGameResURL.CombineURLFromString("/StandaloneWindows64/base_revision"),
                                   _cancelToken);
             string[] responseData = Encoding.UTF8.GetString(byteData).Split(' ');
 
