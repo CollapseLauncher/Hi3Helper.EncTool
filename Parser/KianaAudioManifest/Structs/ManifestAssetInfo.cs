@@ -10,8 +10,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
     public enum AudioLanguageType // TypeDefIndex: 33475
     {
         Common = 0,
-        CN,
-        JP
+        Chinese,
+        Japanese
     }
 
     public enum AudioPCKType
