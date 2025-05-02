@@ -10,29 +10,29 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
     public enum AudioLanguageType // TypeDefIndex: 33475
     {
         Common = 0,
-        Chinese = 1,
-        Japanese = 2
+        CN,
+        JP
     }
 
-    public enum AudioPCKType // TypeDefIndex: 33474
+    public enum AudioPCKType
     {
-        MustHave = 0,       // 0
-        MapBtn,             // 1
-        DLC,                // 2
-        DLC2,               // 3
-        MainLine10_12,      // 4
-        MainLine13_14,      // 5
-        MainLine15_17,      // 6
-        MainLine18_19,      // 7
-        MainLine20_22,      // 8
-        MainLine23_25,      // 9
-        GodWar1,            // 10
-        GodWar2,            // 11
-        GodWar3,            // 12
-        MainLine29_31,      // 13
-        MainLine32_35,      // 14
-        MainLine36_39,      // 15
-        All = 100           // 100
+        MustHave = 0,
+        Activity,
+        DLC,
+        DLC2,
+        MainLine10_12,
+        MainLine13_14,
+        MainLine15_17,
+        MainLine18_19,
+        MainLine20_22,
+        MainLine23_25,
+        GodWar1,
+        MainLine26_28,
+        GodWar3,
+        MainLine29_31,
+        MainLine32_35,
+        MainLine36_39,
+        All = 100
     }
 
 #nullable enable

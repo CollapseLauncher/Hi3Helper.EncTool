@@ -7,11 +7,11 @@ namespace Hi3Helper.EncTool.Hashes
 {
     /// <summary>
     /// MhyMurmurHash264B is a MurmurHash2 64-bit variant, optimized for 32-bit sized data (up to 4 GiB (4,294,967,295 bytes)).
-    /// This hash instance was ported by adding support for <see cref="Stream"/> instead of a raw-bytes.
+    /// This hash instance was ported to make it compatible with <see cref="NonCryptographicHashAlgorithm"/>.
     /// <br/><br/>
     /// This implementation was based on miHoYo own <c>MurmurHash64B</c> function found on Honkai Impact 3rd v8.2 game.
     /// </summary>
-    public class MhyMurmurHash264B : NonCryptographicHashAlgorithm
+    public sealed class MhyMurmurHash264B : NonCryptographicHashAlgorithm
     {
         private const uint Bm = 0x5bd1e995;
         private const int  Br = 24;
@@ -178,7 +178,7 @@ namespace Hi3Helper.EncTool.Hashes
         }
 
         /// <inheritdoc/>
-        public sealed override void Reset()
+        public override void Reset()
         {
             _highBytes = (uint)_seed ^ _readLengthTarget;
             _lowBytes  = (uint)(_seed >> 32);
