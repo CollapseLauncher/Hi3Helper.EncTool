@@ -23,6 +23,8 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         public string remoteURL            { get; set; }
         [JsonIgnore]
         public string remoteURLPersistent  { get; set; }
+        [JsonIgnore]
+        public string remoteURLAlternative { get; set; }
         public string remoteName           { get; set; }
         [JsonIgnore]
         public string remoteNamePersistent { get; set; }
