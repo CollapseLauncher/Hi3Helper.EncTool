@@ -318,7 +318,7 @@ namespace Hi3Helper.Data
         public static float ConvertRangeValue(float sMin, float sMax, float sValue, float tMin, float tMax) => (sValue - sMin) * (tMax - tMin) / (sMax - sMin) + tMin;
 
 #nullable enable
-        public static string CombineURLFromString(this string baseUrl, params ReadOnlySpan<string?> segments)
+        public static string CombineURLFromString(this string? baseUrl, params ReadOnlySpan<string?> segments)
             => CombineURLFromString(baseUrl.AsSpan(), segments);
 
         public static unsafe string CombineURLFromString(ReadOnlySpan<char> baseUrl, params ReadOnlySpan<string?> segments)
@@ -340,69 +340,73 @@ namespace Hi3Helper.Data
 
             // Here we start to do something UNSAFE >:)
             // Get the base and last (to written position) pointers of the buffer array.
-            char* bufferPtr = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffer));
-            char* bufferWrittenPtr = bufferPtr;
-
-            // Get a base pointer of the baseUrl span
-            char* baseUrlPtr = (char*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(baseUrl));
-
-            // Perform intrinsic copy for the specific block of memory from baseUrlPtr
-            // into the buffer pointer.
-            Unsafe.CopyBlock(bufferWrittenPtr, baseUrlPtr, toWriteBase * sizeOfChar);
-            bufferWrittenPtr += toWriteBase;
-            try
+            fixed (char* bufferPtr = &MemoryMarshal.GetArrayDataReference(buffer))
             {
-                // Set the initial position of the segment index
-                int i = 0;
+                char* bufferWrittenPtr = bufferPtr;
 
-            // Perform the segment copy loop routine
-            CopySegments:
-                // If the index is equal to the length of the segment, which means...
-                // due to i being 0, it should expect the length of the segments span as well.
-                // Means, if 0 == 0, then quit from CopySegments routine and jump right
-                // into CreateStringFast routine.
-                if (i == segments.Length)
-                    goto CreateStringFast;
+                // Get a base pointer of the baseUrl span
+                fixed (char* baseUrlPtr = &MemoryMarshal.GetReference(baseUrl))
+                {
+                    // Perform intrinsic copy for the specific block of memory from baseUrlPtr
+                    // into the buffer pointer.
+                    Unsafe.CopyBlock(bufferWrittenPtr, baseUrlPtr, toWriteBase * sizeOfChar);
+                    bufferWrittenPtr += toWriteBase;
+                    try
+                    {
+                        // Set the initial position of the segment index
+                        int i = 0;
 
-                // Get a span of the current segment while in the meantime, trim '/' character
-                // from the start and the end of the span. In the meantime, increment
-                // the index of the segments span.
-                ReadOnlySpan<char> segment = segments[i++].AsSpan().Trim('/');
-                // If the segment span is actually empty, (means either the initial value or
-                // after it's getting trimmed [for example, "//"]), then move to another
-                // segment to merge.
-                if (segment.IsEmpty) goto CopySegments;
+                    // Perform the segment copy loop routine
+                    CopySegments:
+                        // If the index is equal to the length of the segment, which means...
+                        // due to i being 0, it should expect the length of the segments span as well.
+                        // Means, if 0 == 0, then quit from CopySegments routine and jump right
+                        // into CreateStringFast routine.
+                        if (i == segments.Length)
+                            goto CreateStringFast;
 
-                // Check if the segment starts with '?' character (means the segment is a query
-                // and not a relative path), then write a '/' character into the buffer and moving
-                // by 1 byte of the index.
-                bool isQuery = segment[0] == '?';
-                if (!isQuery)
-                    *bufferWrittenPtr++ = '/';
+                        // Get a span of the current segment while in the meantime, trim '/' character
+                        // from the start and the end of the span. In the meantime, increment
+                        // the index of the segments span.
+                        ReadOnlySpan<char> segment = segments[i++].AsSpan().Trim('/');
+                        // If the segment span is actually empty, (means either the initial value or
+                        // after it's getting trimmed [for example, "//"]), then move to another
+                        // segment to merge.
+                        if (segment.IsEmpty) goto CopySegments;
 
-                // Get a base pointer of the current segment and get its length.
-                void* segmentPtr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(segment));
-                uint segmentLen = (uint)segment.Length;
+                        // Check if the segment starts with '?' character (means the segment is a query
+                        // and not a relative path), then write a '/' character into the buffer and moving
+                        // by 1 byte of the index.
+                        bool isQuery = segment[0] == '?';
+                        if (!isQuery)
+                            *bufferWrittenPtr++ = '/';
 
-                // Perform the intrinsic copy for the specific block of memory from the
-                // current segment pointer into the buffer pointer.
-                Unsafe.CopyBlock(bufferWrittenPtr, segmentPtr, segmentLen * sizeOfChar);
-                // Move the position of the written buffer pointer
-                bufferWrittenPtr += segmentLen;
-                // Back to the start of the loop routine
-                goto CopySegments;
+                        // Get a base pointer of the current segment and get its length.
+                        uint segmentLen = (uint)segment.Length;
+                        fixed (void* segmentPtr = &MemoryMarshal.GetReference(segment))
+                        {
+                            // Perform the intrinsic copy for the specific block of memory from the
+                            // current segment pointer into the buffer pointer.
+                            Unsafe.CopyBlock(bufferWrittenPtr, segmentPtr, segmentLen * sizeOfChar);
+                            // Move the position of the written buffer pointer
+                            bufferWrittenPtr += segmentLen;
+                            // Back to the start of the loop routine
+                            goto CopySegments;
+                        }
 
-            CreateStringFast:
-                // Perform a return string creation by how much data being written into the buffer by decrementing
-                // bufferWrittenPtr with initial base pointer, bufferPtr.
-                string returnString = new string(bufferPtr, 0, (int)(bufferWrittenPtr - bufferPtr));
-                // Then return the string
-                return returnString;
-            }
-            finally
-            {
-                // Return the write buffer to save memory from being unnecessarily allocated.
-                ArrayPool<char>.Shared.Return(buffer);
+                    CreateStringFast:
+                        // Perform a return string creation by how much data being written into the buffer by decrementing
+                        // bufferWrittenPtr with initial base pointer, bufferPtr.
+                        string returnString = new string(bufferPtr, 0, (int)(bufferWrittenPtr - bufferPtr));
+                        // Then return the string
+                        return returnString;
+                    }
+                    finally
+                    {
+                        // Return the write buffer to save memory from being unnecessarily allocated.
+                        ArrayPool<char>.Shared.Return(buffer);
+                    }
+                }
             }
 
             static int SumSegmentsLength(ReadOnlySpan<string?> segmentsInner)
