@@ -8,10 +8,9 @@ using System.Text.Json.Serialization;
 namespace Hi3Helper.EncTool.Parser.AssetIndex
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal struct AssetProperty
+    internal unsafe struct AssetProperty
     {
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
-        public byte[] hash;
+        public fixed byte hash[16];
         public uint size;
     }
 
