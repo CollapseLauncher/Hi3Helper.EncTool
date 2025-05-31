@@ -60,7 +60,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             SerializeToBinary(output, versionList, compressionType);
         }
 
-        private void SerializeToBinary(Stream outputStream, List<PkgVersionProperties> versionList, CompressionFlag compressionType)
+        private unsafe void SerializeToBinary(Stream outputStream, List<PkgVersionProperties> versionList, CompressionFlag compressionType)
         {
             using BinaryWriter rawBinaryWriter = new(outputStream);
 
@@ -108,10 +108,20 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
                 // Get the struct array
                 AssetProperty[] assets = versionList
-                    .Select(x => new AssetProperty
+                    .Select(x =>
                     {
-                        hash = HexTool.HexToBytesUnsafe(x.md5!),
-                        size = (uint)x.fileSize
+                        var assetProperty = new AssetProperty
+                        {
+                            size = (uint)x.fileSize
+                        };
+
+                        // Convert the MD5 hash into byte array and copy it into the struct
+                        Span<byte> hashPtr = new(assetProperty.hash, 16);
+                        byte[] md5Bytes = HexTool.HexToBytesUnsafe(x.md5);
+
+                        md5Bytes.CopyTo(hashPtr);
+
+                        return assetProperty;
                     }).ToArray();
 
                 // Serialize the AssetProperty struct array into the output buffer
@@ -171,7 +181,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             return DeserializeFromBinary(stream, rawBinaryReader, out timestamp);
         }
 
-        private List<PkgVersionProperties> DeserializeFromBinary(Stream fileStream, BinaryReader rawBinaryReader, out DateTime timestampUtc)
+        private unsafe List<PkgVersionProperties> DeserializeFromBinary(Stream fileStream, BinaryReader rawBinaryReader, out DateTime timestampUtc)
         {
             // Get the compression flag
             byte compressionByte = rawBinaryReader.ReadByte();
@@ -240,12 +250,22 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 // Convert all the data provided by the string array and the AssetProperty struct array into PkgVersionProperties array
                 for (ushort i = 0; i < assetCount; i++)
                 {
-                    pkgReturn.Add(new PkgVersionProperties
+                    fixed (byte* hashPtr = &returnStruct[i].hash[0])
                     {
-                        remoteName = returnString[i],
-                        md5        = HexTool.BytesToHexUnsafe(returnStruct[i].hash),
-                        fileSize   = returnStruct[i].size
-                    });
+                        Span<byte> hashSpan = new(hashPtr, 16);
+                        ref ulong lowBytes = ref MemoryMarshal.AsRef<ulong>(hashSpan[8..]);
+                        if (lowBytes == 0)
+                        {
+                            hashSpan = hashSpan[..8];
+                        }
+
+                        pkgReturn.Add(new PkgVersionProperties
+                        {
+                            remoteName = returnString[i],
+                            md5 = HexTool.BytesToHexUnsafe(hashSpan),
+                            fileSize = returnStruct[i].size
+                        });
+                    }
                 }
             }
 
