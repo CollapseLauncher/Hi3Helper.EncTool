@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "net9.0": {
+    "net10.0": {
       "Google.Protobuf": {
         "type": "Direct",
         "requested": "[3.33.0, )",
@@ -16,27 +16,27 @@
       },
       "Microsoft.NET.ILLink.Tasks": {
         "type": "Direct",
-        "requested": "[9.0.10, )",
-        "resolved": "9.0.10",
-        "contentHash": "sseaSJcBxKEpkc59hnB00b3NmJdGvJLfj74HK+nucHxERxbZSUREuWKjC9ywc+HdzJvJyiP2eiyEOROaGSfcPw=="
+        "requested": "[10.0.0-preview.5.25277.114, )",
+        "resolved": "10.0.0-preview.5.25277.114",
+        "contentHash": "lKaVaiJvMwAny3XEQI8zP88GVLKBQeb5VIG25jzGkoO4ilRWJAJpYgP0EmgBi4BjJB5PbKEAuMCEbxYthf2vQw=="
       },
       "System.IO.Hashing": {
         "type": "Direct",
-        "requested": "[9.0.11, )",
-        "resolved": "9.0.11",
-        "contentHash": "c9tFngnvHiUsBPLW22QQBgcGe9xFvac9rg3QIRHxrY2gCUdy4s2M/gQHimH+Z4yR9Cj6xWTOsa8IYY5CIG8QFA=="
+        "requested": "[10.0.0-preview.5.25277.114, )",
+        "resolved": "10.0.0-preview.5.25277.114",
+        "contentHash": "9Sfh6l7SGQbDIboo4iIREJdmhrcvxSUK+Jo7PZUe+Z8HaMwdSnPgrHrEiAkWJTDwxvUq0g051+k4pA+wA7vH+Q=="
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
         "type": "Transitive",
-        "resolved": "9.0.11",
-        "contentHash": "+ZxxZzcVU+IEzq12GItUzf/V3mEc5nSLiXijwvDc4zyhbjvSZZ043giSZqGnhakrjwRWjkerIHPrRwm9okEIpw=="
+        "resolved": "10.0.0-preview.5.25277.114",
+        "contentHash": "t0CbrAKI3cL+s2wV6UMf1Wg2wPPZ/ABO2Zi+HALJrd4vSQtskzz4rU+jr0ZKfVSnpj1QuYigj2pIWtQAbqPuLQ=="
       },
       "Microsoft.Extensions.Logging.Abstractions": {
         "type": "Transitive",
-        "resolved": "9.0.11",
-        "contentHash": "UKWFTDwtZQIoypyt1YPVsxTnDK+0sKn26+UeSGeNlkRQddrkt9EC6kP4g94rgO/WOZkz94bKNlF1dVZN3QfPFQ==",
+        "resolved": "10.0.0-preview.5.25277.114",
+        "contentHash": "NcC1ZCcg4DPiej9GBqGEcC3mVjRl1QLlHJGzOHUEZkywkzMoHy5xjiIObpZNcy7XKbl1DYzyuqudDz04QdYIDw==",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.11"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0-preview.5.25277.114"
         }
       },
       "hi3helper.http": {
@@ -45,7 +45,7 @@
       "hi3helper.win32": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "[9.0.11, )"
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.0-preview.5.25277.114, )"
         }
       }
     }

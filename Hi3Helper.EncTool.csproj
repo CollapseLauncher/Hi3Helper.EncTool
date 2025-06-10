@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <Platforms>x64</Platforms>
-        <Configurations>Debug;Release</Configurations>
-        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-        <IsTrimmable>true</IsTrimmable>
-        <DebugType>portable</DebugType>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Platforms>x64</Platforms>
+		<Configurations>Debug;Release</Configurations>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<IsTrimmable>true</IsTrimmable>
+		<DebugType>portable</DebugType>
         <!-- Assembly Info Properties -->
         <AssemblyName>Hi3Helper.EncTool</AssemblyName>
         <ProductName>Hi3Helper.EncTool</ProductName>
@@ -34,15 +34,15 @@
         <None Remove="UABT\.gitignore" />
     </ItemGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" Condition="$(DefineConstants.Contains('USEZSTD'))" />
-        <PackageReference Include="Google.Protobuf" Version="3.33.0" />
-        <PackageReference Include="Google.Protobuf.Tools" Version="3.33.0">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="System.IO.Hashing" Version="9.0.11" />
-    </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" Condition="$(DefineConstants.Contains('USEZSTD'))" />
+		<PackageReference Include="Google.Protobuf" Version="3.31.1" />
+		<PackageReference Include="Google.Protobuf.Tools" Version="3.31.1">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="System.IO.Hashing" Version="10.0.0-preview.5.25277.114" />
+	</ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Hi3Helper.Http\Hi3Helper.Http.csproj" />
