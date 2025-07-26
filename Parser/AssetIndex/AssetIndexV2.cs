@@ -125,7 +125,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                     }).ToArray();
 
                 // Serialize the AssetProperty struct array into the output buffer
-                ConverterTool.TrySerializeStruct<AssetProperty>(bufferOut, out int read, assets.AsSpan());
+                ConverterTool.TrySerializeStruct<AssetProperty>(bufferOut, out _, assets.AsSpan());
 
                 // Write the size of the output buffer and output buffer itself
                 binaryWriter.Write(sizeOf);

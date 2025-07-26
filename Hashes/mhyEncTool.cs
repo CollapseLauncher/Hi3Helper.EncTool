@@ -1,21 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Security.Cryptography;
-using System.Text;
-
 
 namespace Hi3Helper.EncTool
 {
     public class MhyEncTool
     {
-        public    RSA                  Ooh;
-        public    string               _778;
-        protected HMACSHA1             Sha;
-        protected RSA                  MasterKeyRsa;
-        protected string               MasterKey = "";
-        protected int                  MasterKeyBitLength;
-        protected RSAEncryptionPadding MasterKeyPadding;
+        public    RSA      Ooh;
+        public    string   _778;
+        protected HMACSHA1 Sha;
 
         protected readonly Dictionary<char, byte> __951 = new()
         {
@@ -34,37 +27,13 @@ namespace Hi3Helper.EncTool
             134, 227, 129, 132
         ];
 
-        public MhyEncTool() { }
-
-        public MhyEncTool(string i)
-        {
-            _778 = i;
-            Ooh = RSA.Create();
-        }
-
-        public MhyEncTool(string i, string masterKey)
-        {
-            _778 = i;
-            Ooh = RSA.Create();
-            MasterKey = masterKey;
-        }
+        protected MhyEncTool() { }
 
         public MhyEncTool(string i, byte[] masterKey)
         {
             _778 = i;
             Ooh = RSA.Create();
             Ooh.ImportRSAPrivateKey(masterKey, out int _);
-        }
-
-        public string GetMasterKey() => MasterKey;
-
-        public void InitMasterKey(string key, int keyBitLength, RSAEncryptionPadding keyPadding)
-        {
-            MasterKeyRsa = RSA.Create();
-            MasterKey = Encoding.UTF8.GetString(_f8j51(key));
-            MasterKeyBitLength = keyBitLength;
-            MasterKeyPadding = keyPadding;
-            FromXmlStringA(MasterKeyRsa, MasterKey);
         }
 
         public byte[] GetSalt()
@@ -110,31 +79,6 @@ namespace Hi3Helper.EncTool
                     break;
                 }
             }
-        }
-
-        internal void FromXmlStringA(in RSA rsa, string xmlString = null)
-        {
-            if (string.IsNullOrEmpty(xmlString)) xmlString = _778;
-            rsa.FromXmlString(xmlString);
-        }
-
-        internal static byte[] DecryptRsaContent(in RSA rsa, string contentBase64, int encBitLength, RSAEncryptionPadding padding)
-        {
-            byte[] encContent = Convert.FromBase64String(contentBase64);
-            MemoryStream decContent = new MemoryStream();
-
-            int j = 0;
-
-            while (j < encContent.Length)
-            {
-                byte[] chunk = new byte[encBitLength];
-                Array.Copy(encContent, j, chunk, 0, encBitLength);
-                byte[] chunkDec = rsa.Decrypt(chunk, padding);
-                decContent.Write(chunkDec, 0, chunkDec.Length);
-                j += encBitLength;
-            }
-
-            return decContent.ToArray();
         }
 
         private byte[] HTb(string a)
@@ -197,66 +141,6 @@ namespace Hi3Helper.EncTool
                             continue;
                         default:
                             return p49;
-                    }
-                    break;
-                }
-            }
-        }
-
-        internal byte[] _f8j51(string c)
-        {
-            byte[] ar84 = new byte[c.Length / 2];
-            int _445 = 0;
-            int nudE = 0;
-            byte[] r = null;
-            while (true)
-            {
-                int kj9A = -415293042;
-                while (true)
-                {
-                    uint _99Jm1;
-                    switch ((_99Jm1 = unchecked((uint)kj9A) ^ 0xD88AD053u) % 8u)
-                    {
-                        case 3u:
-                            break;
-                        case 5u:
-                            _445 = 0;
-                            nudE = 0;
-                            kj9A = ((int)_99Jm1 * -1420181188) ^ 0x2336EBD;
-                            continue;
-                        case 2u:
-                            kj9A = ((int)_99Jm1 * -336838899) ^ -1483897312;
-                            continue;
-                        case 0u:
-                            nudE++;
-                            kj9A = (int)(_99Jm1 * 1698348363) ^ -1786813222;
-                            continue;
-                        case 4u:
-                            r = ar84;
-                            kj9A = (int)(_99Jm1 * 1245963323) ^ -23762559;
-                            continue;
-                        case 1u:
-                            {
-                                if (_445 >= c.Length)
-                                {
-                                    kj9A = -481382921;
-                                }
-                                else
-                                {
-                                    kj9A = -1714879556;
-                                }
-                                continue;
-                            }
-                        case 7u:
-                            {
-                                byte b = (byte)((__951[c[_445]] << 4) | __951[c[_445 + 1]]);
-                                ar84[nudE] = (byte)(b ^ SKey[nudE % SKey.Length]);
-                                _445 += 2;
-                                kj9A = -1908881005;
-                                continue;
-                            }
-                        default:
-                            return r;
                     }
                     break;
                 }
