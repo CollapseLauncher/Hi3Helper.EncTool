@@ -165,7 +165,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
             // Compute the hash bytes of the phase 1 key
             // NOTE: At this moment, the byte array always be expected as 16 bytes wide for MD5 hash.
             Span<byte> phase1KeyHash = stackalloc byte[16];
-            md5.TryComputeHash(phase1KeyBytes, phase1KeyHash, out int _);
+            MD5.TryHashData(phase1KeyBytes, phase1KeyHash, out _);
 
             // Convert the phase 1 key hash to Hex string
             // NOTE: The result will always be a lowered case string

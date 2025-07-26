@@ -127,7 +127,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             }
         }
 
-        private byte[] BigEndianBytesToHexBytes(ReadOnlySpan<byte> span)
+        private static byte[] BigEndianBytesToHexBytes(ReadOnlySpan<byte> span)
         {
             byte[] result = new byte[16];
 

@@ -40,7 +40,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
         }
 
         public static SleepyInfo CreateSleepyInfo(HttpClient httpClient, RSA rsaInstance, SleepyProperty property) =>
-            new(httpClient, rsaInstance, property);
+            new SleepyInfo(httpClient, rsaInstance, property);
 
         public async Task Initialize(CancellationToken token = default)
         {
@@ -70,7 +70,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             if (ResponseGateway == null)
                 throw new NullReferenceException("Gateway response is empty!");
 
-            var baseFileInfo = GetFileInfo(FileInfoKind.Base);
+            (string BaseUrl, SleepyFileInfo ReferenceFileInfo, string? RevisionStamp) baseFileInfo = GetFileInfo(FileInfoKind.Base);
             string baseFileUrl =
                 baseFileInfo.BaseUrl.CombineURLFromString(baseFileInfo.ReferenceFileInfo.FileName);
             string baseFileRevision = await Client.GetStringAsync(baseFileUrl, token);
@@ -191,14 +191,14 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
         private async Task<T?> GetJsonFromUrl<T>(Uri url, Dictionary<string, string> httpHeader, JsonTypeInfo<T> typeInfo, CancellationToken token = default)
         {
-            using HttpRequestMessage requestMessage = new(HttpMethod.Get, url);
+            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
             foreach (KeyValuePair<string, string> headerKvp in httpHeader)
             {
                 requestMessage.Headers.Add(headerKvp.Key, headerKvp.Value);
             }
 
             using HttpResponseMessage responseMessage = await Client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, token);
-            await using Stream        responseStream  = await responseMessage.Content.ReadAsStreamAsync(token);
+            await using Stream        responseStream  = (await responseMessage.TryGetCachedStreamFrom(token)).Stream;
 
             return await responseMessage.Content.ReadFromJsonAsync(typeInfo, token);
         }
@@ -239,7 +239,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
         public SleepyFileInfoResult GetFileInfoResult(FileInfoKind kind)
         {
-            var result = GetFileInfo(kind);
+            (string BaseUrl, SleepyFileInfo ReferenceFileInfo, string? RevisionStamp) result = GetFileInfo(kind);
             return new SleepyFileInfoResult(result.BaseUrl, result.ReferenceFileInfo, result.RevisionStamp);
         }
     }

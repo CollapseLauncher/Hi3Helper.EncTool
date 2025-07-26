@@ -66,14 +66,12 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
         {
 #if DEBUG
             // DEBUG ONLY: Show URL of Proto
-            string dFormat = $"URL for Proto Response:\r\n{DispatchBaseURL}";
-            _logger?.LogInformation(dFormat);
+            _logger?.LogInformation("URL for Proto Response:\r\n{DispatchBaseURL}", DispatchBaseURL);
 #endif
 
-            return await _httpClient.GetFromJsonAsync(
-                DispatchBaseURL,
-                DispatchHelperContext.Default.DispatchInfo,
-                _cancelToken);
+            return await _httpClient.GetFromCachedJsonAsync(DispatchBaseURL,
+                                                            DispatchHelperContext.Default.DispatchInfo,
+                                                            _cancelToken);
         }
 
         public async Task LoadDispatch(byte[] customDispatchData)
@@ -116,9 +114,9 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
             var jsonDesignData    = _gateway!.GatewayProperties!.RepoDesignDataJSON;
             var jsonDesignDataSil = _gateway!.GatewayProperties!.RepoDesignDataSilenceJSON;
 #if DEBUG
-            _logger?.LogDebug($"[GenshinDispatchHelper::ParseGameResPkgProp] DesignData Response:" +
-                              $"\r\n\tDesignData:\r\n{jsonDesignData}" +
-                              $"\r\n\tDesignData_Silence:\r\n{jsonDesignDataSil}");
+            _logger?.LogDebug("[GenshinDispatchHelper::ParseGameResPkgProp] DesignData Response:" +
+                              "\r\n\tDesignData:\r\n{jsonDesignData}" +
+                              "\r\n\tDesignData_Silence:\r\n{jsonDesignDataSil}", jsonDesignData, jsonDesignDataSil);
 #endif
 
             if (!string.IsNullOrEmpty(jsonDesignData))

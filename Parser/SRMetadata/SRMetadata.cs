@@ -18,7 +18,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         : IDisposable
     {
         private string           PersistentPath { get; set; }
-        private SRDispatcherInfo DispatcherInfo { get; } = new(dispatchURL, dispatchSeed, dispatchFormatTemplate, gatewayFormatTemplate, productID, productVer);
+        private SRDispatcherInfo DispatcherInfo { get; } =
+            new SRDispatcherInfo(dispatchURL, dispatchSeed, dispatchFormatTemplate, gatewayFormatTemplate, productID,
+                                 productVer);
         private bool             IsInitialized  { get; set; }
 
         public SRMetadataBase   MetadataIFix    { get; set; }

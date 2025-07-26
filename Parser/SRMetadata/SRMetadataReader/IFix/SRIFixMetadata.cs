@@ -44,8 +44,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 Magic = _SRMIReader.Magic;
                 TypeID = _SRMIReader.TypeID;
 
-                await downloadClient.DownloadAsync(AssetProperty.MetadataRemoteURL, AssetProperty.MetadataStream, false, downloadClientProgress, cancelToken: token);
-                AssetProperty.MetadataStream.Seek(0, SeekOrigin.Begin);
+                await downloadClient.PerformCopyToDownload(metadataURL, downloadClientProgress, AssetProperty.MetadataStream, token);
+                AssetProperty.MetadataStream.Position = 0;
             }
         }
 

@@ -124,7 +124,7 @@ namespace Hi3Helper.EncTool.Parser.Senadina
 
         private static byte[] GenerateMothAngkaDadoe(int seed)
         {
-            Random random      = new(seed);
+            Random random      = new Random(seed);
             long   randomLong1 = random.NextInt64();
             long   randomLong2 = random.NextInt64();
 
