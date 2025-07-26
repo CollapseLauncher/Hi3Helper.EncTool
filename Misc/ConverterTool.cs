@@ -29,7 +29,6 @@ namespace Hi3Helper.Data
     {
         private static string[] _sizeSuffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
-        public static bool TrySerializeStruct<T>(T[] input, byte[] output, out int read)
         public static void SetSizeSuffixes(string[] suffixes)
         {
             if (suffixes.Length != _sizeSuffixes.Length)
@@ -39,69 +38,116 @@ namespace Hi3Helper.Data
 
             _sizeSuffixes = suffixes;
         }
+
+        public static unsafe bool TrySerializeStruct<T>(Span<byte> outputBuffer, out int read, params ReadOnlySpan<T> input)
+            where T : unmanaged
         {
             read = 0;
-            int lenOfArrayT = Marshal.SizeOf<T>() * input.Length;
-            if (output.Length < lenOfArrayT) return false;
 
-            for (int i = 0; i < input.Length; i++)
+            int inputLen = sizeof(T) * input.Length;
+            if (outputBuffer.Length < inputLen)
             {
-                if (!TrySerializeStruct(input[i], ref read, output)) return false;
+                return false;
             }
-            return true;
-        }
 
-        public static bool TrySerializeStruct<T>(T input, ref int pos, byte[] output)
-        {
-            int lenOfT = Marshal.SizeOf<T>();
-            if (pos + lenOfT > output.Length) return false;
+            ref T startOf = ref MemoryMarshal.GetReference(input);
+            ref T endOf   = ref Unsafe.Add(ref startOf, input.Length);
 
-            nint dataPtr = Marshal.AllocHGlobal(lenOfT);
-            Marshal.StructureToPtr(input, dataPtr, true);
-            Marshal.Copy(dataPtr, output, pos, lenOfT);
-            Marshal.FreeHGlobal(dataPtr);
-            pos += lenOfT;
-            return true;
-        }
-
-        public static bool TryDeserializeStruct<[DynamicallyAccessedMembers(
-              DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.NonPublicConstructors
-            )] T>(byte[] data, int count, out T[] output)
-        {
-            int lenOfArrayT = Marshal.SizeOf<T>() * count;
-            output = null!;
-            if (data.Length < lenOfArrayT) return false;
-
-            output = new T[count];
-            for (int i = 0, pos = 0; i < count; i++)
+            while (Unsafe.IsAddressLessThan(ref startOf, ref endOf))
             {
-                if (!TryDeserializeStruct(data, ref pos, out output[i])) return false;
+                if (!TrySerializeStruct(in startOf, ref read, outputBuffer))
+                {
+                    return false;
+                }
+
+                startOf = Unsafe.Add(ref startOf, 1);
             }
+
             return true;
         }
 
-        public static bool TryDeserializeStruct<[DynamicallyAccessedMembers(
-              DynamicallyAccessedMemberTypes.PublicConstructors
-            | DynamicallyAccessedMemberTypes.NonPublicConstructors
-            )]T>(byte[] data, ref int pos, out T output)
+        public static unsafe bool TrySerializeStruct<T>(in T input, ref int offset, Span<byte> outputBuffer)
+            where T : unmanaged
         {
-            output = default;
-            int lenOfT = Marshal.SizeOf<T>();
-            if (data.Length < lenOfT || data.Length - lenOfT < pos) return false;
+            int sizeOf = sizeof(T);
+            if (offset + sizeOf > outputBuffer.Length)
+            {
+                return false;
+            }
 
-            nint bufferPtr = Marshal.AllocHGlobal(lenOfT);
-            Marshal.Copy(data, pos, bufferPtr, lenOfT);
+            MemoryMarshal.Write(outputBuffer[offset..], in input);
+            offset += sizeOf;
+            return true;
+        }
 
-            output = Marshal.PtrToStructure<T>(bufferPtr);
-            Marshal.FreeHGlobal(bufferPtr);
-            pos += lenOfT;
+        public static unsafe bool TryDeserializeStruct<T>(ReadOnlySpan<byte> data, out T[] result)
+            where T : unmanaged
+        {
+            int dataLen = data.Length;
+            int sizeOf  = sizeof(T);
+
+            if (dataLen % sizeOf == 0)
+            {
+                return TryDeserializeStruct(data, dataLen / sizeOf, out result);
+            }
+
+            Unsafe.SkipInit(out result);
+            return false;
+        }
+
+        public static unsafe bool TryDeserializeStruct<T>(ReadOnlySpan<byte> data, int elementCount, out T[] result)
+            where T : unmanaged
+        {
+            int lengthOfResult = sizeof(T) * elementCount;
+            if (data.Length < lengthOfResult)
+            {
+                Unsafe.SkipInit(out result);
+                return false;
+            }
+
+            // Allocate uninitialized array (don't mind about arbitrary data, it should be overriden anyway)
+            result = GC.AllocateUninitializedArray<T>(elementCount);
+
+            ref T startOf = ref MemoryMarshal.GetArrayDataReference(result);
+            ref T endOf   = ref Unsafe.Add(ref startOf, elementCount);
+
+            ref byte dataStartOf = ref MemoryMarshal.GetReference(data);
+            ref byte dataEndOf   = ref Unsafe.Add(ref dataStartOf, lengthOfResult);
+
+            while (Unsafe.IsAddressLessThan(ref startOf, ref endOf) &&
+                   Unsafe.IsAddressLessThan(ref dataStartOf, ref dataEndOf))
+            {
+                if (!TryDeserializeStruct(ref dataStartOf, out startOf))
+                {
+                    return false;
+                }
+
+                startOf     = ref Unsafe.Add(ref startOf, 1);
+                dataStartOf = ref Unsafe.Add(ref dataStartOf, sizeof(T));
+            }
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe int TryDeserializeStruct<T>(ReadOnlySpan<byte> data, int dataOffset, out T result)
+            where T : unmanaged
+        {
+            ref byte dataRef = ref MemoryMarshal.GetReference(data[dataOffset..]);
+            return !TryDeserializeStruct(ref dataRef, out result) ? -1 : sizeof(T);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool TryDeserializeStruct<T>(scoped ref byte data, out T result)
+            where T : allows ref struct
+        {
+            result = Unsafe.Read<T>(Unsafe.AsPointer(ref data));
             return true;
         }
 
         public static unsafe void GetListOfPaths(ReadOnlySpan<byte> input, out string[] outlist, long count)
         {
-            outlist = new string[count];
+            outlist = GC.AllocateUninitializedArray<string>((int)count);
             int inLen = input.Length;
 
             int idx = 0, strIdx = 0;
