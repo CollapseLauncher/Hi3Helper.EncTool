@@ -60,7 +60,7 @@ namespace Hi3Helper.EncTool.WindowTool
                     {
                         if (IsStyleChanged(oldStyle, curStyle))
                         {
-                            logger?.LogDebug("\r\nCurrent window style has changed!\r\n\tfrom:\t0x{oldStyle:x8}\t({oldStyleInBinary})\r\n\tto:\t0x{curStyle:x8}\t({curStyleInBinary})", oldStyle, ConverterTool.ToBinaryString((uint)oldStyle), curStyle, ConverterTool.ToBinaryString((uint)curStyle));
+                            logger?.LogDebug("\r\nCurrent window style has changed!\r\n\tfrom:\t0x{oldStyle:x}\t({oldStyleInBinary})\r\n\tto:\t0x{curStyle:x}\t({curStyleInBinary})", oldStyle, ConverterTool.ToBinaryString((uint)oldStyle), curStyle, ConverterTool.ToBinaryString((uint)curStyle));
                             logger?.LogDebug("Resetting...");
 
                             // Reset the window style and pos + size to the old state
@@ -149,7 +149,7 @@ namespace Hi3Helper.EncTool.WindowTool
                 WS_STYLE initialStyle = PInvoke.GetWindowLong(windowHandle, GWL_INDEX.GWL_STYLE);
 
                 logger?.LogDebug("Got process handle with name: {processName} (PID: {processId}) - (WindowHandle at: 0x{windowHandle:x})", processName, processId, windowHandle);
-                logger?.LogDebug("Initial window style enum is: 0x{initialStyle:x8}\t({inHex})", initialStyle, ConverterTool.ToBinaryString((uint)initialStyle));
+                logger?.LogDebug("Initial window style enum is: 0x{initialStyle:x}\t({inHex})", initialStyle, ConverterTool.ToBinaryString((uint)initialStyle));
 
                 // Return the window property
                 return new WindowProperty(windowHandle, processId, initialStyle, initialRect);
