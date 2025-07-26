@@ -59,7 +59,7 @@ namespace Hi3Helper.Data
                     return false;
                 }
 
-                startOf = Unsafe.Add(ref startOf, 1);
+                startOf = ref Unsafe.Add(ref startOf, 1);
             }
 
             return true;
