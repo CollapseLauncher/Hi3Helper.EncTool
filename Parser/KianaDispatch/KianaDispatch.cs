@@ -56,7 +56,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
             _keyString = $"{ver[0]}.{ver[1]}{baseKey}";
 
             // Intialize HTTP client class and try start to parse the dispatch
-            return await TryParseDispatch(downloadClient, _dispatchUrl, token);
+            return await TryParseDispatch(downloadClient.GetHttpClient(), _dispatchUrl, token);
         }
 
 #nullable enable
@@ -69,7 +69,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
 
             // Format the gameserver URL and set it to this instance, then try parsing the gateway (gameserver)
             string gameServerUrl = region.DispatchUrl + _dispatchQuery;
-            return await TryParseDispatch(downloadClient, gameServerUrl, token);
+            return await TryParseDispatch(downloadClient.GetHttpClient(), gameServerUrl, token);
         }
 
         private static async ValueTask<KianaDispatch> TryGetPossibleMatchingRegion(DownloadClient downloadClient, KianaDispatch dispatch, CancellationToken token)
@@ -88,20 +88,22 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
         }
 #nullable disable
 
-        private static async Task<KianaDispatch> TryParseDispatch(DownloadClient http, string dispatchUrl, CancellationToken token)
+        private static async Task<KianaDispatch> TryParseDispatch(HttpClient client, string dispatchUrl, CancellationToken token)
         {
             // Initialize memory stream
-            using (Stream memStream = new MemoryStream())
+            using (MemoryStream memStream = new MemoryStream())
             {
                 // Start download the content and set the output to memory stream
-                await http.DownloadAsync(dispatchUrl, memStream, true, cancelToken: token);
+                var result = await client.TryGetCachedStreamFrom(dispatchUrl, token: token);
+                using Stream networkStream = result.Stream;
+                await networkStream.CopyToAsync(memStream, token);
 
                 // Check if the response is encrypted or not
                 if (IsResponseEncrypted(memStream))
                 {
                     // If it's encrypted, get the Base64 decoder stream, get the Decrypt stream and parse the response
-                    using (Stream responseStream = GetTransformBase64Stream(memStream))
-                    using (Stream cryptStream = GetCryptStream(responseStream))
+                    using (CryptoStream responseStream = GetTransformBase64Stream(memStream))
+                    using (CryptoStream cryptStream = GetCryptStream(responseStream))
                     {
 #if DEBUG
                         string line;
@@ -122,7 +124,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
             }
         }
 
-        private static bool IsResponseEncrypted(Stream source)
+        private static bool IsResponseEncrypted(MemoryStream source)
         {
             // Seek it to the beginning
             source.Seek(0, SeekOrigin.Begin);
@@ -138,14 +140,14 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
             return isEncrypt;
         }
 
-        private static Stream GetTransformBase64Stream(Stream source)
+        private static CryptoStream GetTransformBase64Stream(Stream source)
         {
             // Get the Base64 transform interface then return the stream
             ICryptoTransform base64Transform = new FromBase64Transform(FromBase64TransformMode.IgnoreWhiteSpaces);
             return new CryptoStream(source, base64Transform, CryptoStreamMode.Read);
         }
 
-        private static Stream GetCryptStream(Stream inputStream)
+        private static CryptoStream GetCryptStream(Stream inputStream)
         {
             // Get the AES transform interface then return the stream
             ICryptoTransform cryptTransform = GetAESTransform();
