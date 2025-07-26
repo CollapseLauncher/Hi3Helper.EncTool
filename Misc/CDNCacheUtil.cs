@@ -24,6 +24,7 @@ public static class CDNCacheUtil
 {
     public static string?  CurrentCacheDir { get; set; }
     public static ILogger? Logger          { get; set; }
+    public static bool     IsEnabled       { get; set; } = true;
 
     private static readonly Lock            ThisLock             = new();
     private static readonly HashSet<string> CurrentETagToWrite   = [];
@@ -66,6 +67,16 @@ public static class CDNCacheUtil
 
     public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(this HttpResponseMessage? response, CancellationToken token = default)
     {
+        ArgumentNullException.ThrowIfNull(response, nameof(response));
+
+        if (!IsEnabled)
+        {
+            return new CDNCacheResult
+            {
+                Stream = await response.Content.ReadAsStreamAsync(token)
+            };
+        }
+
         string              cacheDir            = CurrentCacheDir!;
         bool                isDispose           = false;
         string?             etag                = null;
@@ -73,7 +84,6 @@ public static class CDNCacheUtil
 
         try
         {
-            ArgumentNullException.ThrowIfNull(response, nameof(response));
 
             bool isTimeBasedCache;
             if ((isTimeBasedCache = TryGetTimeBasedCacheType(response, out etag, out DateTimeOffset nextExpireTime)) &&
@@ -98,10 +108,7 @@ public static class CDNCacheUtil
             {
                 return new CDNCacheResult
                 {
-                    IsCached       = false,
-                    LocalCachePath = null,
-                    CacheETag      = null,
-                    Stream         = bridgedNetworkStream
+                    Stream = bridgedNetworkStream
                 };
             }
 
@@ -125,7 +132,6 @@ public static class CDNCacheUtil
 
             return new CDNCacheResult
             {
-                IsCached       = false,
                 LocalCachePath = string.IsNullOrEmpty(etag) ? null : Path.Combine(cacheDir, etag),
                 CacheETag      = etag,
                 Stream         = returnStream
@@ -181,7 +187,7 @@ public static class CDNCacheUtil
         {
             if (isDispose)
             {
-                response?.Dispose();
+                response.Dispose();
 
                 if (etag != null)
                 {
