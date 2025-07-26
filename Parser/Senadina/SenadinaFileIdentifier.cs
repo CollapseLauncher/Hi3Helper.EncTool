@@ -1,5 +1,4 @@
 ﻿using Hi3Helper.Data;
-using Hi3Helper.Http.Legacy;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,10 +20,11 @@ namespace Hi3Helper.EncTool.Parser.Senadina
     public enum SenadinaKind { bricksBase, bricksCurrent, platformBase, wandCurrent, chiptunesCurrent, chiptunesPreload, wonderland }
     public partial class SenadinaFileIdentifier : IDisposable
     {
-        public string? relativePath { get; set; }
+        public string? relativePath   { get; set; }
         public string? lastIdentifier { get; set; }
-        public long fileTime { get; set; }
-        public Stream? fileStream { get; set; }
+        public long    fileTime       { get; set; }
+
+        public BrotliStream? fileStream { get; set; }
         public Dictionary<string, byte[]>? stringStore { get; set; }
 
         ~SenadinaFileIdentifier() => Dispose();
@@ -117,9 +117,8 @@ namespace Hi3Helper.EncTool.Parser.Senadina
 
         private static byte[] GenerateMothKoentji(string inputKey)
         {
-            SHA256 sha256 = SHA256.Create();
             byte[] keyRaw = Encoding.UTF8.GetBytes(inputKey);
-            byte[] returnKey = sha256.ComputeHash(keyRaw);
+            byte[] returnKey = SHA256.HashData(keyRaw);
             return returnKey;
         }
 
@@ -136,14 +135,13 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             MemoryMarshal.Write(ivByte, randomLong1);
             MemoryMarshal.Write(ivByte.AsSpan(8), randomLong2);
 
-            SHA1 sha = SHA1.Create();
-            byte[] returnIv = sha.ComputeHash(ivByte);
+            byte[] returnIv = SHA1.HashData(ivByte);
             return returnIv[..16];
         }
 
         public Stream CreateKangBakso() => CreateKangBakso(fileStream!, lastIdentifier!, relativePath!, (int)fileTime);
 
-        public static Stream CreateKangBakso(Stream bihun, string koentji, string alamatKangBakso, int jadwal)
+        public static BrotliStream CreateKangBakso(Stream bihun, string koentji, string alamatKangBakso, int jadwal)
         {
             Aes aesInstance = Aes.Create();
             aesInstance.Mode = CipherMode.CFB;
@@ -151,8 +149,8 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             aesInstance.IV = GenerateMothAngkaDadoe(jadwal);
             aesInstance.Padding = PaddingMode.ISO10126;
 
-            Stream superSemar = new CryptoStream(bihun, aesInstance.CreateDecryptor(), CryptoStreamMode.Read);
-            Stream petrus = new BrotliStream(superSemar, CompressionMode.Decompress);
+            Stream superSemar = new CryptoStream(bihun, aesInstance.CreateDecryptor(), CryptoStreamMode.Read, false);
+            BrotliStream petrus = new BrotliStream(superSemar, CompressionMode.Decompress, false);
 
             return petrus;
         }
