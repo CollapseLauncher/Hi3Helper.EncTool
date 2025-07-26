@@ -27,11 +27,18 @@ namespace Hi3Helper.Data
 
     public static class ConverterTool
     {
-    #pragma warning disable CA2211
-        public static string[] SizeSuffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-    #pragma warning restore CA2211
+        private static string[] _sizeSuffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
         public static bool TrySerializeStruct<T>(T[] input, byte[] output, out int read)
+        public static void SetSizeSuffixes(string[] suffixes)
+        {
+            if (suffixes.Length != _sizeSuffixes.Length)
+            {
+                throw new ArgumentException($"Suffixes must be in the same size, which is {_sizeSuffixes.Length} strings!");
+            }
+
+            _sizeSuffixes = suffixes;
+        }
         {
             read = 0;
             int lenOfArrayT = Marshal.SizeOf<T>() * input.Length;
@@ -246,7 +253,7 @@ namespace Hi3Helper.Data
         {
             byte mag = (byte)Math.Log(value, 1000);
 
-            return $"{Math.Round(value / (1L << (mag * 10)), decimalPlaces)} {SizeSuffixes[mag]}";
+            return $"{Math.Round(value / (1L << (mag * 10)), decimalPlaces)} {_sizeSuffixes[mag]}";
         }
         
         public static double SummarizeSizeDouble(double value, byte clampSize = byte.MaxValue)
@@ -306,9 +313,9 @@ namespace Hi3Helper.Data
         {
             { FileSystemRights: var fileSystemRights }
                 when (fileSystemRights & (FileSystemRights.WriteData | FileSystemRights.Write)) == 0 => null,
-            { IdentityReference: { Value: { } value } }
+            { IdentityReference.Value: { } value }
                 when value.StartsWith("S-1-") && !user.IsInRole(new SecurityIdentifier(rule.IdentityReference.Value)) => null,
-            { IdentityReference: { Value: { } value } }
+            { IdentityReference.Value: { } value }
                 when value.StartsWith("S-1-") == false && !user.IsInRole(rule.IdentityReference.Value) => null,
             { AccessControlType: AccessControlType.Deny } => false,
             { AccessControlType: AccessControlType.Allow } => true,
