@@ -31,18 +31,6 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
     public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
         networkStream.ReadAsync(buffer, cancellationToken);
 
-    public new async ValueTask ReadExactlyAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-    {
-        int totalRead = 0;
-        while (totalRead < buffer.Length)
-        {
-            int read = await ReadAsync(buffer[totalRead..], cancellationToken);
-            if (read == 0) return;
-
-            totalRead += read;
-        }
-    }
-
     public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException();
 
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();

@@ -38,8 +38,8 @@ namespace Hi3Helper.EncTool.Parser.Senadina
         }
 
         public bool IsKeyStoreExist(string key) => stringStore?.ContainsKey(key) ?? false;
-        public bool TryReadStringStoreArrayAs<T>(string key, out T[]? result)
-            where T : struct
+        public unsafe bool TryReadStringStoreArrayAs<T>(string key, out T[]? result)
+            where T : unmanaged
         {
             result = null;
             if (!IsKeyStoreExist(key))
@@ -48,7 +48,7 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             }
 
             ReadOnlySpan<byte> dataSpan     = stringStore?[key];
-            int                sizeOfStruct = Marshal.SizeOf<T>();
+            int                sizeOfStruct = sizeof(T);
             int                count        = dataSpan.Length / sizeOfStruct;
 
             if (count <= 0) return false;
@@ -57,7 +57,7 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             result = new T[count];
             int offset = 0;
             for (int i = 0; i < count; i++)
-                result[i] = ReadTInner<T>(dataSpan, sizeOfStruct, ref offset);
+                result[i] = ReadTInner<T>(dataSpan, ref offset);
             return false;
         }
 
@@ -74,8 +74,8 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             return true;
         }
 
-        public bool TryReadStringStoreAs<T>(string key, out T? result)
-            where T : struct
+        public unsafe bool TryReadStringStoreAs<T>(string key, out T? result)
+            where T : unmanaged
         {
             result = null;
             if (!IsKeyStoreExist(key))
@@ -84,20 +84,20 @@ namespace Hi3Helper.EncTool.Parser.Senadina
             }
 
             ReadOnlySpan<byte> dataSpan     = stringStore?[key];
-            int                sizeOfStruct = Marshal.SizeOf<T>();
+            int                sizeOfStruct = sizeof(T);
             if (dataSpan.Length < sizeOfStruct)
                 return false;
 
             int offset = 0;
-            result = ReadTInner<T>(dataSpan, sizeOfStruct, ref offset);
+            result = ReadTInner<T>(dataSpan, ref offset);
             return true;
         }
 
-        private static T ReadTInner<T>(ReadOnlySpan<byte> span, int structSizeOf, ref int offset)
-            where T : struct
+        private static unsafe T ReadTInner<T>(ReadOnlySpan<byte> span, ref int offset)
+            where T : unmanaged
         {
             T value = MemoryMarshal.Read<T>(span[offset..]);
-            offset += structSizeOf;
+            offset += sizeof(T);
             return value;
         }
 

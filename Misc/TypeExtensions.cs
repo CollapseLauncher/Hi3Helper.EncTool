@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.InteropServices;
 // ReSharper disable UnusedMember.Global
 // ReSharper disable CheckNamespace
 
@@ -9,40 +8,6 @@ namespace Hi3Helper.EncTool
 {
     public static class TypeExtensions
     {
-        public static bool IsStructEqual<TStruct>(TStruct self, TStruct to)
-            where TStruct : struct => IsStructEqualFromTo(self, to);
-
-        public static unsafe bool IsStructEqualFromTo<TFrom, TTo>(TFrom self, TTo to)
-            where TFrom : struct
-            where TTo : struct
-        {
-            // Check if the object is equal based on reference or struct can be compared
-            // as a raw data (does not contain any reference type)
-            if (self.Equals(to)) return true;
-
-            // If not, then fallback to check using marshalling
-            // Get the size of the struct
-            int sizeOfTFrom = Marshal.SizeOf<TFrom>();
-            int sizeOfTTo = Marshal.SizeOf<TTo>();
-
-            // Allocate the HGlobal buffer pointer
-            nint bufferPtr = Marshal.AllocHGlobal(sizeOfTFrom + sizeOfTTo); // Allocate size for from and to
-            // Marshal struct into the pointer
-            Marshal.StructureToPtr(self, bufferPtr, true);
-            Marshal.StructureToPtr(to, bufferPtr + sizeOfTFrom, true);
-
-            // Assign as a span and compare the buffer
-            ReadOnlySpan<byte> spanSelf       = new((byte*)bufferPtr, sizeOfTFrom);
-            ReadOnlySpan<byte> spanTo         = new((byte*)bufferPtr + sizeOfTFrom, sizeOfTTo);
-            bool               isRawDataEqual = spanSelf.SequenceEqual(spanTo);
-
-            // Free the HGlobal buffer pointer
-            Marshal.FreeHGlobal(bufferPtr);
-
-            // Return the comparison value
-            return isRawDataEqual;
-        }
-
         public static bool IsInstancePropertyEqual<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]T>(T self, T to)
         {
             // Check if the one of the value is null, if true check the other value if it's null
@@ -57,6 +22,8 @@ namespace Hi3Helper.EncTool
 
             // Get the type of the instance
             Type type = typeof(T);
+
+            // ReSharper disable once LoopCanBeConvertedToQuery
             // Enumerate the PropertyInfo out of instance
             foreach (PropertyInfo pi in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
             {

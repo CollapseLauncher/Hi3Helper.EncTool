@@ -16,20 +16,18 @@ namespace Hi3Helper.EncTool.WindowTool
     {
         private const int RefreshRateMs = 250;  // Loop refresh rate = 250ms
 
-    #pragma warning disable CA1068
         public static void StartHook(string            processName,
-    #pragma warning restore CA1068
                                      int?              height,
                                      int?              width,
-                                     CancellationToken token               = default,
                                      bool              isNeedResetOnInit   = false,
                                      ILogger?          logger              = null,
-                                     string?           checkProcessFromDir = null)
+                                     string?           checkProcessFromDir = null,
+                                     CancellationToken token               = default)
         {
             try
             {
                 // Try to get the window property from the process
-                WindowProperty targetWindow = GetProcessWindowProperty(processName, checkProcessFromDir, token, logger);
+                WindowProperty targetWindow = GetProcessWindowProperty(processName, checkProcessFromDir, logger, token);
 
                 // Assign the current style and initial pos + size of the window to old variable
                 WS_STYLE oldStyle = targetWindow.InitialStyle;
@@ -62,7 +60,7 @@ namespace Hi3Helper.EncTool.WindowTool
                     {
                         if (IsStyleChanged(oldStyle, curStyle))
                         {
-                            logger?.LogDebug($"\r\nCurrent window style has changed!\r\n\tfrom:\t0x{(uint)oldStyle:x8}\t({ConverterTool.ToBinaryString((uint)oldStyle)})\r\n\tto:\t0x{(uint)curStyle:x8}\t({ConverterTool.ToBinaryString((uint)curStyle)})");
+                            logger?.LogDebug("\r\nCurrent window style has changed!\r\n\tfrom:\t0x{oldStyle:x8}\t({oldStyleInBinary})\r\n\tto:\t0x{curStyle:x8}\t({curStyleInBinary})", oldStyle, ConverterTool.ToBinaryString((uint)oldStyle), curStyle, ConverterTool.ToBinaryString((uint)curStyle));
                             logger?.LogDebug("Resetting...");
 
                             // Reset the window style and pos + size to the old state
@@ -84,7 +82,7 @@ namespace Hi3Helper.EncTool.WindowTool
                             targetWindow.RefreshCurrentPosition();
                             if (height != null && width != null)
                             {
-                                logger?.LogDebug($"Moving window to posX: {oldPos.X} posY: {oldPos.Y} W: {width} H: {height}");
+                                logger?.LogDebug("Moving window to posX: {oldPos} posY: {oldPos} W: {width} H: {height}", oldPos.X, oldPos.Y, width, height);
                                 targetWindow.ChangePosition(oldPos.X, oldPos.Y, oldPos.Width, oldPos.Height);
                             }
 
@@ -127,15 +125,15 @@ namespace Hi3Helper.EncTool.WindowTool
             return oldStyle != newStyle;
         }
 
-        private static unsafe WindowProperty GetProcessWindowProperty(string processName, string? checkProcessFromDir, CancellationToken token, ILogger? logger)
+        private static unsafe WindowProperty GetProcessWindowProperty(string processName, string? checkProcessFromDir, ILogger? logger = null, CancellationToken token = default)
         {
-            logger?.LogDebug($"Waiting for process handle: {processName}");
+            logger?.LogDebug("Waiting for process handle: {processName}", processName);
 
             // Do the loop to try getting the process
             while (!token.IsCancellationRequested)
             {
                 // Try to get the process detail
-                bool isProcessExist = ProcessChecker.IsProcessExist(processName, out int processId, out nint hwnd, checkProcessFromDir ?? "", true, logger);
+                bool isProcessExist = ProcessChecker.IsProcessExist(processName, out int processId, out nint windowHandle, checkProcessFromDir ?? "", true, logger);
                 // If the return process is null (not found), then delay and redo the loop
                 if (!isProcessExist)
                 {
@@ -147,14 +145,14 @@ namespace Hi3Helper.EncTool.WindowTool
                 WindowRect  initialRect    = new();
                 WindowRect* initialRectPtr = (WindowRect*)Unsafe.AsPointer(ref initialRect);
 
-                PInvoke.GetWindowRect(hwnd, initialRectPtr);
-                WS_STYLE initialStyle = PInvoke.GetWindowLong(hwnd, GWL_INDEX.GWL_STYLE);
+                PInvoke.GetWindowRect(windowHandle, initialRectPtr);
+                WS_STYLE initialStyle = PInvoke.GetWindowLong(windowHandle, GWL_INDEX.GWL_STYLE);
 
-                logger?.LogDebug($"Got process handle with name: {processName} (PID: {processId}) - (HWND at: 0x{hwnd:x})");
-                logger?.LogDebug($"Initial window style enum is: 0x{(uint)initialStyle:x8}\t({ConverterTool.ToBinaryString((uint)initialStyle)})");
+                logger?.LogDebug("Got process handle with name: {processName} (PID: {processId}) - (WindowHandle at: 0x{windowHandle:x})", processName, processId, windowHandle);
+                logger?.LogDebug("Initial window style enum is: 0x{initialStyle:x8}\t({inHex})", initialStyle, ConverterTool.ToBinaryString((uint)initialStyle));
 
                 // Return the window property
-                return new WindowProperty(hwnd, processId, initialStyle, initialRect);
+                return new WindowProperty(windowHandle, processId, initialStyle, initialRect);
             }
 
             // If the cancel has been called, then return the empty struct

@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 
 namespace Hi3Helper.EncTool
 {
-    public class YSDispatchDec : mhyEncTool
+    public class YSDispatchDec : MhyEncTool
     {
         public static byte[] DecryptYSDispatch(string contentBase64, int encBitLength, string encKey)
         {

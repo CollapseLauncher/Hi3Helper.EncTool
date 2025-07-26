@@ -1,6 +1,6 @@
 ﻿namespace Hi3Helper.Preset
 {
-    public interface IAssetIndexSummary<T> : IAssetIndexSummary, IAssetIndexCloneable<T>;
+    public interface IAssetIndexSummary<out T> : IAssetIndexSummary, IAssetIndexCloneable<T>;
 
     public interface IAssetIndexSummary
     {
