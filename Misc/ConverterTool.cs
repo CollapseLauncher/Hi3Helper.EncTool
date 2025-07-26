@@ -38,10 +38,10 @@ namespace Hi3Helper.Data
             _sizeSuffixes = suffixes;
         }
 
-        public static unsafe bool TrySerializeStruct<T>(Span<byte> outputBuffer, out int read, params ReadOnlySpan<T> input)
+        public static unsafe bool TrySerializeStruct<T>(Span<byte> outputBuffer, out int bytesWritten, params ReadOnlySpan<T> input)
             where T : unmanaged
         {
-            read = 0;
+            bytesWritten = 0;
 
             int inputLen = sizeof(T) * input.Length;
             if (outputBuffer.Length < inputLen)
@@ -54,7 +54,7 @@ namespace Hi3Helper.Data
 
             while (Unsafe.IsAddressLessThan(ref startOf, ref endOf))
             {
-                if (!TrySerializeStruct(in startOf, ref read, outputBuffer))
+                if (!TrySerializeStruct(in startOf, ref bytesWritten, outputBuffer))
                 {
                     return false;
                 }
@@ -65,17 +65,17 @@ namespace Hi3Helper.Data
             return true;
         }
 
-        public static unsafe bool TrySerializeStruct<T>(in T input, ref int offset, Span<byte> outputBuffer)
+        public static unsafe bool TrySerializeStruct<T>(in T input, ref int writeOffset, Span<byte> outputBuffer)
             where T : unmanaged
         {
             int sizeOf = sizeof(T);
-            if (offset + sizeOf > outputBuffer.Length)
+            if (writeOffset + sizeOf > outputBuffer.Length)
             {
                 return false;
             }
 
-            MemoryMarshal.Write(outputBuffer[offset..], in input);
-            offset += sizeOf;
+            MemoryMarshal.Write(outputBuffer[writeOffset..], in input);
+            writeOffset += sizeOf;
             return true;
         }
 
