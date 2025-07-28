@@ -11,6 +11,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+
+#if !DEBUG
+using System.Security.Cryptography;
+#endif
+
 // ReSharper disable InconsistentNaming
 // ReSharper disable PartialTypeWithSinglePart
 
