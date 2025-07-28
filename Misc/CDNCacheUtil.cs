@@ -16,6 +16,7 @@ using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable CommentTypo
+// ReSharper disable InconsistentNaming
 
 #nullable enable
 namespace Hi3Helper.EncTool;
@@ -55,12 +56,15 @@ public record CDNCacheResult
 public static class CDNCacheUtil
 {
     /// <summary>
-    /// Gets/sets the current directory for storing the cache locally.
+    /// Gets/sets the current directory for storing the cache locally.<br/>
+    /// While the cache directory is set, this will also perform a cache garbage collection based on <see cref="MaxAcceptedCacheExpireTime"/>.<br/>
+    /// <br/>
+    /// To skip the cache garbage collection, use <see cref="SetCacheDirSkipGC"/>.
     /// </summary>
     public static string? CurrentCacheDir
     {
         get;
-        set => field = PerformCacheCleanup(value);
+        set => field = PerformCacheGarbageCollection(value);
     }
 
     /// <summary>
@@ -82,7 +86,7 @@ public static class CDNCacheUtil
     public static bool IsUseAggressiveMode { get; set; } = false;
 
     /// <summary>
-    /// Determine how long the maximum duration of the cache expire time is accepted.<br/>
+    /// Determine how long the maximum duration of the cache expire time is accepted (Default: 10 minutes).<br/>
     /// This will clamp the maximum duration of the cache expire time, even if the CDN provides a longer duration.<br/>
     /// <br/>
     /// This also sets how long the cache will be kept in the local directory before it is cleaned up, either it's hash-based or time-based cache.<br/>
@@ -94,6 +98,7 @@ public static class CDNCacheUtil
     private static readonly HashSet<string> CurrentETagToWrite   = [];
     private const           int             MaxHashLengthInBytes = SHA256.HashSizeInBytes;
 
+    private const string SkipGCPrefix = "Skip|";
     private const string LetterNumberOnlyAscii = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private const string SymbolOnlyAscii = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
     private static readonly SearchValues<char> LetterNumberOnlyAsciiSearchValue = SearchValues.Create(LetterNumberOnlyAscii);
@@ -114,16 +119,34 @@ public static class CDNCacheUtil
     }
 
     /// <summary>
+    /// Set the cache directory to use for the CDN cache and skip garbage collection.<br/>
+    /// </summary>
+    /// <param name="cacheDir">The cache directory to use.</param>
+    public static void SetCacheDirSkipGC(string? cacheDir)
+    {
+        if (!string.IsNullOrEmpty(cacheDir))
+        {
+            cacheDir = SkipGCPrefix + cacheDir;
+        }
+        CurrentCacheDir = cacheDir;
+    }
+
+    /// <summary>
     /// This method is used to perform a cache cleanup up of the current cache directory based on <see cref="MaxAcceptedCacheExpireTime"/>.<br/>
     /// It's kind of expensive but this requires synchronous operation to make sure that the cache directory is cleaned up properly and avoid any possible race-condition issue.<br/>
     /// </summary>
     /// <param name="cachePath">The cache path to clean-up.</param>
     /// <returns>The cache path to use.</returns>
-    private static string? PerformCacheCleanup(string? cachePath)
+    private static string? PerformCacheGarbageCollection(string? cachePath)
     {
         if (string.IsNullOrEmpty(cachePath))
         {
             return cachePath;
+        }
+
+        if (cachePath.StartsWith(SkipGCPrefix))
+        {
+            return cachePath[SkipGCPrefix.Length..];
         }
 
         DirectoryInfo directoryInfo = new(cachePath);
@@ -135,7 +158,8 @@ public static class CDNCacheUtil
         DateTime dateTimeOffsetNow = DateTime.UtcNow;
         foreach (FileInfo fileInfo in directoryInfo.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
         {
-            TimeSpan remainedTimeOffset = fileInfo.LastWriteTimeUtc.Subtract(dateTimeOffsetNow);
+            DateTime lastModifiedUtc    = fileInfo.LastWriteTimeUtc;
+            TimeSpan remainedTimeOffset = dateTimeOffsetNow.Subtract(lastModifiedUtc);
             if (remainedTimeOffset <= MaxAcceptedCacheExpireTime)
             {
                 continue;
@@ -144,6 +168,7 @@ public static class CDNCacheUtil
             try
             {
                 fileInfo.Delete();
+                Logger?.LogTrace("Removed cache file from last write {Date}: {FileName}", lastModifiedUtc, fileInfo.FullName);
             }
             catch (Exception e)
             {
@@ -154,13 +179,98 @@ public static class CDNCacheUtil
         return cachePath;
     }
 
-    public static async Task<T?> GetFromCachedJsonAsync<T>(this HttpClient client, string? url, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
+    public static async Task<T?> GetFromCachedJsonAsync<T>(this HttpClient client, string? url, JsonTypeInfo<T?> jsonTypeInfo, HttpMethod? httpMethod = null, CancellationToken token = default)
         where T : class
     {
         ArgumentException.ThrowIfNullOrEmpty(url);
 
-        CDNCacheResult result = await client.TryGetCachedStreamFrom(url, null, cancellationToken);
-        return await JsonSerializer.DeserializeAsync(result.Stream, jsonTypeInfo, cancellationToken);
+        CDNCacheResult     result         = await client.TryGetCachedStreamFrom(url, httpMethod, token);
+        await using Stream responseStream = result.Stream;
+        return await JsonSerializer.DeserializeAsync(responseStream, jsonTypeInfo, token);
+    }
+
+    public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(this HttpClient client, string url, HttpMethod? httpMethod = null, CancellationToken token = default)
+    {
+
+        bool                 isDispose = false;
+        HttpRequestMessage?  message   = null;
+        HttpResponseMessage? response  = null;
+
+        ArgumentException.ThrowIfNullOrEmpty(CurrentCacheDir, nameof(CurrentCacheDir));
+        string cacheDir = CurrentCacheDir;
+
+        try
+        {
+            message = new HttpRequestMessage(httpMethod ?? HttpMethod.Get, url);
+            bool isAggressiveMode = IsUseAggressiveMode;
+
+            if (!IsEnabled)
+            {
+                response = await client.SendAsync(message, token);
+                return new CDNCacheResult
+                {
+                    Stream = await BridgedNetworkStream.CreateStream(response, token)
+                };
+            }
+
+            if (!isAggressiveMode)
+            {
+                response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, token);
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException($"URL: {url} returns a non-successful status code! {response.StatusCode} ({(int)response.StatusCode})",
+                                                   null,
+                                                   response.StatusCode);
+                }
+
+                return await response.TryGetCachedStreamFrom(token);
+            }
+
+            string hashString = GetXxh3HashFrom(url.AsSpan());
+            if (TryCreateResultFromTimeCached(cacheDir, hashString) is { IsCached: true } result)
+            {
+                return result;
+            }
+
+            response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, token);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"URL: {url} returns a non-successful status code while using aggressive cache mode! {response.StatusCode} ({(int)response.StatusCode})",
+                                               null,
+                                               response.StatusCode);
+            }
+
+            DateTimeOffset nextExpireOffset = DateTimeOffset.UtcNow.Add(MaxAcceptedCacheExpireTime);
+            Stream fileStream = AttachETag(hashString) ?
+                CreateCacheStream(Path.Combine(cacheDir, hashString),
+                                  cacheDir,
+                                  hashString,
+                                  await response.Content.ReadAsStreamAsync(token),
+                                  true,
+                                  nextExpireOffset) :
+                await BridgedNetworkStream.CreateStream(response, token);
+
+            return new CDNCacheResult
+            {
+                LocalCachePath     = Path.Combine(cacheDir, hashString),
+                CacheETag          = hashString,
+                CacheExpireTimeUtc = nextExpireOffset,
+                Stream             = fileStream
+            };
+        }
+        catch
+        {
+            isDispose = true;
+            throw;
+        }
+        finally
+        {
+            if (isDispose)
+            {
+                message?.Dispose();
+                response?.Dispose();
+            }
+        }
     }
 
     public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(this HttpResponseMessage? response, CancellationToken token = default)
@@ -171,30 +281,27 @@ public static class CDNCacheUtil
         {
             return new CDNCacheResult
             {
-                Stream = await response.Content.ReadAsStreamAsync(token)
+                Stream = await BridgedNetworkStream.CreateStream(response, token)
             };
         }
 
-        string        cacheDir      = CurrentCacheDir!;
-        bool          isDispose     = false;
-        string?       etag          = null;
-        HashCacheType hashCacheType = HashCacheType.None;
+        string  cacheDir  = CurrentCacheDir!;
+        bool    isDispose = false;
+        string? etag      = null;
 
         try
         {
+            if (TryGetETagBasedCacheType(response, out etag, out HashCacheType hashCacheType) &&
+                await TryCreateResultFromETagCached(cacheDir, etag, response.Content.Headers.ContentLength ?? 0, hashCacheType, token) is { IsCached: true } resultFromETagBased)
+            {
+                return resultFromETagBased;
+            }
 
             bool isTimeBasedCache;
             if ((isTimeBasedCache = TryGetTimeBasedCacheType(response, out etag, out DateTimeOffset nextExpireTime)) &&
                 TryCreateResultFromTimeCached(cacheDir, etag) is { IsCached: true } resultFromTimeBased)
             {
                 return resultFromTimeBased;
-            }
-
-            if (!isTimeBasedCache &&
-                TryGetETagBasedCacheType(response, out etag, out hashCacheType) &&
-                await TryCreateResultFromETagCached(cacheDir, etag, response.Content.Headers.ContentLength ?? 0, hashCacheType, token) is { IsCached: true } resultFromETagBased)
-            {
-                return resultFromETagBased;
             }
 
             // Create HTTP Stream from the response.
@@ -214,7 +321,7 @@ public static class CDNCacheUtil
             if (isTimeBasedCache)
             {
                 // Start write cache based on its etag
-                returnStream = CreateCacheStreamFromETag(Path.Combine(cacheDir, etag), bridgedNetworkStream);
+                returnStream = CreateCacheStream(Path.Combine(cacheDir, etag), cacheDir, etag, bridgedNetworkStream, true, nextExpireTime);
             }
             // Otherwise, use etag-based.
             else
@@ -224,57 +331,17 @@ public static class CDNCacheUtil
 
                 // Start write cache based on its etag
                 returnStream = isAllowWriteToETagCache ?
-                    CreateCacheStreamFromETag(Path.Combine(cacheDir, etag), bridgedNetworkStream) :
+                    CreateCacheStream(Path.Combine(cacheDir, etag), cacheDir, etag, bridgedNetworkStream) :
                     bridgedNetworkStream;
             }
 
             return new CDNCacheResult
             {
-                LocalCachePath = string.IsNullOrEmpty(etag) ? null : Path.Combine(cacheDir, etag),
-                CacheETag      = etag,
-                Stream         = returnStream
+                LocalCachePath     = string.IsNullOrEmpty(etag) ? null : Path.Combine(cacheDir, etag),
+                CacheETag          = etag,
+                CacheExpireTimeUtc = nextExpireTime,
+                Stream             = returnStream
             };
-
-            Stream CreateCacheStreamFromETag(string cachePath, Stream source)
-            {
-                string tempPath = cachePath + ".temp";
-
-                Directory.CreateDirectory(cacheDir);
-                return new CopyToStream(source,
-                                        File.Open(tempPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite),
-                                        null,
-                                        () =>
-                                        {
-                                            if (!IsETagAttached(etag))
-                                            {
-                                                return;
-                                            }
-
-                                            DetachETag(etag);
-                                            try
-                                            {
-                                                if (!File.Exists(tempPath))
-                                                {
-                                                    return;
-                                                }
-
-                                                File.Move(tempPath, cachePath, true);
-                                                if (!isTimeBasedCache)
-                                                {
-                                                    return;
-                                                }
-
-                                                ReadOnlySpan<byte> stampBytes = CreateReadOnlySpanFrom(in nextExpireTime);
-                                                string stampPath = Path.Combine(cacheDir, etag + ".stamp");
-                                                File.WriteAllBytes(stampPath, stampBytes);
-                                            }
-                                            catch (Exception ex)
-                                            {
-                                                Logger?.LogError(ex, "Error has occurred while renaming written cache file on path: {cachePath}\r\n{ex}", cachePath, ex);
-                                            }
-                                        },
-                                        true);
-            }
         }
         catch
         {
@@ -295,6 +362,54 @@ public static class CDNCacheUtil
         }
     }
 
+    private static CopyToStream CreateCacheStream(string         cachePath,
+                                                  string         cacheDir,
+                                                  string         hashName,
+                                                  Stream         source,
+                                                  bool           isTimeBasedCache = false,
+                                                  DateTimeOffset nextExpireTime   = default)
+    {
+        string tempPath = cachePath + ".temp";
+
+        Directory.CreateDirectory(cacheDir);
+        return new CopyToStream(source,
+                                File.Open(tempPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite),
+                                null,
+                                OnDispose,
+                                true);
+
+        void OnDispose()
+        {
+            if (!IsETagAttached(hashName))
+            {
+                return;
+            }
+
+            DetachETag(hashName);
+            try
+            {
+                if (!File.Exists(tempPath))
+                {
+                    return;
+                }
+
+                File.Move(tempPath, cachePath, true);
+                if (!isTimeBasedCache)
+                {
+                    return;
+                }
+
+                ReadOnlySpan<byte> stampBytes = CreateReadOnlySpanFrom(in nextExpireTime);
+                string             stampPath  = Path.Combine(cacheDir, hashName + ".stamp");
+                File.WriteAllBytes(stampPath, stampBytes);
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "Error has occurred while renaming written cache file on path: {cachePath}\r\n{ex}", cachePath, ex);
+            }
+        }
+    }
+
     private static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFrom<T>(scoped in T data)
         where T : unmanaged
     {
@@ -302,42 +417,6 @@ public static class CDNCacheUtil
         {
             int sizeOf = sizeof(T);
             return new ReadOnlySpan<byte>(dataP, sizeOf);
-        }
-    }
-
-    public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(this HttpClient client, string url, HttpMethod? httpMethod = null, CancellationToken token = default)
-    {
-        bool isDispose = false;
-        HttpRequestMessage? message = null;
-        HttpResponseMessage? response = null;
-
-        try
-        {
-            message = new HttpRequestMessage(httpMethod ?? HttpMethod.Get, url);
-            response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, token);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new HttpRequestException(
-                    $"URL: {url} returns a non-successful status code! {response.StatusCode} ({(int)response.StatusCode})",
-                    null,
-                    response.StatusCode);
-            }
-
-            return await response.TryGetCachedStreamFrom(token);
-        }
-        catch
-        {
-            isDispose = true;
-            throw;
-        }
-        finally
-        {
-            if (isDispose)
-            {
-                message?.Dispose();
-                response?.Dispose();
-            }
         }
     }
 
@@ -450,6 +529,18 @@ public static class CDNCacheUtil
         }
     }
 
+    private static string GetXxh3HashFrom<T>(ReadOnlySpan<T> span)
+        where T : struct
+    {
+        Span<byte> hashBuffer = stackalloc byte[8];
+        Span<char> hashChar   = stackalloc char[16];
+
+        XxHash3.TryHash(MemoryMarshal.AsBytes(span), hashBuffer, out _);
+        Convert.TryToHexStringLower(hashBuffer, hashChar, out _);
+
+        return new string(hashChar);
+    }
+
     private static async ValueTask<bool> CheckHash(FileStream inputStream, HashAlgorithm hashAlgorithm, Memory<byte> hashToCheck, CancellationToken token)
     {
         byte[] dataBuffer = ArrayPool<byte>.Shared.Rent(8 << 10);
@@ -509,12 +600,20 @@ public static class CDNCacheUtil
 
     private static bool TryGetTimeBasedCacheType(HttpResponseMessage response, [NotNullWhen(true)] out string? requestHash, out DateTimeOffset nextExpireTime)
     {
-        DateTimeOffset dateExpireFrom = response.Content.Headers.Expires?.ToUniversalTime() ?? default;
+        DateTimeOffset dateNowUtc            = DateTimeOffset.UtcNow;
+        DateTimeOffset dateNowAdvancedMaxUtc = dateNowUtc.Add(MaxAcceptedCacheExpireTime);
+        DateTimeOffset dateExpireFrom        = response.Content.Headers.Expires?.ToUniversalTime() ?? default;
+
+        // Clamp if the CDN one is larger than the allowed max expire time.
+        if (dateExpireFrom > dateNowAdvancedMaxUtc)
+        {
+            dateExpireFrom = dateNowAdvancedMaxUtc;
+        }
 
         requestHash    = null;
         nextExpireTime = default;
 
-        if (dateExpireFrom < DateTimeOffset.UtcNow)
+        if (dateExpireFrom < dateNowUtc)
         {
             return false;
         }
@@ -526,13 +625,7 @@ public static class CDNCacheUtil
         }
 
         nextExpireTime = dateExpireFrom;
-        Span<byte> hashBuffer = stackalloc byte[8];
-        Span<char> hashChar   = stackalloc char[16];
-
-        XxHash3.TryHash(MemoryMarshal.AsBytes(requestUrl.AsSpan()), hashBuffer, out _);
-        Convert.TryToHexStringLower(hashBuffer, hashChar, out _);
-
-        requestHash = new string(hashChar);
+        requestHash    = GetXxh3HashFrom(requestUrl.AsSpan());
         return true;
     }
 
@@ -569,7 +662,7 @@ public static class CDNCacheUtil
         const int md5HashSize = MD5.HashSizeInBytes;
 
         hashCacheType = HashCacheType.None;
-        etag = null;
+        etag          = null;
 
         if (response.Content.Headers.TryGetValues("content-md5", out IEnumerable<string>? contentMd5Enum))
         {
@@ -598,7 +691,7 @@ public static class CDNCacheUtil
             }
 
             hashCacheType = HashCacheType.MD5;
-            etag                = new string(hashString);
+            etag          = new string(hashString);
 
             return true;
         }

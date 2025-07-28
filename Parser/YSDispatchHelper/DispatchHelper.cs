@@ -71,7 +71,7 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
 
             return await _httpClient.GetFromCachedJsonAsync(DispatchBaseURL,
                                                             DispatchHelperContext.Default.DispatchInfo,
-                                                            _cancelToken);
+                                                            token: _cancelToken);
         }
 
         public async Task LoadDispatch(byte[] customDispatchData)

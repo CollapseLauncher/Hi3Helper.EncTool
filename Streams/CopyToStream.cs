@@ -26,7 +26,7 @@ public sealed class CopyToStream(
     private readonly DownloadProgress _readProperty = new()
     {
         BytesDownloaded = 0,
-        BytesTotal      = sourceStream.Length
+        BytesTotal      = TryGetStreamLength(sourceStream)
     };
 
     public override bool CanRead => sourceStream.CanRead;
@@ -35,11 +35,23 @@ public sealed class CopyToStream(
 
     public override bool CanWrite => sourceStream.CanWrite;
 
-    public override long Length => sourceStream.Length;
+    public override long Length => TryGetStreamLength(sourceStream);
 
     public override long Position { get => sourceStream.Position; set => Seek(value, SeekOrigin.Begin); }
 
     ~CopyToStream() => Dispose(false);
+
+    private static long TryGetStreamLength(Stream stream)
+    {
+        try
+        {
+            return stream.Length;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
 
     public override int Read(byte[] buffer, int offset, int count)
         => Read(buffer.AsSpan(offset, count));
