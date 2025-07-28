@@ -1,5 +1,4 @@
 ﻿using Hi3Helper.Data;
-using Hi3Helper.Http;
 using System;
 using System.IO;
 using System.Linq;
@@ -46,7 +45,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
         [JsonPropertyName("manifest")] public ManifestBase Manifest { get; set; }
         #endregion
 
-        public static async Task<KianaDispatch> GetDispatch(DownloadClient downloadClient, string dispatchUrl, string dispatchFormat, string dispatchChannelName, string baseKey, int[] ver, CancellationToken token)
+        public static async Task<KianaDispatch> GetDispatch(HttpClient client, string dispatchUrl, string dispatchFormat, string dispatchChannelName, string baseKey, int[] ver, CancellationToken token)
         {
             // Format the dispatch URL and set it to this instance
             _dispatchQuery = string.Format(dispatchFormat, $"{ver[0]}.{ver[1]}.{ver[2]}", dispatchChannelName, ConverterTool.GetUnixTimestamp(true));
@@ -56,30 +55,30 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
             _keyString = $"{ver[0]}.{ver[1]}{baseKey}";
 
             // Intialize HTTP client class and try start to parse the dispatch
-            return await TryParseDispatch(downloadClient.GetHttpClient(), _dispatchUrl, token);
+            return await TryParseDispatch(client, _dispatchUrl, token);
         }
 
 #nullable enable
-        public static async ValueTask<KianaDispatch> GetGameserver(DownloadClient downloadClient, KianaDispatch dispatch, string regionName, CancellationToken token)
+        public static async ValueTask<KianaDispatch> GetGameserver(HttpClient client, KianaDispatch dispatch, string regionName, CancellationToken token)
         {
             // Find the correct region as per key from codename and select the first entry. If none, then return null (because .FirstOrDefault())
             // If the region results a null, then find a possible dispatch to read.
             KianaDispatch region = dispatch.Regions.Where(x => x.DispatchCodename == regionName)?.FirstOrDefault()
-                ?? await TryGetPossibleMatchingRegion(downloadClient, dispatch, token);
+                ?? await TryGetPossibleMatchingRegion(client, dispatch, token);
 
             // Format the gameserver URL and set it to this instance, then try parsing the gateway (gameserver)
             string gameServerUrl = region.DispatchUrl + _dispatchQuery;
-            return await TryParseDispatch(downloadClient.GetHttpClient(), gameServerUrl, token);
+            return await TryParseDispatch(client, gameServerUrl, token);
         }
 
-        private static async ValueTask<KianaDispatch> TryGetPossibleMatchingRegion(DownloadClient downloadClient, KianaDispatch dispatch, CancellationToken token)
+        private static async ValueTask<KianaDispatch> TryGetPossibleMatchingRegion(HttpClient client, KianaDispatch dispatch, CancellationToken token)
         {
             // Do loop and find a possible valid region/dispatch
             for (int i = 0; i < dispatch.Regions.Length; i++)
             {
                 var region = dispatch.Regions[i];
                 HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, new Uri(region.DispatchUrl));
-                HttpResponseMessage responseMessage = await downloadClient.GetHttpClient().SendAsync(requestMessage, token);
+                HttpResponseMessage responseMessage = await client.SendAsync(requestMessage, token);
                 if (responseMessage.IsSuccessStatusCode) return region;
             }
 

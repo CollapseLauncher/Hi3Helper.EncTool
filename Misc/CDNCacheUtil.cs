@@ -20,12 +20,76 @@ using System.Threading.Tasks;
 #nullable enable
 namespace Hi3Helper.EncTool;
 
+/// <summary>
+/// A record contains the result of the CDN cache.
+/// </summary>
+public record CDNCacheResult
+{
+    /// <summary>
+    /// Whether the request is cached or not.<br/>
+    /// </summary>
+    public bool IsCached { get; set; }
+
+    /// <summary>
+    /// The local path of the cache file. This will be null if the request is not cached.<br/>
+    /// </summary>
+    public string? LocalCachePath { get; set; }
+
+    /// <summary>
+    /// The tag/hash of the cache file. This will be null if the request is not cached using hash-based cache (like ETag or Content-MD5).
+    /// </summary>
+    public string? CacheETag { get; set; }
+
+    /// <summary>
+    /// The expired time of the cache in UTC. This will return default value if the request is not cached using time-based cache.<br/>
+    /// </summary>
+    public DateTimeOffset CacheExpireTimeUtc { get; set; }
+
+    /// <summary>
+    /// The stream of the response content. This will never be null.<br/>
+    /// A <see cref="CopyToStream"/> will be used if the response is actually determined to be cached. Otherwise, a <see cref="BridgedNetworkStream"/> will be used.<br/>
+    /// </summary>
+    public required Stream Stream { get; set; }
+}
+
 public static class CDNCacheUtil
 {
-    public static string?  CurrentCacheDir { get; set; }
-    public static ILogger? Logger          { get; set; }
-    public static bool     IsEnabled       { get; set; } = true;
+    /// <summary>
+    /// Gets/sets the current directory for storing the cache locally.
+    /// </summary>
+    public static string? CurrentCacheDir
+    {
+        get;
+        set => field = PerformCacheCleanup(value);
+    }
 
+    /// <summary>
+    /// Gets/sets the logger for this cache utility.
+    /// </summary>
+    public static ILogger? Logger { get; set; }
+
+    /// <summary>
+    /// Whether the CDN cache is enabled or not.
+    /// </summary>
+    public static bool IsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Whether the aggressive mode is enabled or not (Default: disabled).<br/>
+    /// This mode will try to cache all requests, even if the ETag or expire header is not present in the response.<br/>
+    /// <br/>
+    /// This method is valid only if <see cref="IsEnabled"/> is set to true and if <see cref="TryGetCachedStreamFrom(HttpClient,string,HttpMethod,System.Threading.CancellationToken)"/> method is used.<br/>
+    /// </summary>
+    public static bool IsUseAggressiveMode { get; set; } = false;
+
+    /// <summary>
+    /// Determine how long the maximum duration of the cache expire time is accepted.<br/>
+    /// This will clamp the maximum duration of the cache expire time, even if the CDN provides a longer duration.<br/>
+    /// <br/>
+    /// This also sets how long the cache will be kept in the local directory before it is cleaned up, either it's hash-based or time-based cache.<br/>
+    /// </summary>
+    public static TimeSpan MaxAcceptedCacheExpireTime { get; set; } = TimeSpan.FromMinutes(10);
+
+    #region Private Fields
     private static readonly Lock            ThisLock             = new();
     private static readonly HashSet<string> CurrentETagToWrite   = [];
     private const           int             MaxHashLengthInBytes = SHA256.HashSizeInBytes;
@@ -34,9 +98,10 @@ public static class CDNCacheUtil
     private const string SymbolOnlyAscii = " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
     private static readonly SearchValues<char> LetterNumberOnlyAsciiSearchValue = SearchValues.Create(LetterNumberOnlyAscii);
     private static readonly SearchValues<char> SymbolOnlyAsciiSearchValue = SearchValues.Create(SymbolOnlyAscii);
+    #endregion
 
     [Flags]
-    private enum CacheTypeAssumption
+    private enum HashCacheType
     {
         None       = 0,
         CryptoType = 0b_00000001_00000000,
@@ -48,12 +113,45 @@ public static class CDNCacheUtil
         Sha256 = CryptoType | 0b_00000000_00010000
     }
 
-    public record CDNCacheResult
+    /// <summary>
+    /// This method is used to perform a cache cleanup up of the current cache directory based on <see cref="MaxAcceptedCacheExpireTime"/>.<br/>
+    /// It's kind of expensive but this requires synchronous operation to make sure that the cache directory is cleaned up properly and avoid any possible race-condition issue.<br/>
+    /// </summary>
+    /// <param name="cachePath">The cache path to clean-up.</param>
+    /// <returns>The cache path to use.</returns>
+    private static string? PerformCacheCleanup(string? cachePath)
     {
-        public          bool    IsCached       { get; set; }
-        public          string? LocalCachePath { get; set; }
-        public          string? CacheETag      { get; set; }
-        public required Stream  Stream         { get; set; }
+        if (string.IsNullOrEmpty(cachePath))
+        {
+            return cachePath;
+        }
+
+        DirectoryInfo directoryInfo = new(cachePath);
+        if (!directoryInfo.Exists)
+        {
+            return cachePath;
+        }
+
+        DateTime dateTimeOffsetNow = DateTime.UtcNow;
+        foreach (FileInfo fileInfo in directoryInfo.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
+        {
+            TimeSpan remainedTimeOffset = fileInfo.LastWriteTimeUtc.Subtract(dateTimeOffsetNow);
+            if (remainedTimeOffset <= MaxAcceptedCacheExpireTime)
+            {
+                continue;
+            }
+
+            try
+            {
+                fileInfo.Delete();
+            }
+            catch (Exception e)
+            {
+                Logger?.LogError(e, "Cannot clean-up cache file: {FileName}", fileInfo.FullName);
+            }
+        }
+
+        return cachePath;
     }
 
     public static async Task<T?> GetFromCachedJsonAsync<T>(this HttpClient client, string? url, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
@@ -77,10 +175,10 @@ public static class CDNCacheUtil
             };
         }
 
-        string              cacheDir            = CurrentCacheDir!;
-        bool                isDispose           = false;
-        string?             etag                = null;
-        CacheTypeAssumption cacheTypeAssumption = CacheTypeAssumption.None;
+        string        cacheDir      = CurrentCacheDir!;
+        bool          isDispose     = false;
+        string?       etag          = null;
+        HashCacheType hashCacheType = HashCacheType.None;
 
         try
         {
@@ -93,8 +191,8 @@ public static class CDNCacheUtil
             }
 
             if (!isTimeBasedCache &&
-                TryGetETagBasedCacheType(response, out etag, out cacheTypeAssumption) &&
-                await TryCreateResultFromETagCached(cacheDir, etag, response.Content.Headers.ContentLength ?? 0, cacheTypeAssumption, token) is { IsCached: true } resultFromETagBased)
+                TryGetETagBasedCacheType(response, out etag, out hashCacheType) &&
+                await TryCreateResultFromETagCached(cacheDir, etag, response.Content.Headers.ContentLength ?? 0, hashCacheType, token) is { IsCached: true } resultFromETagBased)
             {
                 return resultFromETagBased;
             }
@@ -122,7 +220,7 @@ public static class CDNCacheUtil
             else
             {
                 // Check whether the cache is from ETag source.
-                bool isAllowWriteToETagCache = cacheTypeAssumption != CacheTypeAssumption.None;
+                bool isAllowWriteToETagCache = hashCacheType != HashCacheType.None;
 
                 // Start write cache based on its etag
                 returnStream = isAllowWriteToETagCache ?
@@ -244,17 +342,17 @@ public static class CDNCacheUtil
     }
 
     private static async ValueTask<CDNCacheResult?> TryCreateResultFromETagCached(
-        string cacheDir,
+        string            cacheDir,
         [NotNull] string? etag,
-        long expectedSize,
-        CacheTypeAssumption cacheTypeAssumption,
+        long              expectedSize,
+        HashCacheType     hashCacheType,
         CancellationToken token)
     {
         ArgumentException.ThrowIfNullOrEmpty(etag, nameof(etag));
 
         string cachedFilePath = Path.Combine(cacheDir, etag);
         if (File.Exists(cachedFilePath) &&
-            await TryCheckAndGetCachedStreamOrCreate(cachedFilePath, etag, expectedSize, cacheTypeAssumption, token) is { } cachedStream)
+            await TryCheckAndGetCachedStreamOrCreate(cachedFilePath, etag, expectedSize, hashCacheType, token) is { } cachedStream)
         {
             return new CDNCacheResult
             {
@@ -269,10 +367,10 @@ public static class CDNCacheUtil
     }
 
     private static async ValueTask<Stream?> TryCheckAndGetCachedStreamOrCreate(
-        string cachedFilePath,
-        string etag,
-        long expectedSize,
-        CacheTypeAssumption cacheTypeAssumption,
+        string            cachedFilePath,
+        string            etag,
+        long              expectedSize,
+        HashCacheType     hashCacheType,
         CancellationToken token)
     {
         FileStream? fileStream = null;
@@ -289,14 +387,14 @@ public static class CDNCacheUtil
                 return null;
             }
 
-            if (cacheTypeAssumption.HasFlag(CacheTypeAssumption.CryptoType))
+            if (hashCacheType.HasFlag(HashCacheType.CryptoType))
             {
-                using HashAlgorithm hashAlgorithm = cacheTypeAssumption switch
+                using HashAlgorithm hashAlgorithm = hashCacheType switch
                 {
-                    CacheTypeAssumption.MD5 => MD5.Create(),
-                    CacheTypeAssumption.Sha1 => SHA1.Create(),
-                    CacheTypeAssumption.Sha256 => SHA256.Create(),
-                    _ => throw new NotSupportedException($"Crypto Hash Type: {cacheTypeAssumption} isn't supported!")
+                    HashCacheType.MD5 => MD5.Create(),
+                    HashCacheType.Sha1 => SHA1.Create(),
+                    HashCacheType.Sha256 => SHA256.Create(),
+                    _ => throw new NotSupportedException($"Crypto Hash Type: {hashCacheType} isn't supported!")
                 };
 
                 // >> 3 is equal to divided by 8. HashSize must be calculated since it returns bits, not bytes.
@@ -315,13 +413,13 @@ public static class CDNCacheUtil
                 return isMatched ? fileStream : null;
             }
 
-            if (!cacheTypeAssumption.HasFlag(CacheTypeAssumption.CryptoType))
+            if (!hashCacheType.HasFlag(HashCacheType.CryptoType))
             {
-                NonCryptographicHashAlgorithm hashAlgorithm = cacheTypeAssumption switch
+                NonCryptographicHashAlgorithm hashAlgorithm = hashCacheType switch
                 {
-                    CacheTypeAssumption.Crc32 => new Crc32(),
-                    CacheTypeAssumption.Crc64 => new Crc64(),
-                    _ => throw new NotSupportedException($"Hash Type: {cacheTypeAssumption} isn't supported!")
+                    HashCacheType.Crc32 => new Crc32(),
+                    HashCacheType.Crc64 => new Crc64(),
+                    _ => throw new NotSupportedException($"Hash Type: {hashCacheType} isn't supported!")
                 };
 
                 if (hashAlgorithm.HashLengthInBytes != actualHashLen)
@@ -466,11 +564,11 @@ public static class CDNCacheUtil
         return span;
     }
 
-    private static bool TryGetETagBasedCacheType(HttpResponseMessage response, [NotNullWhen(true)] out string? etag, out CacheTypeAssumption cacheTypeAssumption)
+    private static bool TryGetETagBasedCacheType(HttpResponseMessage response, [NotNullWhen(true)] out string? etag, out HashCacheType hashCacheType)
     {
         const int md5HashSize = MD5.HashSizeInBytes;
 
-        cacheTypeAssumption = CacheTypeAssumption.None;
+        hashCacheType = HashCacheType.None;
         etag = null;
 
         if (response.Content.Headers.TryGetValues("content-md5", out IEnumerable<string>? contentMd5Enum))
@@ -499,7 +597,7 @@ public static class CDNCacheUtil
                 return false;
             }
 
-            cacheTypeAssumption = CacheTypeAssumption.MD5;
+            hashCacheType = HashCacheType.MD5;
             etag                = new string(hashString);
 
             return true;
@@ -517,17 +615,17 @@ public static class CDNCacheUtil
         }
 
         int etagSizeInBytes = etagSpan.Length / 2;
-        cacheTypeAssumption = etagSizeInBytes switch
+        hashCacheType = etagSizeInBytes switch
         {
-            32 => CacheTypeAssumption.Sha256,
-            20 => CacheTypeAssumption.Sha1,
-            16 => CacheTypeAssumption.MD5,
-            8 => CacheTypeAssumption.Crc64,
-            4 => CacheTypeAssumption.Crc32,
-            _ => CacheTypeAssumption.None
+            32 => HashCacheType.Sha256,
+            20 => HashCacheType.Sha1,
+            16 => HashCacheType.MD5,
+            8 => HashCacheType.Crc64,
+            4 => HashCacheType.Crc32,
+            _ => HashCacheType.None
         };
 
-        if (cacheTypeAssumption == CacheTypeAssumption.None)
+        if (hashCacheType == HashCacheType.None)
         {
             return false;
         }
@@ -569,10 +667,10 @@ public static class CDNCacheUtil
         {
             return new CDNCacheResult
             {
-                CacheETag = requestHash,
-                IsCached = true,
-                LocalCachePath = cacheFilePath,
-                Stream = File.Open(cacheFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                IsCached           = true,
+                LocalCachePath     = cacheFilePath,
+                CacheExpireTimeUtc = currentDateStampUtc,
+                Stream             = File.Open(cacheFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
             };
         }
 
