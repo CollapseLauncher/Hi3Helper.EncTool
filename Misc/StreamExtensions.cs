@@ -1,5 +1,4 @@
 ﻿using Hi3Helper.Http;
-using System;
 using System.Buffers;
 using System.IO;
 using System.Net.Http;
@@ -13,10 +12,10 @@ namespace Hi3Helper.EncTool;
 internal static class StreamExtensions
 {
     internal static Task PerformCopyToDownload(this DownloadClient       downloadClient,
-                                                     string                    url,
-                                                     DownloadProgressDelegate? downloadDelegate,
-                                                     Stream                    targetStream,
-                                                     CancellationToken         token)
+                                               string                    url,
+                                               DownloadProgressDelegate? downloadDelegate,
+                                               Stream                    targetStream,
+                                               CancellationToken         token)
         => downloadClient
           .GetHttpClient()
           .PerformCopyToDownload(url, downloadDelegate, targetStream, token);
@@ -30,23 +29,15 @@ internal static class StreamExtensions
         byte[] buffer = ArrayPool<byte>.Shared.Rent(4 << 10);
         try
         {
-            CDNCacheUtil.CDNCacheResult result       = await client.TryGetCachedStreamFrom(url, null, token);
-            await using Stream          resultStream = result.Stream;
+            CDNCacheResult     result       = await client.TryGetCachedStreamFrom(url, null, token);
+            await using Stream resultStream = result.Stream;
 
-            int size = (int)resultStream.Length;
-            DownloadProgress progress = new()
-            {
-                BytesDownloaded = 0,
-                BytesTotal      = size
-            };
+            await using CopyToStream copyToStream = new CopyToStream(resultStream, targetStream, downloadDelegate, false);
 
-            int read;
-            while ((read = await resultStream.ReadAsync(buffer, token)) > 0)
-            {
-                await targetStream.WriteAsync(buffer.AsMemory(0, read), token);
-                progress.BytesDownloaded += read;
-                downloadDelegate?.Invoke(read, progress);
-            }
+            Read:
+            int read = await copyToStream.ReadAsync(buffer, token);
+            if (read > 0)
+                goto Read;
         }
         finally
         {

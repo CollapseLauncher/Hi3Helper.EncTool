@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
-		<Platforms>x64</Platforms>
-		<Configurations>Debug;Release</Configurations>
-		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<IsTrimmable>true</IsTrimmable>
-		<DebugType>portable</DebugType>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Platforms>x64</Platforms>
+        <Configurations>Debug;Release</Configurations>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <IsTrimmable>true</IsTrimmable>
+        <DebugType>portable</DebugType>
         <!-- Assembly Info Properties -->
         <AssemblyName>Hi3Helper.EncTool</AssemblyName>
         <ProductName>Hi3Helper.EncTool</ProductName>
@@ -15,63 +15,64 @@
         <Company>Collapse Launcher Team</Company>
         <Authors>$(Company). neon-nyan, Cry0, bagusnl, shatyuka, gablm.</Authors>
         <Copyright>Copyright 2022-2025 $(Company)</Copyright>
-		<IsAotCompatible>true</IsAotCompatible>
-	</PropertyGroup>
+        <IsAotCompatible>true</IsAotCompatible>
+        <LangVersion>preview</LangVersion>
+    </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-		<Optimize>False</Optimize>
-	</PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <Optimize>False</Optimize>
+    </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-		<Optimize>True</Optimize>
-		<DebugType>none</DebugType>
-	</PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <Optimize>True</Optimize>
+        <DebugType>none</DebugType>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<None Remove="UABT\.git" />
-		<None Remove="UABT\.gitattributes" />
-		<None Remove="UABT\.gitignore" />
-	</ItemGroup>
+    <ItemGroup>
+        <None Remove="UABT\.git" />
+        <None Remove="UABT\.gitattributes" />
+        <None Remove="UABT\.gitignore" />
+    </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" Condition="$(DefineConstants.Contains('USEZSTD'))" />
-		<PackageReference Include="Google.Protobuf" Version="3.31.1" />
-		<PackageReference Include="Google.Protobuf.Tools" Version="3.31.1">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="System.IO.Hashing" Version="9.0.7" />
-	</ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" Condition="$(DefineConstants.Contains('USEZSTD'))" />
+        <PackageReference Include="Google.Protobuf" Version="3.31.1" />
+        <PackageReference Include="Google.Protobuf.Tools" Version="3.31.1">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="System.IO.Hashing" Version="9.0.7" />
+    </ItemGroup>
 
-	<ItemGroup>
-	  <ProjectReference Include="..\Hi3Helper.Http\Hi3Helper.Http.csproj" />
-	  <ProjectReference Include="..\Hi3Helper.Win32\Hi3Helper.Win32.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\Hi3Helper.Http\Hi3Helper.Http.csproj" />
+      <ProjectReference Include="..\Hi3Helper.Win32\Hi3Helper.Win32.csproj" />
+    </ItemGroup>
 
-	<!-- 
-	Generate C# code from proto when it changed 
-	https://stackoverflow.com/questions/58385978/invoking-tool-in-a-nuget-package-with-generator-getting-unexpected-was-not-f
-	-->
+    <!-- 
+    Generate C# code from proto when it changed 
+    https://stackoverflow.com/questions/58385978/invoking-tool-in-a-nuget-package-with-generator-getting-unexpected-was-not-f
+    -->
 
-	<Target Name="GenerateProto-Genshin-Gateway" Inputs="$(ProjectDir)Parser\Proto\GenshinGateway.proto" Outputs="$(ProjectDir)Parser\Proto\src\GenshinGateway.cs" BeforeTargets="BeforeBuild">
-		<Message Text="Generating Genshin gateway proto code..." Importance="high" />
-		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.31.1\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\GenshinGateway.proto&quot;" />
-	</Target>
+    <Target Name="GenerateProto-Genshin-Gateway" Inputs="$(ProjectDir)Parser\Proto\GenshinGateway.proto" Outputs="$(ProjectDir)Parser\Proto\src\GenshinGateway.cs" BeforeTargets="BeforeBuild">
+        <Message Text="Generating Genshin gateway proto code..." Importance="high" />
+        <Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.31.1\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\GenshinGateway.proto&quot;" />
+    </Target>
 
-	<Target Name="GenerateProto-StarRail-Gateway" Inputs="$(ProjectDir)Parser\Proto\StarRailGateway.proto" Outputs="$(ProjectDir)Parser\Proto\src\StarRailGateway.cs" BeforeTargets="BeforeBuild">
-		<Message Text="Generating StarRail gateway proto code..." Importance="high" />
-		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.31.1\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailGateway.proto&quot;" />
-	</Target>
+    <Target Name="GenerateProto-StarRail-Gateway" Inputs="$(ProjectDir)Parser\Proto\StarRailGateway.proto" Outputs="$(ProjectDir)Parser\Proto\src\StarRailGateway.cs" BeforeTargets="BeforeBuild">
+        <Message Text="Generating StarRail gateway proto code..." Importance="high" />
+        <Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.31.1\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailGateway.proto&quot;" />
+    </Target>
 
-	<Target Name="GenerateProto-StarRail-Dispatch" Inputs="$(ProjectDir)Parser\Proto\StarRailDispatch.proto" Outputs="$(ProjectDir)Parser\Proto\src\StarRailDispatch.cs" BeforeTargets="BeforeBuild">
-		<Message Text="Generating StarRail dispatch proto code..." Importance="high" />
-		<Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.31.1\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailDispatch.proto&quot;" />
-	</Target>
+    <Target Name="GenerateProto-StarRail-Dispatch" Inputs="$(ProjectDir)Parser\Proto\StarRailDispatch.proto" Outputs="$(ProjectDir)Parser\Proto\src\StarRailDispatch.cs" BeforeTargets="BeforeBuild">
+        <Message Text="Generating StarRail dispatch proto code..." Importance="high" />
+        <Exec Command="&quot;$(NugetPackageRoot)\google.protobuf.tools\3.31.1\tools\windows_x64\protoc.exe&quot; --proto_path=&quot;$(ProjectDir)Parser\Proto&quot; --csharp_out=&quot;$(ProjectDir)Parser\Proto\src&quot; &quot;$(ProjectDir)Parser\Proto\StarRailDispatch.proto&quot;" />
+    </Target>
 
-	<Target Name="PreCompile" BeforeTargets="Compile">
-		<CallTarget Targets="GenerateProto-Genshin-Gateway" />
-		<CallTarget Targets="GenerateProto-StarRail-Gateway" />
-		<CallTarget Targets="GenerateProto-StarRail-Dispatch" />
-		<Message Text="PreCompile target has finished running." Importance="high" />
-	</Target>
+    <Target Name="PreCompile" BeforeTargets="Compile">
+        <CallTarget Targets="GenerateProto-Genshin-Gateway" />
+        <CallTarget Targets="GenerateProto-StarRail-Gateway" />
+        <CallTarget Targets="GenerateProto-StarRail-Dispatch" />
+        <Message Text="PreCompile target has finished running." Importance="high" />
+    </Target>
 </Project>
