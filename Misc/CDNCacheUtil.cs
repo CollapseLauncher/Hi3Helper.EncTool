@@ -136,8 +136,9 @@ public static class CDNCacheUtil
     /// It's kind of expensive but this requires synchronous operation to make sure that the cache directory is cleaned up properly and avoid any possible race-condition issue.<br/>
     /// </summary>
     /// <param name="cachePath">The cache path to clean-up.</param>
+    /// <param name="forceClean">Remove all caches even though the file isn't expired yet.</param>
     /// <returns>The cache path to use.</returns>
-    private static string? PerformCacheGarbageCollection(string? cachePath)
+    public static string? PerformCacheGarbageCollection(string? cachePath, bool forceClean = false)
     {
         if (string.IsNullOrEmpty(cachePath))
         {
@@ -160,7 +161,7 @@ public static class CDNCacheUtil
         {
             DateTime lastModifiedUtc    = fileInfo.LastWriteTimeUtc;
             TimeSpan remainedTimeOffset = dateTimeOffsetNow.Subtract(lastModifiedUtc);
-            if (remainedTimeOffset <= MaxAcceptedCacheExpireTime)
+            if (remainedTimeOffset <= MaxAcceptedCacheExpireTime && !forceClean)
             {
                 continue;
             }
