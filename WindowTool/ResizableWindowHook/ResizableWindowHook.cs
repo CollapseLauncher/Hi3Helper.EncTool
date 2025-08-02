@@ -1,7 +1,7 @@
 ﻿using Hi3Helper.Data;
+using Hi3Helper.Win32.ManagedTools;
 using Hi3Helper.Win32.Native.Enums;
 using Hi3Helper.Win32.Native.LibraryImport;
-using Hi3Helper.Win32.Native.ManagedTools;
 using Hi3Helper.Win32.Native.Structs;
 using Microsoft.Extensions.Logging;
 using System;
