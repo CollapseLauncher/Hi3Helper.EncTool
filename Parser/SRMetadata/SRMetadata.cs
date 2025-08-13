@@ -19,8 +19,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
     {
         private string           PersistentPath { get; set; }
         private SRDispatcherInfo DispatcherInfo { get; } =
-            new SRDispatcherInfo(dispatchURL, dispatchSeed, dispatchFormatTemplate, gatewayFormatTemplate, productID,
-                                 productVer);
+            new(dispatchURL, dispatchSeed, dispatchFormatTemplate, gatewayFormatTemplate, productID,
+                productVer);
         private bool             IsInitialized  { get; set; }
 
         public SRMetadataBase   MetadataIFix    { get; set; }
@@ -69,51 +69,66 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
         public async Task ReadIFixMetadataInformation(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, CancellationToken threadToken)
         {
-            MetadataIFix = SRIFixMetadata.CreateInstance(DispatcherInfo.IsUseLegacy ? DispatcherInfo.RegionGatewayLegacy.IFixPatchVersionUpdateUrl : DispatcherInfo.RegionGateway.ValuePairs["IFixPatchVersionUpdateUrl"]);
+            MetadataIFix = SRIFixMetadata.CreateInstance(DispatcherInfo.RegionGateway.ValuePairs["IFixPatchVersionUpdateUrl"]);
             await MetadataIFix.GetRemoteMetadata(downloadClient, downloadProgressDelegate, PersistentPath, threadToken, "IFix\\Windows");
             MetadataIFix.Deserialize();
         }
 
         public async Task ReadDesignMetadataInformation(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, CancellationToken threadToken)
         {
-            MetadataDesign = SRDesignMetadata.CreateInstance(DispatcherInfo.IsUseLegacy ? DispatcherInfo.RegionGatewayLegacy.DesignDataBundleVersionUpdateUrl : DispatcherInfo.RegionGateway.ValuePairs["DesignDataBundleVersionUpdateUrl"]);
+            MetadataDesign = SRDesignMetadata.CreateInstance(DispatcherInfo.RegionGateway.ValuePairs["DesignDataBundleVersionUpdateUrl"]);
             await MetadataDesign.GetRemoteMetadata(downloadClient, downloadProgressDelegate, PersistentPath, threadToken, "DesignData\\Windows");
             MetadataDesign.Deserialize();
         }
 
         public async Task ReadLuaMetadataInformation(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, CancellationToken threadToken)
         {
-            MetadataLua = SRLuaMetadata.CreateInstance(DispatcherInfo.IsUseLegacy ? DispatcherInfo.RegionGatewayLegacy.LuaBundleVersionUpdateUrl : DispatcherInfo.RegionGateway.ValuePairs["LuaBundleVersionUpdateUrl"]);
+            MetadataLua = SRLuaMetadata.CreateInstance(DispatcherInfo.RegionGateway.ValuePairs["LuaBundleVersionUpdateUrl"]);
             await MetadataLua.GetRemoteMetadata(downloadClient, downloadProgressDelegate, PersistentPath, threadToken, "Lua\\Windows");
             MetadataLua.Deserialize();
         }
 
         public async Task ReadAsbMetadataInformation(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, CancellationToken threadToken)
         {
-            MetadataAsb = SRAsbMetadata.CreateInstance(DispatcherInfo.ArchiveInfo, DispatcherInfo.IsUseLegacy ? DispatcherInfo.RegionGatewayLegacy.AssetBundleVersionUpdateUrl : DispatcherInfo.RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"]);
+            MetadataAsb = SRAsbMetadata.CreateInstance(DispatcherInfo.ArchiveInfo, DispatcherInfo.RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"], TryGetAltUrl("AssetBundleVersionUpdateUrl"));
             await MetadataAsb.GetRemoteMetadata(downloadClient, downloadProgressDelegate, PersistentPath, threadToken, "Asb\\Windows");
             MetadataAsb.Deserialize();
         }
 
         public async Task ReadBlockMetadataInformation(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, CancellationToken threadToken)
         {
-            MetadataBlock = SRBlockMetadata.CreateInstance(DispatcherInfo.ArchiveInfo, DispatcherInfo.IsUseLegacy ? DispatcherInfo.RegionGatewayLegacy.AssetBundleVersionUpdateUrl : DispatcherInfo.RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"]);
+            MetadataBlock = SRBlockMetadata.CreateInstance(DispatcherInfo.ArchiveInfo, DispatcherInfo.RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"], TryGetAltUrl("AssetBundleVersionUpdateUrl"));
             await MetadataBlock.GetRemoteMetadata(downloadClient, downloadProgressDelegate, PersistentPath, threadToken, "Asb\\Windows");
             MetadataBlock.Deserialize();
         }
 
         public async Task ReadAudioMetadataInformation(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, CancellationToken threadToken)
         {
-            MetadataAudio = SRAudioMetadata.CreateInstance(DispatcherInfo.ArchiveInfo, DispatcherInfo.IsUseLegacy ? DispatcherInfo.RegionGatewayLegacy.AssetBundleVersionUpdateUrl : DispatcherInfo.RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"]);
+            MetadataAudio = SRAudioMetadata.CreateInstance(DispatcherInfo.ArchiveInfo, DispatcherInfo.RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"], TryGetAltUrl("AssetBundleVersionUpdateUrl"));
             await MetadataAudio.GetRemoteMetadata(downloadClient, downloadProgressDelegate, PersistentPath, threadToken, "Audio\\AudioPackage\\Windows");
             MetadataAudio.Deserialize();
         }
 
         public async Task ReadVideoMetadataInformation(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, CancellationToken threadToken)
         {
-            MetadataVideo = SRVideoMetadata.CreateInstance(DispatcherInfo.ArchiveInfo, DispatcherInfo.IsUseLegacy ? DispatcherInfo.RegionGatewayLegacy.AssetBundleVersionUpdateUrl : DispatcherInfo.RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"]);
+            MetadataVideo = SRVideoMetadata.CreateInstance(DispatcherInfo.ArchiveInfo, DispatcherInfo.RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"], TryGetAltUrl("AssetBundleVersionUpdateUrl"));
             await MetadataVideo.GetRemoteMetadata(downloadClient, downloadProgressDelegate, PersistentPath, threadToken, "Video\\Windows");
             MetadataVideo.Deserialize();
+        }
+
+        private string TryGetAltUrl(string key)
+        {
+            if (!DispatcherInfo.RegionGateway.ValuePairs.TryGetValue(key + "Alt", out string value))
+            {
+                return "";
+            }
+
+            if (value.Length == 0 || value[0] == '$')
+            {
+                return "";
+            }
+
+            return value;
         }
 
         internal static int GetUnixTimestamp(bool isUTC = true) => (int)Math.Truncate(isUTC ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);

@@ -23,15 +23,16 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
     internal class SRDispatchArchiveInfo
     {
-        public uint   MajorVersion          { get; set; }
-        public uint   MinorVersion          { get; set; }
-        public uint   PatchVersion          { get; set; }
-        public string ContentHash           { get; set; }
-        public uint   FileSize              { get; set; }
-        public uint   TimeStamp             { get; set; }
-        public string FileName              { get; set; }
-        public string BaseAssetsDownloadUrl { get; set; }
-        public string FullAssetsDownloadUrl { get; set; }
+        public uint   MajorVersion             { get; set; }
+        public uint   MinorVersion             { get; set; }
+        public uint   PatchVersion             { get; set; }
+        public string ContentHash              { get; set; }
+        public uint   FileSize                 { get; set; }
+        public uint   TimeStamp                { get; set; }
+        public string FileName                 { get; set; }
+        public string BaseAssetsDownloadUrl    { get; set; }
+        public string FullAssetsDownloadUrl    { get; set; }
+        public string FullAssetsDownloadUrlAlt { get; set; }
     }
 
     [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true)]
@@ -50,9 +51,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private  CancellationToken     ThreadToken         { get; set; }
         internal string                RegionName          { get; set; }
         internal RegionInfo            RegionInfo          { get; set; }
-        internal StarRailGateway       RegionGatewayLegacy { get; set; }
         internal StarRailGatewayStatic RegionGateway       { get; set; }
-        internal bool                  IsUseLegacy         { get => false; }
 
         internal Dictionary<string, SRDispatchArchiveInfo>  ArchiveInfo { get; set; }
 
@@ -110,12 +109,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #if DEBUG
             Console.WriteLine($"Gateway URL: {gatewayURL}");
 #endif
-                
+
             // Deserialize gateway
-            if (IsUseLegacy)
-                RegionGatewayLegacy = await ParseFromUrlAsync(gatewayURL, downloadClient.GetHttpClient(), StarRailGateway.Parser, ThreadToken);
-            else
-                RegionGateway = await ParseFromUrlAsync(gatewayURL, downloadClient.GetHttpClient(), StarRailGatewayStatic.Parser, ThreadToken);
+            RegionGateway = await ParseFromUrlAsync(gatewayURL, downloadClient.GetHttpClient(), StarRailGatewayStatic.Parser, ThreadToken);
         }
 
         private static async Task<T> ParseFromUrlAsync<T>(string            url,
@@ -149,7 +145,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
              * ===============================
              */
             ArchiveInfo = new Dictionary<string, SRDispatchArchiveInfo>();
-            string archiveURL = (IsUseLegacy ? RegionGatewayLegacy.AssetBundleVersionUpdateUrl : RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"]) + "/client/Windows/Archive/M_ArchiveV.bytes";
+            string archiveURL = RegionGateway.ValuePairs["AssetBundleVersionUpdateUrl"] + "/client/Windows/Archive/M_ArchiveV.bytes";
             string localPath = Path.Combine(PersistentDirectory, @"Archive\Windows\M_ArchiveV_cache.bytes");
 
 #if DEBUG
@@ -165,7 +161,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
              * Design_Archive_V region
              * ===============================
              */
-            archiveURL = (IsUseLegacy ? RegionGatewayLegacy.DesignDataBundleVersionUpdateUrl : RegionGateway.ValuePairs["DesignDataBundleVersionUpdateUrl"]) + "/client/Windows/M_Design_ArchiveV.bytes";
+            archiveURL = RegionGateway.ValuePairs["DesignDataBundleVersionUpdateUrl"] + "/client/Windows/M_Design_ArchiveV.bytes";
 
 #if DEBUG
             Console.WriteLine("Parsing Design Archive -----");
@@ -242,21 +238,28 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 SRDispatchArchiveInfo archiveInfo = JsonSerializer.Deserialize(line, SRDispatchArchiveInfoContext.Default.SRDispatchArchiveInfo);
                 string baseUrl = string.IsNullOrEmpty(archiveInfo.BaseAssetsDownloadUrl) ?
                     RegionGateway.ValuePairs[gatewayDictKey] :
-                    TrimLastURLRelativePath(IsUseLegacy ?
-                                                RegionGatewayLegacy.AssetBundleVersionUpdateUrl :
-                                                RegionGateway.ValuePairs[gatewayDictKey]
-                                           );
+                    TrimLastURLRelativePath(RegionGateway.ValuePairs[gatewayDictKey]);
+
+                string relativePath = archiveInfo.FileName switch
+                {
+                    "M_AudioV" => "/client/Windows/AudioBlock",
+                    "M_VideoV" => "/client/Windows/Video",
+                    "M_DesignV" or "M_Design_PatchV" => "/client/Windows",
+                    "M_NativeDataV" => "/client/Windows/NativeData",
+                    _ => "/client/Windows/Block"
+                };
+
                 archiveInfo.FullAssetsDownloadUrl = 
                     baseUrl.CombineURLFromString(archiveInfo.BaseAssetsDownloadUrl,
-                                                 archiveInfo.FileName switch
-                                                 {
-                                                     "M_AudioV" => "/client/Windows/AudioBlock",
-                                                     "M_VideoV" => "/client/Windows/Video",
-                                                     "M_DesignV" or "M_Design_PatchV" => "/client/Windows",
-                                                     "M_NativeDataV" => "/client/Windows/NativeData",
-                                                     _ => "/client/Windows/Block"
-                                                 }
-                                                );
+                                                 relativePath);
+
+                if (RegionGateway.ValuePairs.TryGetValue(gatewayDictKey + "Alt", out string baseUrlAlt))
+                {
+                    archiveInfo.FullAssetsDownloadUrlAlt =
+                        baseUrlAlt.CombineURLFromString(archiveInfo.BaseAssetsDownloadUrl,
+                                                        relativePath);
+                }
+
                 ArchiveInfo.Add(archiveInfo.FileName, archiveInfo);
             }
         }

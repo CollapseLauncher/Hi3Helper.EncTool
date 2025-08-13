@@ -67,6 +67,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
         public Dictionary<string, string> ValuePairs = new Dictionary<string, string>
         {
             { "AssetBundleVersionUpdateUrl", "$/asb/" },
+            { "AssetBundleVersionUpdateUrlAlt", "$/asb/" },
             { "LuaBundleVersionUpdateUrl", "$/lua/" },
             { "LuaPatchVersion", "$NUMREF|LuaBundleVersionUpdateUrl|output" },
             { "DesignDataBundleVersionUpdateUrl", "$/design_data/" },

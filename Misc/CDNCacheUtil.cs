@@ -192,7 +192,6 @@ public static class CDNCacheUtil
 
     public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(this HttpClient client, string url, HttpMethod? httpMethod = null, CancellationToken token = default)
     {
-
         bool                 isDispose = false;
         HttpRequestMessage?  message   = null;
         HttpResponseMessage? response  = null;

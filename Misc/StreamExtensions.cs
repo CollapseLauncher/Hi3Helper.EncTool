@@ -33,11 +33,19 @@ internal static class StreamExtensions
             CDNCacheResult     result       = await client.TryGetCachedStreamFrom(url, null, token);
             await using Stream resultStream = result.Stream;
 
+            DownloadProgress progress = new DownloadProgress
+            {
+                BytesTotal      = resultStream.Length,
+                BytesDownloaded = 0
+            };
+
             Read:
             int read = await resultStream.ReadAsync(buffer, token);
             if (read > 0)
             {
-                targetStream.Write(buffer.AsSpan(0, read));
+                await targetStream.WriteAsync(buffer.AsMemory(0, read), token);
+                progress.BytesDownloaded += read;
+                downloadDelegate?.Invoke(read, progress);
                 goto Read;
             }
         }

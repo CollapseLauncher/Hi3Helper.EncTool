@@ -16,18 +16,19 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 {
     public class SRAssetProperty
     {
-        public string BaseURL { get; set; }
-        public string StartBaseURL { get; set; }
-        public string MetadataRemoteURL { get; set; }
-        public string MetadataStartRemoteURL { get; set; }
-        public string MetadataLocalName { get; set; }
-        public string MetadataStartLocalName { get; set; }
-        public Stream MetadataStream { get; set; }
-        public Stream MetadataStartStream { get; set; }
-        public uint MetadataRevision { get; set; }
-        public uint MetadataStartRevision { get; set; }
-        public long AssetTotalSize { get => AssetList.Count == 0 ? 0 : AssetList.Sum(x => x.Size); }
-        public List<SRAsset> AssetList { get; set; }
+        public string        BaseURL                { get; set; }
+        public string        BaseURLAlt             { get; set; }
+        public string        StartBaseURL           { get; set; }
+        public string        MetadataRemoteURL      { get; set; }
+        public string        MetadataStartRemoteURL { get; set; }
+        public string        MetadataLocalName      { get; set; }
+        public string        MetadataStartLocalName { get; set; }
+        public Stream        MetadataStream         { get; set; }
+        public Stream        MetadataStartStream    { get; set; }
+        public uint          MetadataRevision       { get; set; }
+        public uint          MetadataStartRevision  { get; set; }
+        public long          AssetTotalSize         { get => AssetList.Count == 0 ? 0 : AssetList.Sum(x => x.Size); }
+        public List<SRAsset> AssetList              { get; set; }
 
         public SRAssetProperty()
         {
@@ -60,12 +61,13 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
     public class SRAsset : IAssetIndexSummary
     {
-        public string LocalName { get; set; }
-        public string RemoteURL { get; set; }
-        public long Size { get; set; }
-        public byte[] Hash { get; set; }
+        public string      LocalName { get; set; }
+        public string      RemoteURL { get; set; }
+        public string      RemoteURAlt { get; set; }
+        public long        Size      { get; set; }
+        public byte[]      Hash      { get; set; }
         public SRAssetType AssetType { get; set; }
-        public bool IsPatch { get; set; }
+        public bool        IsPatch   { get; set; }
 
         public string PrintSummary() => $"File [T: {AssetType}]: {LocalName}\t{ConverterTool.SummarizeSizeSimple(Size)} ({Size} bytes)";
         public long GetAssetSize() => Size;
@@ -87,17 +89,23 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
     public abstract class SRMetadataBase : IDisposable
     {
-        protected abstract SRAssetProperty AssetProperty { get; set; }
-        internal virtual string Magic { get; set; }
-        internal virtual ushort TypeID { get; set; }
-        protected abstract string ParentRemotePath { get; set; }
-        protected abstract string MetadataPath { get; set; }
-        protected string BaseURL { get; init; }
-        protected string PersistentPath { get; set; }
+        protected abstract SRAssetProperty AssetProperty     { get; set; }
+        internal virtual   string          Magic             { get; set; }
+        internal virtual   ushort          TypeID            { get; set; }
+        protected abstract string          ParentRemotePath  { get; set; }
+        protected abstract string          MetadataPath      { get; set; }
+        protected          string          BaseURL           { get; init; }
+        protected          string          BaseURLAlt        { get; set; } = "";
+        protected          string          PersistentPath    { get; set; }
+        protected          bool            UseURLAltForAsset { get; set; }
 
-        protected SRMetadataBase(string baseURL)
+        protected SRMetadataBase(string baseURL, string baseURLAlt = "")
         {
             BaseURL = baseURL;
+            if (!string.IsNullOrEmpty(baseURLAlt))
+            {
+                BaseURLAlt = baseURLAlt;
+            }
             if (string.IsNullOrEmpty(BaseURL)) throw new NullReferenceException("BaseURL is empty!");
         }
 
@@ -106,14 +114,46 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             PersistentPath = persistentPath;
             string metadataPath = Path.Combine(PersistentPath, localManifestPath, MetadataPath.TrimStart('/'));
             string metadataURL = BaseURL + ParentRemotePath + MetadataPath;
+            string metadataURLAlt = !string.IsNullOrEmpty(BaseURLAlt) ? BaseURLAlt + ParentRemotePath + MetadataPath : "";
 
             AssetProperty = new SRAssetProperty(metadataPath);
 
 #if DEBUG
             Console.WriteLine($"[SRMetadataBase:GetRemoteData] Fetching metadata from {metadataURL}");
 #endif
-            await downloadClient.PerformCopyToDownload(metadataURL, downloadProgressDelegate, AssetProperty.MetadataStream, token);
-            AssetProperty.MetadataStream.Position = 0;
+
+            bool isUseAltForAsset = await GetRefDataAndTrySetAssetUrl(downloadClient,
+                                                                      downloadProgressDelegate,
+                                                                      metadataURL,
+                                                                      metadataURLAlt,
+                                                                      AssetProperty.MetadataStream,
+                                                                      token);
+
+            if (isUseAltForAsset && !string.IsNullOrEmpty(BaseURLAlt))
+            {
+                UseURLAltForAsset = true;
+            }
+        }
+
+        protected virtual async Task<bool> GetRefDataAndTrySetAssetUrl(
+            DownloadClient           downloadClient,
+            DownloadProgressDelegate downloadProgressDelegate,
+            string                   metadataUrl,
+            string                   metadataUrlAlt,
+            Stream                   outputStream,
+            CancellationToken        token)
+        {
+            try
+            {
+                await downloadClient.PerformCopyToDownload(metadataUrl, downloadProgressDelegate, outputStream, token);
+                outputStream.Position = 0;
+                return true;
+            }
+            catch when (!string.IsNullOrEmpty(metadataUrlAlt))
+            {
+                _ = await GetRefDataAndTrySetAssetUrl(downloadClient, downloadProgressDelegate, metadataUrlAlt, "", outputStream, token);
+                return false;
+            }
         }
 
         protected void EnsureMagicIsValid(EndianBinaryReader reader)
