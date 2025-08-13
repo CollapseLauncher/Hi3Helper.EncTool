@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Http;
+using System;
 using System.Buffers;
 using System.IO;
 using System.Net.Http;
@@ -32,12 +33,13 @@ internal static class StreamExtensions
             CDNCacheResult     result       = await client.TryGetCachedStreamFrom(url, null, token);
             await using Stream resultStream = result.Stream;
 
-            await using CopyToStream copyToStream = new CopyToStream(resultStream, targetStream, downloadDelegate, false);
-
             Read:
-            int read = await copyToStream.ReadAsync(buffer, token);
+            int read = await resultStream.ReadAsync(buffer, token);
             if (read > 0)
+            {
+                targetStream.Write(buffer.AsSpan(0, read));
                 goto Read;
+            }
         }
         finally
         {
