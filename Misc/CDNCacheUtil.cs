@@ -196,7 +196,16 @@ public static class CDNCacheUtil
         HttpRequestMessage?  message   = null;
         HttpResponseMessage? response  = null;
 
-        ArgumentException.ThrowIfNullOrEmpty(CurrentCacheDir, nameof(CurrentCacheDir));
+        if (string.IsNullOrEmpty(CurrentCacheDir))
+        {
+            message  = new HttpRequestMessage(httpMethod ?? HttpMethod.Get, url);
+            response = await client.SendAsync(message, token);
+            return new CDNCacheResult
+            {
+                Stream = await BridgedNetworkStream.CreateStream(response, token)
+            };
+        }
+
         string cacheDir = CurrentCacheDir;
 
         try
