@@ -84,7 +84,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         Block,
         Lua,
         Video,
-        Audio
+        Audio,
+
+        RawRes // TODO: Introduced in v3.5. Need to implement the parser in Collapse v1.83.x update later
     }
 
     public abstract class SRMetadataBase : IDisposable
