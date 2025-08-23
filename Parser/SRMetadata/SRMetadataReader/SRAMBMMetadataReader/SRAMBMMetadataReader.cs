@@ -50,7 +50,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             {
                 case SRAMBMMetadataType.SRAM:
                     Magic = "SRAM";
-                    TypeID = 4;
+                    TypeID = 5;
                     break;
                 case SRAMBMMetadataType.SRBM:
                     Magic = "SRBM";
@@ -86,14 +86,25 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             switch (StructType)
             {
                 case SRAMBMMetadataType.SRAM:
-                    _ = reader.ReadUInt32(); // A3
-                    _ = reader.ReadUInt32(); // A4
-                    _ = reader.ReadUInt32(); // A5
+                    // Added in SRAM v5
+                    _ = reader.ReadBytes(24);
+
+                    // SRAM v4. Removed in SRAM v5
+                    // _ = reader.ReadUInt32(); // A3
+                    // _ = reader.ReadUInt32(); // A4
+                    // _ = reader.ReadUInt32(); // A5
                     for (int i = 0; i < count; i++)
                     {
+                        // Added in SRAM v5.
+                        // This field is used as Struct Pack.
+                        // Due to all structs are dividable by 8, this field will always set to 0 and is not being used.
+                        _ = reader.ReadUInt32();
+
+                        // SRAM v4. Still used in v5
                         offset      = reader.ReadUInt32();
                         structCount = reader.ReadUInt32();
                         structSize  = reader.ReadUInt32();
+
                         StructList.Add(new SRAMBMMetadataStruct
                         {
                             Offset      = offset,

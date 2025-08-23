@@ -23,14 +23,14 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         protected override string             ParentRemotePath { get; set; } = "/client/Windows/Block";
         protected override string             MetadataPath     { get; set; }
         protected override SRAssetProperty    AssetProperty    { get; set; }
-        protected SRAsbMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) : base(baseURL)
+        protected SRAsbMetadata(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, string baseURLAlt) : base(baseURL, baseURLAlt)
         {
             _dispatchArchiveInfo = dictArchiveInfo;
             MetadataType         = SRAMBMMetadataType.SRAM;
             AssetType            = SRAssetType.Asb;
         }
 
-        internal static SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL) => new SRAsbMetadata(dictArchiveInfo, baseURL);
+        internal static SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, string baseURLAlt) => new SRAsbMetadata(dictArchiveInfo, baseURL, baseURLAlt);
 
         internal override async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadClientProgress, string persistentPath, CancellationToken token, string localManifestPath)
         {
@@ -127,7 +127,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             }
         }
 
-        private byte[] BigEndianBytesToHexBytes(ReadOnlySpan<byte> span)
+        private static byte[] BigEndianBytesToHexBytes(ReadOnlySpan<byte> span)
         {
             byte[] result = new byte[16];
 
