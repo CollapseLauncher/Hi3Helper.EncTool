@@ -34,14 +34,14 @@
         <None Remove="UABT\.gitignore" />
     </ItemGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" Condition="$(DefineConstants.Contains('USEZSTD'))" />
-		<PackageReference Include="Google.Protobuf" Version="3.31.1" />
-		<PackageReference Include="Google.Protobuf.Tools" Version="3.31.1">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="System.IO.Hashing" Version="10.0.0-preview.5.25277.114" />
+    <ItemGroup>
+        <PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" Condition="$(DefineConstants.Contains('USEZSTD'))" />
+        <PackageReference Include="Google.Protobuf" Version="3.32.0" />
+        <PackageReference Include="Google.Protobuf.Tools" Version="3.32.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+		<PackageReference Include="System.IO.Hashing" Version="10.0.0-preview.7.25380.108" />
 	</ItemGroup>
 
     <ItemGroup>
