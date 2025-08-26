@@ -140,7 +140,10 @@ public partial class HashUtility<T>
     /// </summary>
     private static void ThrowIfStatusNonSuccess(HashOperationStatus status)
     {
-        throw new InvalidOperationException($"Hashing operation failed with status: {status}");
+        if (status != HashOperationStatus.Success)
+        {
+            throw new InvalidOperationException($"Hashing operation failed with status: {status}");
+        }
     }
 
     /// <summary>
@@ -230,7 +233,6 @@ public partial class HashUtility<T>
             // Convert string to Utf8
             int bytesWritten = Encoding.UTF8.GetBytes(source, bufferSpan);
             return TryGetHashFromBytes(bufferSpan[..bytesWritten], hashBytesDestination, out hashBytesWritten);
-
         }
         finally
         {

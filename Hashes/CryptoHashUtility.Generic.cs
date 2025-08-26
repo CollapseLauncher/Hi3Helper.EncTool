@@ -15,7 +15,7 @@ namespace Hi3Helper.EncTool.Hashes;
 /// </summary>
 /// <typeparam name="T">Hash type member of Cryptographic-based <see cref="HashAlgorithm"/>.</typeparam>
 public partial class CryptoHashUtility<T>
-    where T : HashAlgorithm, new()
+    where T : HashAlgorithm
 {
     /// <summary>
     /// A shared and non thread-safe instance of <see cref="CryptoHashUtility{T}"/>.<br/>
@@ -39,8 +39,8 @@ public partial class CryptoHashUtility<T>
     private readonly Lock?          _sharedLock;
     private readonly SemaphoreSlim? _sharedSemaphore;
 
-    private readonly T?            _sharedHasher;
-    private readonly T?            _sharedHasherForAsync;
+    private readonly HashAlgorithm? _sharedHasher;
+    private readonly HashAlgorithm? _sharedHasherForAsync;
 
     private CryptoHashUtility(bool isShared)
     {
@@ -51,8 +51,8 @@ public partial class CryptoHashUtility<T>
 
         try
         {
-            _sharedHasher         = new T();
-            _sharedHasherForAsync = new T();
+            _sharedHasher         = CreateInstance();
+            _sharedHasherForAsync = CreateInstance();
 
             _sharedLock      = new Lock();
             _sharedSemaphore = new SemaphoreSlim(1, 1);
@@ -70,9 +70,30 @@ public partial class CryptoHashUtility<T>
     }
 
     /// <summary>
+    /// Create the hash instance of <see cref="HashAlgorithm"/>.
+    /// </summary>
+    private static HashAlgorithm CreateInstance()
+    {
+        string nameOf = typeof(T).Name;
+        return nameOf switch
+               {
+                   "MD5" => MD5.Create(),
+                   "SHA1" => SHA1.Create(),
+                   "SHA256" => SHA256.Create(),
+                   "SHA384" => SHA384.Create(),
+                   "SHA512" => SHA512.Create(),
+                   "SHA3_256" => SHA3_256.Create(),
+                   "SHA3_384" => SHA3_384.Create(),
+                   "SHA3_512" => SHA3_512.Create(),
+                   _ => throw new
+                       NotSupportedException($"Hash type: {nameOf} isn't supported! Please manually add the switch entry.")
+               };
+    }
+
+    /// <summary>
     /// Returns true if shared mode is used. Otherwise, false.
     /// </summary>
-    private bool TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher)
+    private bool TryAcquireLockAndHasher(out Lock.Scope lockScope, out HashAlgorithm? hasher)
     {
         if (_sharedHasher != null && _sharedLock != null)
         {
@@ -84,7 +105,7 @@ public partial class CryptoHashUtility<T>
         lockScope = default;
         try
         {
-            hasher = new T();
+            hasher = CreateInstance();
         }
         catch (PlatformNotSupportedException)
         {
@@ -98,7 +119,7 @@ public partial class CryptoHashUtility<T>
     /// Wait until shared semaphore is released, locks and return the hasher for asynchronous operation.
     /// </summary>
     /// <returns>The hasher to be used.</returns>
-    private async ValueTask<(T? Hasher, bool IsShared)> WaitForSemaphoreAndHasher(CancellationToken token)
+    private async ValueTask<(HashAlgorithm? Hasher, bool IsShared)> WaitForSemaphoreAndHasher(CancellationToken token)
     {
         if (_sharedHasherForAsync != null && _sharedSemaphore != null)
         {
@@ -108,7 +129,7 @@ public partial class CryptoHashUtility<T>
 
         try
         {
-            return (new T(), false);
+            return (CreateInstance(), false);
         }
         catch (PlatformNotSupportedException)
         {
@@ -140,7 +161,10 @@ public partial class CryptoHashUtility<T>
     /// </summary>
     private static void ThrowIfStatusNonSuccess(HashOperationStatus status)
     {
-        throw new InvalidOperationException($"Hashing operation failed with status: {status}");
+        if (status != HashOperationStatus.Success)
+        {
+            throw new InvalidOperationException($"Hashing operation failed with status: {status}");
+        }
     }
 
     /// <summary>
@@ -163,7 +187,7 @@ public partial class CryptoHashUtility<T>
     {
         // Enter the lock scope and acquire hasher
         hashBytesWritten = 0;
-        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher);
+        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out HashAlgorithm? hasher);
 
         if (hasher == null)
         {
@@ -173,7 +197,7 @@ public partial class CryptoHashUtility<T>
 
         try
         {
-            if (hashBytesDestination.Length < hasher.HashSize)
+            if (hashBytesDestination.Length < hasher.HashSize >> 3)
             {
                 return HashOperationStatus.DestinationBufferTooSmall;
             }
@@ -263,7 +287,6 @@ public partial class CryptoHashUtility<T>
             // Convert string to Utf8
             int bytesWritten = Encoding.UTF8.GetBytes(source, bufferSpan);
             return TryGetHashFromBytes(bufferSpan[..bytesWritten], hashBytesDestination, out hashBytesWritten, hmacKey);
-
         }
         finally
         {
@@ -311,7 +334,7 @@ public partial class CryptoHashUtility<T>
         }
 
         // Enter the lock scope and acquire hasher
-        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher);
+        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out HashAlgorithm? hasher);
         if (hasher == null)
         {
             lockScope.Dispose();
@@ -322,7 +345,7 @@ public partial class CryptoHashUtility<T>
         try
         {
 
-            if (hashBytesDestination.Length < hasher.HashSize)
+            if (hashBytesDestination.Length < hasher.HashSize >> 3)
             {
                 return HashOperationStatus.DestinationBufferTooSmall;
             }
@@ -415,7 +438,7 @@ public partial class CryptoHashUtility<T>
         }
 
         // Enter the lock scope and acquire hasher
-        (T? hasher, bool isSharedMode) = await WaitForSemaphoreAndHasher(token);
+        (HashAlgorithm? hasher, bool isSharedMode) = await WaitForSemaphoreAndHasher(token);
         if (hasher == null)
         {
             if (isSharedMode)
@@ -430,7 +453,7 @@ public partial class CryptoHashUtility<T>
         byte[]? buffer = null;
         try
         {
-            if (hashBytesDestination.Length < hasher.HashSize)
+            if (hashBytesDestination.Length < hasher.HashSize >> 3)
             {
                 return (HashOperationStatus.DestinationBufferTooSmall, 0);
             }
