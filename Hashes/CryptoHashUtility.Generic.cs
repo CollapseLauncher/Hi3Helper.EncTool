@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+// ReSharper disable StringLiteralTypo
 
 #nullable enable
 namespace Hi3Helper.EncTool.Hashes;
@@ -77,6 +78,15 @@ public partial class CryptoHashUtility<T>
         string nameOf = typeof(T).Name;
         return nameOf switch
                {
+                   "HMACMD5" => new HMACMD5(),
+                   "HMACSHA1" => new HMACSHA1(),
+                   "HMACSHA256" => new HMACSHA256(),
+                   "HMACSHA384" => new HMACSHA384(),
+                   "HMACSHA512" => new HMACSHA512(),
+                   "HMACSHA3_256" => new HMACSHA3_256(),
+                   "HMACSHA3_384" => new HMACSHA3_384(),
+                   "HMACSHA3_512" => new HMACSHA3_256(),
+
                    "MD5" => MD5.Create(),
                    "SHA1" => SHA1.Create(),
                    "SHA256" => SHA256.Create(),
