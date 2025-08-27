@@ -4,12 +4,35 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable PartialTypeWithSinglePart
+// ReSharper disable CheckNamespace
 
+#nullable enable
 namespace Hi3Helper.EncTool;
 
 public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResponse, Stream networkStream) : Stream
 {
-    public static async Task<BridgedNetworkStream> CreateStream(HttpResponseMessage networkResponse, CancellationToken token)
+    public static Task<BridgedNetworkStream> CreateStream(HttpClient        client,
+                                                          string            url,
+                                                          HttpMethod?       method = null,
+                                                          CancellationToken token  = default)
+        => CreateStream(client, new Uri(url), method, token);
+
+    public static async Task<BridgedNetworkStream> CreateStream(HttpClient        client,
+                                                                Uri               url,
+                                                                HttpMethod?       method = null,
+                                                                CancellationToken token  = default)
+    {
+        HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage
+        {
+            Method     = method ?? HttpMethod.Get,
+            RequestUri = url
+        }, HttpCompletionOption.ResponseHeadersRead, token);
+
+        return await CreateStream(response, token);
+    }
+
+    public static async Task<BridgedNetworkStream> CreateStream(HttpResponseMessage networkResponse,
+                                                                CancellationToken   token = default)
     {
         Stream networkStream = await networkResponse.Content.ReadAsStreamAsync(token);
         return new BridgedNetworkStream(networkResponse, networkStream);
@@ -71,9 +94,8 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
     /// <inheritdoc/>
     public override async ValueTask DisposeAsync()
     {
-        networkResponse?.Dispose();
-        if (networkStream != null)
-            await networkStream.DisposeAsync();
+        networkResponse.Dispose();
+        await networkStream.DisposeAsync();
 
         await base.DisposeAsync();
         GC.SuppressFinalize(this);
