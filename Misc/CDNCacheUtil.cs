@@ -196,6 +196,14 @@ public static class CDNCacheUtil
         HttpRequestMessage?  message   = null;
         HttpResponseMessage? response  = null;
 
+        if (!IsEnabled)
+        {
+            return new CDNCacheResult
+            {
+                Stream = await BridgedNetworkStream.CreateStream(client, url, httpMethod, token)
+            };
+        }
+
         if (string.IsNullOrEmpty(CurrentCacheDir))
         {
             message  = new HttpRequestMessage(httpMethod ?? HttpMethod.Get, url);
