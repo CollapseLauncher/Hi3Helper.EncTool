@@ -25,23 +25,29 @@ public partial class CryptoHashUtility<T>
     /// Even though we call this as "non thread-safe", if the same call is performed, the thread on that other call will be suspended/locked until
     /// the current call is finished. If you're planning to use this in parallel/multi-thread scenario, consider using <see cref="ThreadSafe"/> instance instead.
     /// </summary>
-    public static CryptoHashUtility<T> Shared;
+    public static CryptoHashUtility<T> Shared { get; }
 
     /// <summary>
     /// A non-shared and thread-safe instance of <see cref="CryptoHashUtility{T}"/>.<br/>
     /// Every inner instance of the hasher is being allocated in every call instead of being used in shared-manner.
     /// </summary>
-    public static CryptoHashUtility<T> ThreadSafe;
+    public static CryptoHashUtility<T> ThreadSafe { get; }
 
+    // Reason:
+    // We need to set the buffer size extremely bigger than synchronous buffer size due to async overhead.
+    // Instead of hitting the Task from the ReadAsync call multiple times, we can bulk read the data in bigger
+    // buffer size in one time. In our parallel benchmark scenario, we gained significant peak read speed
+    // from only 1.7 GB/s to 3.1 GB/s on NVMe SSD.
+    private const int  AsyncBufferSize   = 512 << 10;
     private const int  BufferSize        = 16 << 10;
-    private const byte MaxHashBufferSize = 64; // SHA512
+    private const byte MaxHashBufferSize = SHA512.HashSizeInBytes; // SHA512
 
     // Lock for Synchronous and Semaphore for Asynchronous respectively.
     private readonly Lock?          _sharedLock;
     private readonly SemaphoreSlim? _sharedSemaphore;
 
-    private readonly HashAlgorithm? _sharedHasher;
-    private readonly HashAlgorithm? _sharedHasherForAsync;
+    private readonly T? _sharedHasher;
+    private readonly T? _sharedHasherForAsync;
 
     private CryptoHashUtility(bool isShared)
     {
@@ -73,10 +79,10 @@ public partial class CryptoHashUtility<T>
     /// <summary>
     /// Create the hash instance of <see cref="HashAlgorithm"/>.
     /// </summary>
-    private static HashAlgorithm CreateInstance()
+    private static T CreateInstance()
     {
         string nameOf = typeof(T).Name;
-        return nameOf switch
+        return (T)(object)(nameOf switch
                {
                    "HMACMD5" => new HMACMD5(),
                    "HMACSHA1" => new HMACSHA1(),
@@ -97,13 +103,13 @@ public partial class CryptoHashUtility<T>
                    "SHA3_512" => SHA3_512.Create(),
                    _ => throw new
                        NotSupportedException($"Hash type: {nameOf} isn't supported! Please manually add the switch entry.")
-               };
+               });
     }
 
     /// <summary>
     /// Returns true if shared mode is used. Otherwise, false.
     /// </summary>
-    private bool TryAcquireLockAndHasher(out Lock.Scope lockScope, out HashAlgorithm? hasher)
+    private bool TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher)
     {
         if (_sharedHasher != null && _sharedLock != null)
         {
@@ -197,7 +203,7 @@ public partial class CryptoHashUtility<T>
     {
         // Enter the lock scope and acquire hasher
         hashBytesWritten = 0;
-        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out HashAlgorithm? hasher);
+        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher);
 
         if (hasher == null)
         {
@@ -344,7 +350,7 @@ public partial class CryptoHashUtility<T>
         }
 
         // Enter the lock scope and acquire hasher
-        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out HashAlgorithm? hasher);
+        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher);
         if (hasher == null)
         {
             lockScope.Dispose();
@@ -433,7 +439,7 @@ public partial class CryptoHashUtility<T>
                                   Memory<byte>      hashBytesDestination,
                                   Action<int>?      readBytesAction = null,
                                   byte[]?           hmacKey         = null,
-                                  int               bufferSize      = BufferSize,
+                                  int               bufferSize      = AsyncBufferSize,
                                   CancellationToken token           = default)
     {
         if (token.IsCancellationRequested)
@@ -444,7 +450,7 @@ public partial class CryptoHashUtility<T>
         // Ensure buffer size is valid
         if (bufferSize <= 0)
         {
-            bufferSize = BufferSize;
+            bufferSize = AsyncBufferSize;
         }
 
         // Enter the lock scope and acquire hasher
@@ -486,7 +492,9 @@ public partial class CryptoHashUtility<T>
 
             try
             {
-                while ((read = await sourceStream.ReadAtLeastAsync(buffer, bufferSize, false, token)) > 0)
+                while ((read = await sourceStream
+                                    .ReadAtLeastAsync(buffer, bufferSize, false, token)
+                                    .ConfigureAwait(false)) > 0)
                 {
                     hasher.TransformBlock(buffer, 0, read, buffer, 0);
                     readBytesAction?.Invoke(read);

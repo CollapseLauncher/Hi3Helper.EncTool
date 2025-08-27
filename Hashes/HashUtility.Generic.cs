@@ -24,14 +24,20 @@ public partial class HashUtility<T>
     /// Even though we call this as "non thread-safe", if the same call is performed, the thread on that other call will be suspended/locked until
     /// the current call is finished. If you're planning to use this in parallel/multi-thread scenario, consider using <see cref="ThreadSafe"/> instance instead.
     /// </summary>
-    public static HashUtility<T> Shared;
+    public static HashUtility<T> Shared { get; }
 
     /// <summary>
     /// A non-shared and thread-safe instance of <see cref="HashUtility{T}"/>.<br/>
     /// Every inner instance of the hasher is being allocated in every call instead of being used in shared-manner.
     /// </summary>
-    public static HashUtility<T> ThreadSafe;
+    public static HashUtility<T> ThreadSafe { get; }
 
+    // Reason:
+    // We need to set the buffer size extremely bigger than synchronous buffer size due to async overhead.
+    // Instead of hitting the Task from the ReadAsync call multiple times, we can bulk read the data in bigger
+    // buffer size in one time. In our parallel benchmark scenario, we gained significant peak read speed
+    // from only 1.7 GB/s to 3.1 GB/s on NVMe SSD.
+    private const int  AsyncBufferSize   = 512 << 10;
     private const int  BufferSize        = 16 << 10;
     private const byte MaxHashBufferSize = 32; // BLAKE2 (Currently not implemented on .NET)
 
@@ -336,7 +342,7 @@ public partial class HashUtility<T>
         TryGetHashFromStreamAsync(Stream            sourceStream,
                                   Memory<byte>      hashBytesDestination,
                                   Action<int>?      readBytesAction = null,
-                                  int               bufferSize      = BufferSize,
+                                  int               bufferSize      = AsyncBufferSize,
                                   CancellationToken token           = default)
     {
 
@@ -348,7 +354,7 @@ public partial class HashUtility<T>
         // Ensure buffer size is valid
         if (bufferSize <= 0)
         {
-            bufferSize = BufferSize;
+            bufferSize = AsyncBufferSize;
         }
 
         // Enter the lock scope and acquire hasher
@@ -381,7 +387,9 @@ public partial class HashUtility<T>
             try
             {
                 int read;
-                while ((read = await sourceStream.ReadAtLeastAsync(buffer, bufferSize, false, token)) > 0)
+                while ((read = await sourceStream
+                                    .ReadAtLeastAsync(buffer, bufferSize, false, token)
+                                    .ConfigureAwait(false)) > 0)
                 {
                     hasher.Append(buffer[..read]);
                     readBytesAction?.Invoke(read);
