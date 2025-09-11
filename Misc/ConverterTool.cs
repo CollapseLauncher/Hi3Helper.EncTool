@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 // ReSharper disable ForCanBeConvertedToForeach
 // ReSharper disable GrammarMistakeInComment
 
+#nullable enable
 namespace Hi3Helper.Data
 {
     public delegate ValueTask<TResult> GetSelectorSignedAsync<in TFrom, TResult>(TFrom item, CancellationToken token)
@@ -241,23 +242,28 @@ namespace Hi3Helper.Data
 
         public static unsafe void NormalizePathInplaceNoTrim(ReadOnlySpan<char> source, char replaceFrom = '/', char replaceTo = '\\')
         {
-            fixed (char* ptr = &MemoryMarshal.GetReference(source))
-            {
-                Span<char> unlockedSource = new(ptr, source.Length);
-                NormalizePathUnsafeCore(unlockedSource, replaceFrom, replaceTo, (nint)ptr);
-            }
+            Span<char> unlockedSource = source.UnsafeUnlockSpan(out void* ptr);
+            NormalizePathUnsafeCore(unlockedSource, replaceFrom, replaceTo, ptr);
         }
 
+        public static unsafe Span<T> UnsafeUnlockSpan<T>(this ReadOnlySpan<T> span)
+            where T : unmanaged
+            => new Span<T>(Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)), span.Length);
+
+        public static unsafe Span<T> UnsafeUnlockSpan<T>(this ReadOnlySpan<T> span, out void* ptr)
+            where T : unmanaged
+            => new Span<T>(ptr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)), span.Length);
+
         // Reference: https://github.com/dotnet/aspnetcore/blob/c65dac77cf6540c81860a42fff41eb11b9804367/src/Shared/QueryStringEnumerable.cs#L169
-        private static unsafe void NormalizePathUnsafeCore(Span<char> buffer, char replaceFrom, char replaceTo, nint state)
+        private static unsafe void NormalizePathUnsafeCore(Span<char> buffer, char replaceFrom, char replaceTo, void* state)
         {
             fixed (char* ptr = buffer)
             {
-                var input  = (ushort*)state.ToPointer();
-                var output = (ushort*)ptr;
+                ushort* input  = (ushort*)state;
+                ushort* output = (ushort*)ptr;
 
-                var i = (nint)0;
-                var n = (nint)(uint)buffer.Length;
+                nint i = 0;
+                nint n = (nint)(uint)buffer.Length;
 
                 if (Sse41.IsSupported && n >= Vector128<ushort>.Count)
                 {
@@ -291,8 +297,8 @@ namespace Hi3Helper.Data
             }
         }
 
-        private static void NormalizePathUnsafeCore(Span<char> buffer, nint state)
-            => NormalizePathUnsafeCore(buffer, '/', '\\', state);
+        private static unsafe void NormalizePathUnsafeCore(Span<char> buffer, nint state)
+            => NormalizePathUnsafeCore(buffer, '/', '\\', (void*)state);
 
         public static string SummarizeSizeSimple(double value, int decimalPlaces = 2)
         {
@@ -361,7 +367,7 @@ namespace Hi3Helper.Data
             { IdentityReference.Value: { } value }
                 when value.StartsWith("S-1-") && !user.IsInRole(new SecurityIdentifier(rule.IdentityReference.Value)) => null,
             { IdentityReference.Value: { } value }
-                when value.StartsWith("S-1-") == false && !user.IsInRole(rule.IdentityReference.Value) => null,
+                when !value.StartsWith("S-1-") && !user.IsInRole(rule.IdentityReference.Value) => null,
             { AccessControlType: AccessControlType.Deny } => false,
             { AccessControlType: AccessControlType.Allow } => true,
             _ => null
@@ -369,7 +375,6 @@ namespace Hi3Helper.Data
 
         public static float ConvertRangeValue(float sMin, float sMax, float sValue, float tMin, float tMax) => (sValue - sMin) * (tMax - tMin) / (sMax - sMin) + tMin;
 
-#nullable enable
         public static string CombineURLFromString(this string? baseUrl, params ReadOnlySpan<string?> segments)
             => CombineURLFromString(baseUrl.AsSpan(), segments);
 
@@ -446,7 +451,7 @@ namespace Hi3Helper.Data
                             goto CopySegments;
                         }
 
-                    CreateStringFast:
+                        CreateStringFast:
                         // Perform a return string creation by how much data being written into the buffer by decrementing
                         // bufferWrittenPtr with initial base pointer, bufferPtr.
                         string returnString = new string(bufferPtr, 0, (int)(bufferWrittenPtr - bufferPtr));
@@ -484,7 +489,6 @@ namespace Hi3Helper.Data
                 return sum;
             }
         }
-#nullable restore
 
         // Reference:
         // https://stackoverflow.com/questions/3702216/how-to-convert-integer-to-binary-string-in-c#:~:text=Simple%20.NET%208%2B%20Version
