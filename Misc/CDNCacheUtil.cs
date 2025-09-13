@@ -765,11 +765,12 @@ public static class CDNCacheUtil
         string cacheFilePath  = Path.Combine(cacheDir, requestHash);
         string cacheStampPath = cacheFilePath + ".stamp";
 
-        DateTimeOffset currentDateStamp = default;
+        DateTimeOffset currentDateStamp      = default;
+        bool           isFileStampExist      = File.Exists(cacheStampPath);
+        bool           isFileExist           = File.Exists(cacheFilePath);
+        bool           isReadAllBytesSuccess = TryReadAllBytes(cacheStampPath, GetAsSpan(ref currentDateStamp));
 
-        if (!File.Exists(cacheStampPath) ||
-            !File.Exists(cacheFilePath) ||
-            !TryReadAllBytes(cacheStampPath, GetAsSpan(ref currentDateStamp)))
+        if (!isFileStampExist || !isFileExist || !isReadAllBytesSuccess)
         {
             return null;
         }
