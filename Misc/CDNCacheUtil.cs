@@ -773,7 +773,7 @@ public static class CDNCacheUtil
         }
 
         DateTimeOffset currentDateStampUtc = currentDateStamp.ToUniversalTime();
-        if (currentDateStampUtc <= DateTimeOffset.UtcNow)
+        if (currentDateStampUtc >= DateTimeOffset.UtcNow)
         {
             return new CDNCacheResult
             {
