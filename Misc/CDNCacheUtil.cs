@@ -311,6 +311,7 @@ public static class CDNCacheUtil
             if (TryGetETagBasedCacheType(response, out etag, out HashCacheType hashCacheType) &&
                 await TryCreateResultFromETagCached(cacheDir, etag, response.Content.Headers.ContentLength ?? 0, hashCacheType, token) is { IsCached: true } resultFromETagBased)
             {
+                response.Dispose();
                 return resultFromETagBased;
             }
 
@@ -318,6 +319,7 @@ public static class CDNCacheUtil
             if ((isTimeBasedCache = TryGetTimeBasedCacheType(response, out etag, out DateTimeOffset nextExpireTime)) &&
                 TryCreateResultFromTimeCached(cacheDir, etag) is { IsCached: true } resultFromTimeBased)
             {
+                response.Dispose();
                 return resultFromTimeBased;
             }
 
