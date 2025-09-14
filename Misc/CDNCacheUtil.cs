@@ -180,34 +180,93 @@ public static class CDNCacheUtil
         return cachePath;
     }
 
-    public static async Task<T?> GetFromCachedJsonAsync<T>(this HttpClient client, string? url, JsonTypeInfo<T?> jsonTypeInfo, HttpMethod? httpMethod = null, CancellationToken token = default)
+    public static async Task<T?> GetFromCachedJsonAsync<T>(
+        this HttpClient   client,
+        string?           url,
+        JsonTypeInfo<T?>  jsonTypeInfo,
+        HttpMethod?       httpMethod = null,
+        CancellationToken token      = default)
         where T : class
     {
         ArgumentException.ThrowIfNullOrEmpty(url);
 
-        CDNCacheResult     result         = await client.TryGetCachedStreamFrom(url, httpMethod, token);
+        using HttpRequestMessage requestMessage = new HttpRequestMessage(httpMethod ?? HttpMethod.Get, url);
+        return await client.GetFromCachedJsonAsync(requestMessage, jsonTypeInfo, token);
+    }
+
+    public static async Task<T?> GetFromCachedJsonAsync<T>(
+        this HttpClient    client,
+        HttpRequestMessage requestMessage,
+        JsonTypeInfo<T?>   jsonTypeInfo,
+        CancellationToken  token = default)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(requestMessage);
+
+        CDNCacheResult     result         = await client.TryGetCachedStreamFrom(requestMessage, token);
         await using Stream responseStream = result.Stream;
         return await JsonSerializer.DeserializeAsync(responseStream, jsonTypeInfo, token);
     }
 
-    public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(this HttpClient client, string url, HttpMethod? httpMethod = null, CancellationToken token = default)
+    public static async Task<string> GetFromCachedStringAsync(
+        this HttpClient   client,
+        string?           url,
+        HttpMethod?       httpMethod = null,
+        CancellationToken token      = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(url);
+
+        using HttpRequestMessage requestMessage = new HttpRequestMessage(httpMethod ?? HttpMethod.Get, url);
+        return await client.GetFromCachedStringAsync(requestMessage, token);
+    }
+
+
+    public static async Task<string> GetFromCachedStringAsync(
+        this HttpClient    client,
+        HttpRequestMessage requestMessage,
+        CancellationToken  token = default)
+    {
+        ArgumentNullException.ThrowIfNull(requestMessage);
+
+        CDNCacheResult     result         = await client.TryGetCachedStreamFrom(requestMessage, token);
+        await using Stream responseStream = result.Stream;
+        using StreamReader responseReader = new StreamReader(responseStream);
+        return await responseReader.ReadToEndAsync(token);
+    }
+
+    public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(
+        this HttpClient   client,
+        string            url,
+        HttpMethod?       httpMethod = null,
+        CancellationToken token      = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(url);
+
+        using HttpRequestMessage requestMessage = new HttpRequestMessage(httpMethod ?? HttpMethod.Get, url);
+        return await client.TryGetCachedStreamFrom(requestMessage, token);
+    }
+
+    public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(
+        this HttpClient    client,
+        HttpRequestMessage requestMessage,
+        CancellationToken  token = default)
     {
         bool                 isDispose = false;
-        HttpRequestMessage?  message   = null;
         HttpResponseMessage? response  = null;
+
+        string requestUrl = requestMessage.RequestUri?.OriginalString ?? "";
 
         if (!IsEnabled)
         {
             return new CDNCacheResult
             {
-                Stream = await BridgedNetworkStream.CreateStream(client, url, httpMethod, token)
+                Stream = await BridgedNetworkStream.CreateStream(client, requestMessage, token)
             };
         }
 
         if (string.IsNullOrEmpty(CurrentCacheDir))
         {
-            message  = new HttpRequestMessage(httpMethod ?? HttpMethod.Get, url);
-            response = await client.SendAsync(message, token);
+            response = await client.SendAsync(requestMessage, token);
             return new CDNCacheResult
             {
                 Stream = await BridgedNetworkStream.CreateStream(response, token)
@@ -218,24 +277,23 @@ public static class CDNCacheUtil
 
         try
         {
-            message = new HttpRequestMessage(httpMethod ?? HttpMethod.Get, url);
             bool isAggressiveMode = IsUseAggressiveMode;
 
             if (!IsEnabled)
             {
-                response = await client.SendAsync(message, token);
+                response = await client.SendAsync(requestMessage, token);
                 return new CDNCacheResult
                 {
-                    Stream = await BridgedNetworkStream.CreateStream(response, token)
+                    Stream = await BridgedNetworkStream.CreateStream(client, requestMessage, token)
                 };
             }
 
             if (!isAggressiveMode)
             {
-                response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, token);
+                response = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, token);
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new HttpRequestException($"URL: {url} returns a non-successful status code! {response.StatusCode} ({(int)response.StatusCode})",
+                    throw new HttpRequestException($"URL: {requestUrl} returns a non-successful status code! {response.StatusCode} ({(int)response.StatusCode})",
                                                    null,
                                                    response.StatusCode);
                 }
@@ -243,16 +301,16 @@ public static class CDNCacheUtil
                 return await response.TryGetCachedStreamFrom(token);
             }
 
-            string hashString = GetXxh3HashFrom(url.AsSpan());
+            string hashString = GetXxh3HashFrom(requestUrl.AsSpan());
             if (TryCreateResultFromTimeCached(cacheDir, hashString) is { IsCached: true } result)
             {
                 return result;
             }
 
-            response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, token);
+            response = await client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, token);
             if (!response.IsSuccessStatusCode)
             {
-                throw new HttpRequestException($"URL: {url} returns a non-successful status code while using aggressive cache mode! {response.StatusCode} ({(int)response.StatusCode})",
+                throw new HttpRequestException($"URL: {requestUrl} returns a non-successful status code while using aggressive cache mode! {response.StatusCode} ({(int)response.StatusCode})",
                                                null,
                                                response.StatusCode);
             }
@@ -284,7 +342,7 @@ public static class CDNCacheUtil
         {
             if (isDispose)
             {
-                message?.Dispose();
+                requestMessage.Dispose();
                 response?.Dispose();
             }
         }

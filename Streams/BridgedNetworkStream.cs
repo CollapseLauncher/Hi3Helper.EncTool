@@ -17,17 +17,19 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
                                                           CancellationToken token  = default)
         => CreateStream(client, new Uri(url), method, token);
 
-    public static async Task<BridgedNetworkStream> CreateStream(HttpClient        client,
-                                                                Uri               url,
-                                                                HttpMethod?       method = null,
-                                                                CancellationToken token  = default)
-    {
-        HttpResponseMessage response = await client.SendAsync(new HttpRequestMessage
-        {
-            Method     = method ?? HttpMethod.Get,
-            RequestUri = url
-        }, HttpCompletionOption.ResponseHeadersRead, token);
+    public static Task<BridgedNetworkStream> CreateStream(HttpClient        client,
+                                                          Uri               url,
+                                                          HttpMethod?       method = null,
+                                                          CancellationToken token  = default)
+        => CreateStream(client, new HttpRequestMessage(method ?? HttpMethod.Get, url), token);
 
+    public static async Task<BridgedNetworkStream> CreateStream(HttpClient         client,
+                                                                HttpRequestMessage requestMessage,
+                                                                CancellationToken  token = default)
+    {
+        HttpResponseMessage response = await client.SendAsync(requestMessage,
+                                                              HttpCompletionOption.ResponseHeadersRead,
+                                                              token);
         return await CreateStream(response, token);
     }
 
