@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 // ReSharper disable CheckNamespace
 // ReSharper disable ForCanBeConvertedToForeach
 // ReSharper disable GrammarMistakeInComment
+// ReSharper disable InconsistentNaming
 
 #nullable enable
 namespace Hi3Helper.Data
@@ -27,6 +28,7 @@ namespace Hi3Helper.Data
 
     public static class ConverterTool
     {
+        private const  double   ScOneSecond   = 1000;
         private static string[] _sizeSuffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
         public static void SetSizeSuffixes(string[] suffixes)
@@ -317,6 +319,7 @@ namespace Hi3Helper.Data
 
         public static int GetUnixTimestamp(bool isUtc = false) => (int)Math.Truncate(isUtc ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
 
+#pragma warning disable CA1416
         private static readonly WindowsIdentity CurrentWindowsIdentity = WindowsIdentity.GetCurrent();
         public static bool IsUserHasPermission(string input)
         {
@@ -372,6 +375,7 @@ namespace Hi3Helper.Data
             { AccessControlType: AccessControlType.Allow } => true,
             _ => null
         };
+#pragma warning restore CA1416
 
         public static float ConvertRangeValue(float sMin, float sMax, float sValue, float tMin, float tMax) => (sValue - sMin) * (tMax - tMin) / (sMax - sMin) + tMin;
 
@@ -596,6 +600,44 @@ namespace Hi3Helper.Data
                 // Return the buffer
                 ArrayPool<TResult>.Shared.Return(chunks);
             }
+        }
+
+        public static double CalculateSpeed(long receivedBytes, ref double lastSpeedToUse, ref long lastReceivedBytesToUse, ref long lastTickToUse)
+        {
+            long nowTicks = Environment.TickCount64;
+
+            long   currentTick           = nowTicks - lastTickToUse + 1;
+            long   totalReceivedInSecond = Interlocked.Add(ref lastReceivedBytesToUse, receivedBytes);
+            double speed                 = totalReceivedInSecond * ScOneSecond / currentTick;
+
+            if (!(currentTick > ScOneSecond))
+            {
+                return lastSpeedToUse;
+            }
+
+            _ = Interlocked.Exchange(ref lastSpeedToUse,         speed);
+            _ = Interlocked.Exchange(ref lastTickToUse,          nowTicks);
+            _ = Interlocked.Exchange(ref lastReceivedBytesToUse, 0);
+            return lastSpeedToUse;
+        }
+
+        public static bool IsPastOneSecond(ref long lastTick)
+        {
+            long now = DateTimeOffset.Now.Ticks;
+
+            if (now - lastTick < 10000000)
+            {
+                return false;
+            }
+
+            lastTick = now;
+            return true;
+        }
+
+        public static void WriteLeftRightMessage(string leftMessage, string rightMessage)
+        {
+            int consoleSpaceRemain = Math.Max(Console.WindowWidth - (leftMessage.Length + rightMessage.Length + 1), 0);
+            Console.Write(leftMessage + new string(' ', consoleSpaceRemain) + rightMessage + '\r');
         }
     }
 }
