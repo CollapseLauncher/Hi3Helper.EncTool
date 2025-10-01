@@ -30,6 +30,8 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
         HttpResponseMessage response = await client.SendAsync(requestMessage,
                                                               HttpCompletionOption.ResponseHeadersRead,
                                                               token);
+        response.EnsureSuccessStatusCode();
+
         return await CreateStream(response, token);
     }
 
