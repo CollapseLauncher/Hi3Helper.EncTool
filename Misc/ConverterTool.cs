@@ -304,7 +304,8 @@ namespace Hi3Helper.Data
 
         public static string SummarizeSizeSimple(double value, int decimalPlaces = 2)
         {
-            byte mag = (byte)Math.Log(value, 1000);
+            int mag = (int)Math.Log(value, 1000);
+            mag = Math.Clamp(mag, 0, _sizeSuffixes.Length - 1);
 
             return $"{Math.Round(value / (1L << (mag * 10)), decimalPlaces)} {_sizeSuffixes[mag]}";
         }
