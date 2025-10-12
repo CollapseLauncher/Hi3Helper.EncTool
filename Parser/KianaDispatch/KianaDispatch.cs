@@ -59,7 +59,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
         }
 
 #nullable enable
-        public static async ValueTask<KianaDispatch> GetGameserver(HttpClient client, KianaDispatch dispatch, string regionName, CancellationToken token)
+        public static async Task<KianaDispatch> GetGameserver(HttpClient client, KianaDispatch dispatch, string regionName, CancellationToken token)
         {
             // Find the correct region as per key from codename and select the first entry. If none, then return null (because .FirstOrDefault())
             // If the region results a null, then find a possible dispatch to read.
