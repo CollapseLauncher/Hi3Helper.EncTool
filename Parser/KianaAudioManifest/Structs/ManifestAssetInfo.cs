@@ -38,10 +38,10 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #nullable enable
     public class ManifestAssetInfo
     {
-        public string? Name { get; set; } // 0x10
-        public string? Path { get; set; } // 0x18
-        public byte[]? Hash { get; set; } // 0x20
-        public string? HashString { get => HexTool.BytesToHexUnsafe(Hash); }
+        public required string Name { get; set; } // 0x10
+        public required string Path { get; set; } // 0x18
+        public required byte[] Hash { get; set; } // 0x20
+        public string HashString { get => HexTool.BytesToHexUnsafe(Hash) ?? ""; }
         public int Size { get; set; } // 0x30
         public AudioLanguageType Language { get; set; } // 0x34
         public AudioPCKType PckType { get; set; } // 0x38
