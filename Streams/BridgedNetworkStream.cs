@@ -68,7 +68,7 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
 
     public override bool CanWrite => false;
 
-    public override void Flush() => networkStream.Flush();
+    public override void Flush() => networkStream?.Flush();
 
     public override long Length { get; } = networkResponse?.Content.Headers.ContentLength ?? 0;
 
