@@ -180,7 +180,8 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
     public static class AssetBundleReference
     {
-        internal const ulong CollapseHeader = 7310310183885631299;
+        internal const ulong              CollapseHeader = 7310310183885631299;
+        public static  ReadOnlySpan<byte> CollapseHeaderBytes => "Collapse"u8;
 
         public static AssetBundleReferenceData[] CreateData(IDictionary<string, ConcurrentBag<AssetBundleReferenceData>> dictionary)
         {

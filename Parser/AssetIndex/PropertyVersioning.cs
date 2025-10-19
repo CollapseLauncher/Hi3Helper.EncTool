@@ -33,6 +33,9 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
         [JsonIgnore]
         public bool   isForceStoreInStreaming  { get; set; }
 
+        [JsonIgnore]
+        public object associatedObject { get; set; }
+
         public string PrintSummary() => $"{remoteName}\t{ConverterTool.SummarizeSizeSimple(fileSize)} ({fileSize} bytes)";
         public long GetAssetSize() => fileSize;
         public string GetRemoteURL() => remoteURL;
@@ -49,6 +52,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 isPatch                  = isPatch,
                 md5                      = md5,
                 xxh64hash                = xxh64hash,
+                associatedObject         = associatedObject
             };
     }
 

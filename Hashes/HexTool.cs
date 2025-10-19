@@ -256,5 +256,33 @@ namespace Hi3Helper.Data
         public static OperationStatus TryHexToBytesUnsafe(ReadOnlySpan<char> source, Span<byte> buffer, out int charsConsumed, out int bytesWritten)
             => Convert.FromHexString(source, buffer, out charsConsumed, out bytesWritten);
 #endif
+
+        public static bool IsHexString(ReadOnlySpan<char> source)
+        {
+            const int stackallocThreshold = 4 << 10;
+
+            if (source.Length % 2 != 0)
+            {
+                return false;
+            }
+
+            int dummyBufferSize = source.Length / 2;
+            byte[]? buffer = dummyBufferSize > stackallocThreshold
+                ? ArrayPool<byte>.Shared.Rent(dummyBufferSize)
+                : null;
+            scoped Span<byte> spanBuffer = buffer ?? stackalloc byte[dummyBufferSize];
+
+            try
+            {
+                return TryHexToBytesUnsafe(source, spanBuffer[..dummyBufferSize], out _, out _) == OperationStatus.Done;
+            }
+            finally
+            {
+                if (buffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+        }
     }
 }

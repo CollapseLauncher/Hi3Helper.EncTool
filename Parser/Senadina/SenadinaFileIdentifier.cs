@@ -23,6 +23,7 @@ namespace Hi3Helper.EncTool.Parser.Senadina
         public string? relativePath   { get; set; }
         public string? lastIdentifier { get; set; }
         public long    fileTime       { get; set; }
+        public byte[]? lastOriginHash { get; set; }
 
         public BrotliStream? fileStream { get; set; }
         public Dictionary<string, byte[]>? stringStore { get; set; }

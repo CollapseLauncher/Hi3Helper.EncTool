@@ -41,5 +41,7 @@ namespace Hi3Helper.EncTool
             // If all passes, then return true (equal)
             return true;
         }
+
+        public static T RandomSelectSingle<T>(this ReadOnlySpan<T> source) => source[Random.Shared.Next(0, source.Length)];
     }
 }

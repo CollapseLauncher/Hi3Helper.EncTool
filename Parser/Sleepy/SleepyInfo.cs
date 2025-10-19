@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -73,7 +72,8 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             (string BaseUrl, SleepyFileInfo ReferenceFileInfo, string? RevisionStamp) baseFileInfo = GetFileInfo(FileInfoKind.Base);
             string baseFileUrl =
                 baseFileInfo.BaseUrl.CombineURLFromString(baseFileInfo.ReferenceFileInfo.FileName);
-            string baseFileRevision = await Client.GetStringAsync(baseFileUrl, token);
+
+            string baseFileRevision = await Client.GetFromCachedStringAsync(baseFileUrl, HttpMethod.Get, token);
             ResponseGateway.CdnConfig.GameResConfig.BaseRevision = baseFileRevision;
         }
 
@@ -189,7 +189,8 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
             }
         }
 
-        private async Task<T?> GetJsonFromUrl<T>(Uri url, Dictionary<string, string> httpHeader, JsonTypeInfo<T> typeInfo, CancellationToken token = default)
+        private async Task<T?> GetJsonFromUrl<T>(Uri url, Dictionary<string, string> httpHeader, JsonTypeInfo<T?> typeInfo, CancellationToken token = default)
+            where T : class
         {
             using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
             foreach (KeyValuePair<string, string> headerKvp in httpHeader)
@@ -197,10 +198,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                 requestMessage.Headers.Add(headerKvp.Key, headerKvp.Value);
             }
 
-            using HttpResponseMessage responseMessage = await Client.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, token);
-            await using Stream        responseStream  = (await responseMessage.TryGetCachedStreamFrom(token)).Stream;
-
-            return await responseMessage.Content.ReadFromJsonAsync(typeInfo, token);
+            return await Client.GetFromCachedJsonAsync(requestMessage, typeInfo, token);
         }
 
         public (string BaseUrl, SleepyFileInfo ReferenceFileInfo, string? RevisionStamp) GetFileInfo(FileInfoKind kind)
