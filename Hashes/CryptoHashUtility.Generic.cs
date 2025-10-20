@@ -338,6 +338,69 @@ public partial class CryptoHashUtility<T>
         CancellationToken token           = default)
     {
         hashBytesWritten = 0;
+
+        // Enter the lock scope and acquire hasher
+        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher);
+        if (hasher == null)
+        {
+            lockScope.Dispose();
+            return HashOperationStatus.HashNotSupported;
+        }
+
+        try
+        {
+            return TryGetHashFromStream(hasher,
+                                        sourceStream,
+                                        hashBytesDestination,
+                                        out hashBytesWritten,
+                                        readBytesAction,
+                                        hmacKey,
+                                        bufferSize,
+                                        true,
+                                        token);
+        }
+        finally
+        {
+            if (isSharedMode)
+            {
+                lockScope.Dispose();
+            }
+            else
+            {
+                hasher.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Try to perform cryptographic-based hashing from <see cref="Stream"/> source using a custom <see cref="HashAlgorithm"/> instance.
+    /// </summary>
+    /// <param name="hasher">A custom <see cref="HashAlgorithm"/> instance for hashing.</param>
+    /// <param name="sourceStream">The source of span/array to compute the hash from.</param>
+    /// <param name="hashBytesDestination">The buffer where the hash result will be written.</param>
+    /// <param name="readBytesAction">A callback to gather how many bytes of data have been computed.</param>
+    /// <param name="hashBytesWritten">The total bytes written into the <paramref name="hashBytesDestination"/> span.</param>
+    /// <param name="hmacKey">The secret-key used for <see cref="HMAC"/>-based Cryptographic hash.</param>
+    /// <param name="bufferSize">Defines the buffer size for reading data from the <see cref="Stream"/> source.</param>
+    /// <param name="disposeHasher">Whether to dispose the <paramref name="hasher"/> after operation or not.</param>
+    /// <param name="token">Token to notify cancellation while computing the hash.</param>
+    /// <remarks>
+    /// When using <see cref="HMAC"/>-based Cryptographic hash, the <paramref name="hmacKey"/> must be provided.
+    /// Otherwise, it will return <see cref="HashOperationStatus.InvalidOperation"/>.
+    /// </remarks>
+    /// <returns>The hash operation status.</returns>
+    public HashOperationStatus TryGetHashFromStream(
+        HashAlgorithm     hasher,
+        Stream            sourceStream,
+        Span<byte>        hashBytesDestination,
+        out int           hashBytesWritten,
+        Action<int>?      readBytesAction = null,
+        byte[]?           hmacKey         = null,
+        int               bufferSize      = BufferSize,
+        bool              disposeHasher   = false,
+        CancellationToken token           = default)
+    {
+        hashBytesWritten = 0;
         if (token.IsCancellationRequested)
         {
             return HashOperationStatus.OperationCancelled;
@@ -347,14 +410,6 @@ public partial class CryptoHashUtility<T>
         if (bufferSize <= 0)
         {
             bufferSize = BufferSize;
-        }
-
-        // Enter the lock scope and acquire hasher
-        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher);
-        if (hasher == null)
-        {
-            lockScope.Dispose();
-            return HashOperationStatus.HashNotSupported;
         }
 
         byte[]? buffer = null;
@@ -404,11 +459,7 @@ public partial class CryptoHashUtility<T>
         }
         finally
         {
-            if (isSharedMode)
-            {
-                lockScope.Dispose();
-            }
-            else
+            if (disposeHasher)
             {
                 hasher.Dispose();
             }
@@ -442,17 +493,6 @@ public partial class CryptoHashUtility<T>
                                   int               bufferSize      = AsyncBufferSize,
                                   CancellationToken token           = default)
     {
-        if (token.IsCancellationRequested)
-        {
-            return (HashOperationStatus.OperationCancelled, 0);
-        }
-
-        // Ensure buffer size is valid
-        if (bufferSize <= 0)
-        {
-            bufferSize = AsyncBufferSize;
-        }
-
         // Enter the lock scope and acquire hasher
         (HashAlgorithm? hasher, bool isSharedMode) = await WaitForSemaphoreAndHasher(token);
         if (hasher == null)
@@ -464,6 +504,68 @@ public partial class CryptoHashUtility<T>
             }
 
             return (HashOperationStatus.HashNotSupported, 0);
+        }
+
+        try
+        {
+            return await TryGetHashFromStreamAsync(hasher,
+                                                   sourceStream,
+                                                   hashBytesDestination,
+                                                   readBytesAction,
+                                                   hmacKey,
+                                                   bufferSize,
+                                                   !isSharedMode,
+                                                   token);
+        }
+        finally
+        {
+            if (isSharedMode)
+            {
+                _sharedSemaphore?.Release();
+            }
+            else
+            {
+                hasher.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Try to asynchronously perform cryptographic-based hashing from <see cref="Stream"/> source using a custom <see cref="HashAlgorithm"/> instance.
+    /// </summary>
+    /// <param name="hasher">A custom <see cref="HashAlgorithm"/> instance for hashing.</param>
+    /// <param name="sourceStream">The source of span/array to compute the hash from.</param>
+    /// <param name="hashBytesDestination">The buffer where the hash result will be written.</param>
+    /// <param name="readBytesAction">A callback to gather how many bytes of data have been computed.</param>
+    /// <param name="hmacKey">The secret-key used for <see cref="HMAC"/>-based Cryptographic hash.</param>
+    /// <param name="bufferSize">Defines the buffer size for reading data from the <see cref="Stream"/> source.</param>
+    /// <param name="disposeHasher">Whether to dispose the <paramref name="hasher"/> after operation or not.</param>
+    /// <param name="token">Token to notify cancellation while computing the hash.</param>
+    /// <remarks>
+    /// When using <see cref="HMAC"/>-based Cryptographic hash, the <paramref name="hmacKey"/> must be provided.
+    /// Otherwise, it will return <see cref="HashOperationStatus.InvalidOperation"/>.
+    /// </remarks>
+    /// <returns>Returns a Value Tuple of <see cref="HashOperationStatus"/> and length of bytes written to <paramref name="hashBytesDestination"/>.</returns>
+    public async ValueTask<(HashOperationStatus Status, int HashBytesWritten)>
+        TryGetHashFromStreamAsync(
+            HashAlgorithm     hasher,
+            Stream            sourceStream,
+            Memory<byte>      hashBytesDestination,
+            Action<int>?      readBytesAction = null,
+            byte[]?           hmacKey         = null,
+            int               bufferSize      = AsyncBufferSize,
+            bool              disposeHasher   = false,
+            CancellationToken token           = default)
+    {
+        if (token.IsCancellationRequested)
+        {
+            return (HashOperationStatus.OperationCancelled, 0);
+        }
+
+        // Ensure buffer size is valid
+        if (bufferSize <= 0)
+        {
+            bufferSize = AsyncBufferSize;
         }
 
         byte[]? buffer = null;
@@ -519,11 +621,7 @@ public partial class CryptoHashUtility<T>
         }
         finally
         {
-            if (isSharedMode)
-            {
-                _sharedSemaphore?.Release();
-            }
-            else
+            if (disposeHasher)
             {
                 hasher.Dispose();
             }
