@@ -165,45 +165,27 @@ namespace Hi3Helper.EncTool.Parser.Senadina
                     KeyNotFoundException("origUrl from pustaka's store is not exist. Please report this issue to our Discord Server!");
             }
 
-            if (string.IsNullOrEmpty(result))
-                throw new NullReferenceException("origUrl from pustaka's store is null or just an empty string. Please report this issue to our Discord Server!");
-
-            return result;
+            return string.IsNullOrEmpty(result)
+                ? throw new NullReferenceException("origUrl from pustaka's store is null or just an empty string. Please report this issue to our Discord Server!")
+                : result;
         }
 
-        public async ValueTask<HttpResponseMessage> GetOriginalFileHttpResponse(HttpClient client, HttpMethod? method = null, CancellationToken token = default)
+        public async Task<Stream> GetOriginalFileStream(
+            HttpClient        client,
+            HttpMethod?       method = null,
+            CancellationToken token  = default)
         {
-            HttpRequestMessage?  message  = null;
-            HttpResponseMessage? response = null;
-
             string originalUrl = GetOriginalFileUrl();
+            return (await client.TryGetCachedStreamFrom(originalUrl, method, token)).Stream;
+        }
 
-            bool isFail = false;
-            try
-            {
-                message  = new HttpRequestMessage(method ?? HttpMethod.Get, originalUrl);
-                response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, token);
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new HttpRequestException($"Error while retrieving the original URL: {originalUrl} with status: {response.StatusCode} ({(int)response.StatusCode})", null, response.StatusCode);
-                }
-
-                return response;
-            }
-            catch
-            {
-                isFail = true;
-            }
-            finally
-            {
-                if (isFail)
-                {
-                    message?.Dispose();
-                    response?.Dispose();
-                }
-            }
-
-            throw new InvalidOperationException("This code shouldn't expect to be executed!");
+        public async Task<CDNCacheResult> GetOriginalFileHttpResponse(
+            HttpClient        client,
+            HttpMethod?       method = null,
+            CancellationToken token  = default)
+        {
+            string originalUrl = GetOriginalFileUrl();
+            return await client.TryGetCachedStreamFrom(originalUrl, method, token);
         }
     }
 }

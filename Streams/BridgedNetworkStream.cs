@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -77,6 +78,8 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
         get { throw new NotSupportedException(); }
         set { throw new NotSupportedException(); }
     }
+
+    public HttpStatusCode StatusCode => networkResponse.StatusCode;
 
     public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
 

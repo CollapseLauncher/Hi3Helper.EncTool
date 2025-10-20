@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Hashing;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -17,6 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable CommentTypo
 // ReSharper disable InconsistentNaming
+// ReSharper disable CheckNamespace
 
 #nullable enable
 namespace Hi3Helper.EncTool;
@@ -51,6 +53,10 @@ public record CDNCacheResult
     /// A <see cref="CopyToStream"/> will be used if the response is actually determined to be cached. Otherwise, a <see cref="BridgedNetworkStream"/> will be used.<br/>
     /// </summary>
     public required Stream Stream { get; set; }
+
+    public HttpStatusCode StatusCode { get; set; } = 0;
+
+    public bool IsSuccessStatusCode => (int)StatusCode is > 199 and < 300;
 }
 
 public static class CDNCacheUtil
@@ -150,7 +156,7 @@ public static class CDNCacheUtil
             return cachePath[SkipGCPrefix.Length..];
         }
 
-        DirectoryInfo directoryInfo = new(cachePath);
+        DirectoryInfo directoryInfo = new DirectoryInfo(cachePath);
         if (!directoryInfo.Exists)
         {
             return cachePath;
@@ -258,9 +264,11 @@ public static class CDNCacheUtil
 
         if (!IsEnabled)
         {
+            BridgedNetworkStream responseStream = await BridgedNetworkStream.CreateStream(client, requestMessage, token);
             return new CDNCacheResult
             {
-                Stream = await BridgedNetworkStream.CreateStream(client, requestMessage, token)
+                StatusCode = responseStream.StatusCode,
+                Stream     = responseStream
             };
         }
 
@@ -269,7 +277,8 @@ public static class CDNCacheUtil
             response = await client.SendAsync(requestMessage, token);
             return new CDNCacheResult
             {
-                Stream = await BridgedNetworkStream.CreateStream(response, token)
+                StatusCode = response.StatusCode,
+                Stream     = await BridgedNetworkStream.CreateStream(response, token)
             };
         }
 
@@ -284,7 +293,8 @@ public static class CDNCacheUtil
                 response = await client.SendAsync(requestMessage, token);
                 return new CDNCacheResult
                 {
-                    Stream = await BridgedNetworkStream.CreateStream(client, requestMessage, token)
+                    StatusCode = response.StatusCode,
+                    Stream     = await BridgedNetworkStream.CreateStream(client, requestMessage, token)
                 };
             }
 
@@ -330,7 +340,8 @@ public static class CDNCacheUtil
                 LocalCachePath     = Path.Combine(cacheDir, hashString),
                 CacheETag          = hashString,
                 CacheExpireTimeUtc = nextExpireOffset,
-                Stream             = fileStream
+                Stream             = fileStream,
+                StatusCode         = HttpStatusCode.OK
             };
         }
         catch
@@ -350,13 +361,15 @@ public static class CDNCacheUtil
 
     public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(this HttpResponseMessage? response, CancellationToken token = default)
     {
-        ArgumentNullException.ThrowIfNull(response, nameof(response));
+        ArgumentNullException.ThrowIfNull(response);
 
         if (!IsEnabled)
         {
+            BridgedNetworkStream stream = await BridgedNetworkStream.CreateStream(response, token);
             return new CDNCacheResult
             {
-                Stream = await BridgedNetworkStream.CreateStream(response, token)
+                StatusCode = stream.StatusCode,
+                Stream     = stream
             };
         }
 
@@ -390,7 +403,8 @@ public static class CDNCacheUtil
             {
                 return new CDNCacheResult
                 {
-                    Stream = bridgedNetworkStream
+                    StatusCode = bridgedNetworkStream.StatusCode,
+                    Stream     = bridgedNetworkStream
                 };
             }
 
@@ -417,7 +431,8 @@ public static class CDNCacheUtil
                 LocalCachePath     = string.IsNullOrEmpty(etag) ? null : Path.Combine(cacheDir, etag),
                 CacheETag          = etag,
                 CacheExpireTimeUtc = nextExpireTime,
-                Stream             = returnStream
+                Stream             = returnStream,
+                StatusCode         = HttpStatusCode.OK
             };
         }
         catch
@@ -504,7 +519,7 @@ public static class CDNCacheUtil
         HashCacheType     hashCacheType,
         CancellationToken token)
     {
-        ArgumentException.ThrowIfNullOrEmpty(etag, nameof(etag));
+        ArgumentException.ThrowIfNullOrEmpty(etag);
 
         string cachedFilePath = Path.Combine(cacheDir, etag);
         if (File.Exists(cachedFilePath) &&
@@ -515,7 +530,8 @@ public static class CDNCacheUtil
                 IsCached       = true,
                 LocalCachePath = cachedFilePath,
                 CacheETag      = etag,
-                Stream         = cachedStream
+                Stream         = cachedStream,
+                StatusCode     = HttpStatusCode.OK
             };
         }
 
@@ -545,13 +561,14 @@ public static class CDNCacheUtil
 
             if (hashCacheType.HasFlag(HashCacheType.CryptoType))
             {
+                // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
                 using HashAlgorithm hashAlgorithm = hashCacheType switch
-                {
-                    HashCacheType.MD5 => MD5.Create(),
-                    HashCacheType.Sha1 => SHA1.Create(),
-                    HashCacheType.Sha256 => SHA256.Create(),
-                    _ => throw new NotSupportedException($"Crypto Hash Type: {hashCacheType} isn't supported!")
-                };
+                                                    {
+                                                        HashCacheType.MD5 => MD5.Create(),
+                                                        HashCacheType.Sha1 => SHA1.Create(),
+                                                        HashCacheType.Sha256 => SHA256.Create(),
+                                                        _ => throw new NotSupportedException($"Crypto Hash Type: {hashCacheType} isn't supported!")
+                                                    };
 
                 // >> 3 is equal to divided by 8. HashSize must be calculated since it returns bits, not bytes.
                 if (hashAlgorithm.HashSize >> 3 != actualHashLen)
@@ -571,6 +588,7 @@ public static class CDNCacheUtil
 
             if (!hashCacheType.HasFlag(HashCacheType.CryptoType))
             {
+                // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
                 NonCryptographicHashAlgorithm hashAlgorithm = hashCacheType switch
                 {
                     HashCacheType.Crc32 => new Crc32(),
@@ -873,7 +891,7 @@ public static class CDNCacheUtil
 
     private static bool IsETagAttached(string? tag)
     {
-        ArgumentException.ThrowIfNullOrEmpty(tag, nameof(tag));
+        ArgumentException.ThrowIfNullOrEmpty(tag);
 
         using (ThisLock.EnterScope())
         {
@@ -883,7 +901,7 @@ public static class CDNCacheUtil
 
     private static bool AttachETag(string? tag)
     {
-        ArgumentException.ThrowIfNullOrEmpty(tag, nameof(tag));
+        ArgumentException.ThrowIfNullOrEmpty(tag);
 
         using (ThisLock.EnterScope())
         {
@@ -893,7 +911,7 @@ public static class CDNCacheUtil
 
     private static void DetachETag(string? tag)
     {
-        ArgumentException.ThrowIfNullOrEmpty(tag, nameof(tag));
+        ArgumentException.ThrowIfNullOrEmpty(tag);
 
         using (ThisLock.EnterScope())
         {

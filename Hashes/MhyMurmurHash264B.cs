@@ -11,7 +11,7 @@ namespace Hi3Helper.EncTool.Hashes
     /// <br/><br/>
     /// This implementation was based on miHoYo own <c>MurmurHash64B</c> function found on Honkai Impact 3rd v8.2 game.
     /// </summary>
-    public sealed class MhyMurmurHash264B : NonCryptographicHashAlgorithm
+    public sealed class MhyMurmurHash264B() : NonCryptographicHashAlgorithm(8)
     {
         private const uint Bm = 0x5bd1e995;
         private const int  Br = 24;
@@ -27,7 +27,7 @@ namespace Hi3Helper.EncTool.Hashes
         /// </summary>
         /// <param name="readLengthTarget">The length in which the target <see cref="Stream"/> define.</param>
         /// <param name="seed">Optional seed for hashing.</param>
-        public MhyMurmurHash264B(uint readLengthTarget, ulong seed = 0) : base(8)
+        public MhyMurmurHash264B(uint readLengthTarget, ulong seed = 0) : this()
         {
             _readLengthTarget = readLengthTarget;
             _seed             = seed;
