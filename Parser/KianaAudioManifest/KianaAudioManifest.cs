@@ -268,9 +268,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
                 // Get the name and try to get the ManifestAudioPatchInfo
                 string name = AudioAssets[i].Name + ".pck";
-                ManifestAudioPatchInfo info = _audioPatches.FirstOrDefault(x => x.AudioFilename.Equals(name));
+                ManifestAudioPatchInfo info = _audioPatches.FirstOrDefault(x => x.AudioFilename.Equals(name, StringComparison.OrdinalIgnoreCase));
                 AudioAssets[i].AddPatchInfo(info?.AudioFilename == null ? null : info);
-                AudioAssets[i].AllPatchInfo.AddRange(_audioPatches.Where(x => x.AudioFilename.Equals(name)));
+                AudioAssets[i].AllPatchInfo.AddRange(_audioPatches.Where(x => x.AudioFilename.Equals(name, StringComparison.OrdinalIgnoreCase)));
             }
 
             // Clean-up PatchInfo
