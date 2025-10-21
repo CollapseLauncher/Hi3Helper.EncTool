@@ -48,7 +48,8 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
         public static async Task<KianaDispatch> GetDispatch(HttpClient client, string dispatchUrl, string dispatchFormat, string dispatchChannelName, string baseKey, int[] ver, CancellationToken token)
         {
             // Format the dispatch URL and set it to this instance
-            _dispatchQuery = string.Format(dispatchFormat, $"{ver[0]}.{ver[1]}.{ver[2]}", dispatchChannelName, ConverterTool.GetUnixTimestamp(true));
+            // _dispatchQuery = string.Format(dispatchFormat, $"{ver[0]}.{ver[1]}.{ver[2]}", dispatchChannelName, ConverterTool.GetUnixTimestamp(true));
+            _dispatchQuery = string.Format(dispatchFormat, $"{ver[0]}.{ver[1]}.{ver[2]}", dispatchChannelName, 1762016400);
             _dispatchUrl = dispatchUrl + _dispatchQuery;
 
             // Concatenate the base key with the short version string
