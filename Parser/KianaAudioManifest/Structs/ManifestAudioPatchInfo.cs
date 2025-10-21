@@ -18,7 +18,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             ReadOnlySpan<byte> bytes     = new ReadOnlySpan<byte>(ptr, sizeof(ulong));
             byte[]             bytesTemp = new byte[bytes.Length];
             bytes.CopyTo(bytesTemp);
-            bytesTemp.Reverse();
             return bytesTemp;
         }
 
