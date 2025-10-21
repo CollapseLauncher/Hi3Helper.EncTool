@@ -248,10 +248,29 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             // Iterate the AudioAssets
             for (int i = 0; i < le; i++)
             {
+                // Sidenote 2025/10/21:
+                // Starting from version 8.x, the patch info has multiple entries with the same name.
+                // The order is from the oldest to newest revision. For example:
+                // 
+                // Let's say that your game was updated from 8.4.0.0 to 8.5.0.0, and the audio have multiple patches
+                // which consists of these revisions:
+                //     - 8.4.0.0 -> 8.5.0.0
+                //     - 8.5.0.0 -> 8.5.0.2
+                //     - 8.5.0.2 -> 8.5.0.3
+                // 
+                // On PatchInfo field, the first revision will be selected.
+                // But, on AllPatchInfo field, all the revisions will be stored in List form.
+                // 
+                // PatchInfo field will be preserved for backward compatibility with Old mechanism.
+                // While on New mechanism, after the hash of the current file has been calculated, you need to lookup
+                // which old hash is matching from AllPatchInfo, then apply the patch from that entry and
+                // replace the value inside PatchInfo field with that entry.
+
                 // Get the name and try to get the ManifestAudioPatchInfo
                 string name = AudioAssets[i].Name + ".pck";
                 ManifestAudioPatchInfo info = _audioPatches.FirstOrDefault(x => x.AudioFilename.Equals(name));
                 AudioAssets[i].AddPatchInfo(info?.AudioFilename == null ? null : info);
+                AudioAssets[i].AllPatchInfo.AddRange(_audioPatches.Where(x => x.AudioFilename.Equals(name)));
             }
 
             // Clean-up PatchInfo
