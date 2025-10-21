@@ -83,7 +83,7 @@ namespace Hi3Helper.EncTool.Hashes
         public override unsafe void Append(ReadOnlySpan<byte> source)
         {
             int len = source.Length;
-            AssertEnsureBufferLengthEven(len);
+            // AssertEnsureBufferLengthEven(len);
 
             fixed (byte* bytePtr = &MemoryMarshal.GetReference(source))
             {
@@ -96,6 +96,7 @@ namespace Hi3Helper.EncTool.Hashes
             }
         }
 
+        /*
         private void AssertEnsureBufferLengthEven(int len)
         {
             _remained -= (uint)len;
@@ -106,6 +107,7 @@ namespace Hi3Helper.EncTool.Hashes
                                                     "If you're getting the data from a Stream, Please use Stream.ReadAtLeast() or Stream.ReadExactly() to " +
                                                     "ensure that your buffer is always filled!");
         }
+        */
 
         private unsafe void ComputeRemainedBytes(byte* start, byte* end)
         {
