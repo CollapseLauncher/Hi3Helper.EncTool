@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
@@ -22,6 +23,66 @@ using System.Threading.Tasks;
 
 #nullable enable
 namespace Hi3Helper.EncTool;
+
+/// <summary>
+/// A record contains the status of the response from a URL.
+/// </summary>
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public unsafe struct UrlStatus
+{
+    private const int urlStrLen = 512 - 16;
+
+    /// <summary>
+    /// The status code of the response.
+    /// </summary>
+    public readonly HttpStatusCode StatusCode;
+
+    /// <summary>
+    /// The size of the response data.
+    /// </summary>
+    public readonly long FileSize;
+
+    private fixed byte _urlString[urlStrLen]; // Fit to 512 bytes
+
+    /// <summary>
+    /// Whether the <see cref="UrlStatus.StatusCode"/> is a success status code (2xx) or not.
+    /// </summary>
+    public bool IsSuccessStatusCode => (int)StatusCode is > 199 and < 300;
+
+    /// <summary>
+    /// Gets the URL string of the request
+    /// </summary>
+    public string Url
+    {
+        get
+        {
+            fixed (byte* bufferP = _urlString)
+            {
+                ReadOnlySpan<byte> buffer = MemoryMarshal
+                   .CreateReadOnlySpanFromNullTerminated(bufferP);
+                return Encoding.UTF8.GetString(buffer);
+            }
+        }
+    }
+
+    internal UrlStatus(HttpResponseMessage message)
+        : this(message.StatusCode, message.RequestMessage?.RequestUri?.AbsoluteUri ?? "")
+    {
+        FileSize = message.Content.Headers.ContentLength ?? 0;
+    }
+
+    internal UrlStatus(HttpStatusCode statusCode, string url)
+    {
+        StatusCode = statusCode;
+
+        fixed (byte* urlBytesP = _urlString)
+        {
+            Span<byte> urlBytesSpan = new Span<byte>(urlBytesP, urlStrLen);
+            urlBytesSpan.Clear();
+            Encoding.UTF8.GetBytes(url, urlBytesSpan[..(urlStrLen - 1)]);
+        }
+    }
+}
 
 /// <summary>
 /// A record contains the result of the CDN cache.
@@ -54,8 +115,14 @@ public record CDNCacheResult
     /// </summary>
     public required Stream Stream { get; set; }
 
+    /// <summary>
+    /// The status code of the response.
+    /// </summary>
     public HttpStatusCode StatusCode { get; set; } = 0;
 
+    /// <summary>
+    /// Whether the <see cref="CDNCacheResult.StatusCode"/> is a success status code (2xx) or not.
+    /// </summary>
     public bool IsSuccessStatusCode => (int)StatusCode is > 199 and < 300;
 }
 
@@ -135,6 +202,87 @@ public static class CDNCacheUtil
             cacheDir = SkipGCPrefix + cacheDir;
         }
         CurrentCacheDir = cacheDir;
+    }
+
+    /// <summary>
+    /// Gets the cached response status from the given URL using HEAD request. The return value: <see cref="UrlStatus"/> contains the HTTP status code and size of the response.
+    /// </summary>
+    /// <param name="client">Client to be used to retrieve the response.</param>
+    /// <param name="url">The URL to check</param>
+    /// <param name="token">Cancellation token for the async operation.</param>
+    /// <returns>The return status of the given URL.</returns>
+    public static ValueTask<UrlStatus> GetCachedUrlStatus(
+        this HttpClient   client,
+        string            url,
+        CancellationToken token) =>
+        client.GetCachedUrlStatus(new Uri(url), token);
+
+    /// <summary>
+    /// Gets the cached response status from the given URL using HEAD request. The return value: <see cref="UrlStatus"/> contains the HTTP status code and size of the response.
+    /// </summary>
+    /// <param name="client">Client to be used to retrieve the response.</param>
+    /// <param name="url">The URL to check</param>
+    /// <param name="token">Cancellation token for the async operation.</param>
+    /// <returns>The return status of the given URL.</returns>
+    public static async ValueTask<UrlStatus> GetCachedUrlStatus(
+        this HttpClient   client,
+        Uri               url,
+        CancellationToken token)
+    {
+        if (!IsEnabled || string.IsNullOrEmpty(CurrentCacheDir))
+        {
+            using HttpResponseMessage uncachedResponse =
+                await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url),
+                                       HttpCompletionOption.ResponseHeadersRead,
+                                       token)
+                            .ConfigureAwait(false);
+            return new UrlStatus(uncachedResponse);
+        }
+
+        string   cacheDir           = CurrentCacheDir;
+        string   cacheStampName     = $"cached_status_{GetXxh3HashFrom(url.AbsoluteUri.AsSpan())}";
+        string   cacheStampPath     = Path.Combine(cacheDir, cacheStampName);
+        FileInfo cacheStampFileInfo = new FileInfo(cacheStampPath);
+
+        DateTime dateTimeOffsetNow = DateTime.UtcNow;
+        if (cacheStampFileInfo.Exists &&
+            cacheStampFileInfo.LastWriteTimeUtc.Add(MaxAcceptedCacheExpireTime) >= dateTimeOffsetNow &&
+            ReadFromFile(cacheStampPath, out UrlStatus cachedStatus))
+        {
+            return cachedStatus;
+        }
+
+        using HttpResponseMessage response =
+            await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url),
+                                   HttpCompletionOption.ResponseHeadersRead,
+                                   token)
+                        .ConfigureAwait(false);
+
+        UrlStatus status = new UrlStatus(response);
+        WriteToFile(cacheStampPath, in status);
+        return status;
+
+        static unsafe void WriteToFile(string filePath, in UrlStatus urlStatus)
+        {
+            fixed (void* buffer = &urlStatus)
+            {
+                ReadOnlySpan<byte> bufferSpan = new ReadOnlySpan<byte>(buffer, sizeof(UrlStatus));
+                File.WriteAllBytes(filePath, bufferSpan);
+            }
+        }
+
+        static unsafe bool ReadFromFile(string filePath, out UrlStatus urlStatus)
+        {
+            using FileStream fileStream = File.Open(filePath,
+                                                    FileMode.Open,
+                                                    FileAccess.ReadWrite,
+                                                    FileShare.ReadWrite);
+            urlStatus = default;
+            Span<byte> urlStatusBuffer = new Span<byte>(Unsafe.AsPointer(ref urlStatus), sizeof(UrlStatus));
+            int read = fileStream.Read(urlStatusBuffer);
+
+            return read == sizeof(UrlStatus);
+        }
     }
 
     /// <summary>
