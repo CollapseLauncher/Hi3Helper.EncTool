@@ -22,7 +22,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         }
 
         public string AudioFilename    { get; } = name;
-        public string PatchFilename    { get; } = $"{patchMD5}.pck";
+        public string PatchFilename    { get; } = $"{patchMD5}.patch";
         public byte[] OldAudioMD5Array { get; } = DecodeNumberAsBytes(fileMD5);
         public byte[] NewAudioMD5Array { get; } = DecodeNumberAsBytes(newFileMD5);
         public byte[] PatchMD5Array    { get; } = DecodeNumberAsBytes(patchMD5);
