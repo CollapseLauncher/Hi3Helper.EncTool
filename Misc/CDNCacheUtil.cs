@@ -267,7 +267,11 @@ public static class CDNCacheUtil
             fixed (void* buffer = &urlStatus)
             {
                 ReadOnlySpan<byte> bufferSpan = new ReadOnlySpan<byte>(buffer, sizeof(UrlStatus));
-                File.WriteAllBytes(filePath, bufferSpan);
+                using FileStream fileStream = File.Open(filePath,
+                                                        FileMode.Create,
+                                                        FileAccess.ReadWrite,
+                                                        FileShare.ReadWrite);
+                fileStream.Write(bufferSpan);
             }
         }
 
