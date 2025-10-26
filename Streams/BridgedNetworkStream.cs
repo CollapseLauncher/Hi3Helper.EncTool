@@ -12,6 +12,8 @@ namespace Hi3Helper.EncTool;
 
 public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResponse, Stream networkStream) : Stream
 {
+    private bool _isDisposed;
+
     public static Task<BridgedNetworkStream> CreateStream(HttpClient        client,
                                                           string            url,
                                                           HttpMethod?       method = null,
@@ -69,9 +71,9 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
 
     public override bool CanWrite => false;
 
-    public override void Flush() => networkStream?.Flush();
+    public override void Flush() => networkStream.Flush();
 
-    public override long Length { get; } = networkResponse?.Content.Headers.ContentLength ?? 0;
+    public override long Length { get; } = networkResponse.Content.Headers.ContentLength ?? 0;
 
     public override long Position
     {
@@ -89,22 +91,29 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        if (!disposing)
+        if (!disposing || _isDisposed)
         {
             return;
         }
 
-        networkResponse?.Dispose();
-        networkStream?.Dispose();
+        networkResponse.Dispose();
+        networkStream.Dispose();
+        _isDisposed = true;
     }
 
     /// <inheritdoc/>
     public override async ValueTask DisposeAsync()
     {
+        if (_isDisposed)
+        {
+            return;
+        }
+
         networkResponse.Dispose();
         await networkStream.DisposeAsync();
 
         await base.DisposeAsync();
         GC.SuppressFinalize(this);
+        _isDisposed = true;
     }
 }
