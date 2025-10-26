@@ -482,7 +482,7 @@ public static class CDNCacheUtil
                 CreateCacheStream(Path.Combine(cacheDir, hashString),
                                   cacheDir,
                                   hashString,
-                                  await response.Content.ReadAsStreamAsync(token),
+                                  await BridgedNetworkStream.CreateStream(response, token),
                                   true,
                                   nextExpireOffset) :
                 await BridgedNetworkStream.CreateStream(response, token);
