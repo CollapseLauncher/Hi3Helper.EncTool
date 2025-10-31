@@ -20,6 +20,8 @@ namespace Hi3Helper.EncTool.Parser.Senadina
     public enum SenadinaKind { bricksBase, bricksCurrent, platformBase, wandCurrent, chiptunesCurrent, chiptunesPreload, wonderland }
     public partial class SenadinaFileIdentifier : IDisposable
     {
+        private bool _isDisposed;
+
         public string? relativePath   { get; set; }
         public string? lastIdentifier { get; set; }
         public long    fileTime       { get; set; }
@@ -28,17 +30,28 @@ namespace Hi3Helper.EncTool.Parser.Senadina
         public BrotliStream? fileStream { get; set; }
         public Dictionary<string, byte[]>? stringStore { get; set; }
 
-        ~SenadinaFileIdentifier() => Dispose();
+        ~SenadinaFileIdentifier() => DisposeCore(false);
 
         public void Dispose()
         {
-            stringStore?.Clear();
-            fileStream?.Dispose();
-
+            DisposeCore(true);
             GC.SuppressFinalize(this);
         }
 
+        private void DisposeCore(bool isDispose)
+        {
+            if (!isDispose || _isDisposed)
+            {
+                return;
+            }
+
+            stringStore?.Clear();
+            fileStream?.Dispose();
+            _isDisposed = true;
+        }
+
         public bool IsKeyStoreExist(string key) => stringStore?.ContainsKey(key) ?? false;
+
         public unsafe bool TryReadStringStoreArrayAs<T>(string key, out T[]? result)
             where T : unmanaged
         {
