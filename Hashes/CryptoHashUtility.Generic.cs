@@ -38,8 +38,9 @@ public partial class CryptoHashUtility<T>
     // Instead of hitting the Task from the ReadAsync call multiple times, we can bulk read the data in bigger
     // buffer size in one time. In our parallel benchmark scenario, we gained significant peak read speed
     // from only 1.7 GB/s to 3.1 GB/s on NVMe SSD.
-    private const int  AsyncBufferSize   = 512 << 10;
+    private const int  AsyncBufferSize   = 128 << 10;
     private const int  BufferSize        = 16 << 10;
+    private const int  MaxStackallocSize = 128 << 10;              // 128 KiB
     private const byte MaxHashBufferSize = SHA512.HashSizeInBytes; // SHA512
 
     // Lock for Synchronous and Semaphore for Asynchronous respectively.
@@ -293,7 +294,7 @@ public partial class CryptoHashUtility<T>
     {
         // Alloc for Utf8 buffer
         int  bufByteSize   = source.Length * 2;
-        bool useStackalloc = bufByteSize <= 1024;
+        bool useStackalloc = bufByteSize <= MaxStackallocSize;
 
         byte[]?           buffer     = !useStackalloc ? ArrayPool<byte>.Shared.Rent(bufByteSize) : null;
         scoped Span<byte> bufferSpan = buffer ?? stackalloc byte[bufByteSize];
@@ -485,7 +486,7 @@ public partial class CryptoHashUtility<T>
     /// Otherwise, it will return <see cref="HashOperationStatus.InvalidOperation"/>.
     /// </remarks>
     /// <returns>Returns a Value Tuple of <see cref="HashOperationStatus"/> and length of bytes written to <paramref name="hashBytesDestination"/>.</returns>
-    public async ValueTask<(HashOperationStatus Status, int HashBytesWritten)>
+    public async Task<(HashOperationStatus Status, int HashBytesWritten)>
         TryGetHashFromStreamAsync(Stream            sourceStream,
                                   Memory<byte>      hashBytesDestination,
                                   Action<int>?      readBytesAction = null,
@@ -546,7 +547,7 @@ public partial class CryptoHashUtility<T>
     /// Otherwise, it will return <see cref="HashOperationStatus.InvalidOperation"/>.
     /// </remarks>
     /// <returns>Returns a Value Tuple of <see cref="HashOperationStatus"/> and length of bytes written to <paramref name="hashBytesDestination"/>.</returns>
-    public async ValueTask<(HashOperationStatus Status, int HashBytesWritten)>
+    public async Task<(HashOperationStatus Status, int HashBytesWritten)>
         TryGetHashFromStreamAsync(
             HashAlgorithm     hasher,
             Stream            sourceStream,
@@ -568,7 +569,7 @@ public partial class CryptoHashUtility<T>
             bufferSize = AsyncBufferSize;
         }
 
-        byte[]? buffer = null;
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         try
         {
             if (hashBytesDestination.Length < hasher.HashSize >> 3)
@@ -589,14 +590,12 @@ public partial class CryptoHashUtility<T>
             }
 
             // Compute hash
-            buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             int read;
 
             try
             {
                 while ((read = await sourceStream
-                                    .ReadAtLeastAsync(buffer, bufferSize, false, token)
-                                    .ConfigureAwait(false)) > 0)
+                                    .ReadAtLeastAsync(buffer, bufferSize, false, token)) > 0)
                 {
                     hasher.TransformBlock(buffer, 0, read, buffer, 0);
                     readBytesAction?.Invoke(read);
@@ -626,10 +625,7 @@ public partial class CryptoHashUtility<T>
                 hasher.Dispose();
             }
 
-            if (buffer != null)
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 }
