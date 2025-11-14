@@ -7,11 +7,11 @@ namespace Hi3Helper.EncTool.Hashes
 {
     /// <summary>
     /// MhyMurmurHash264B is a MurmurHash2 64-bit variant, optimized for 32-bit sized data (up to 4 GiB (4,294,967,295 bytes)).
-    /// This hash instance was ported to make it compatible with <see cref="NonCryptographicHashAlgorithm"/>.
+    /// This hash instance has been rewritten from miHoYo's original code to make it compatible with <see cref="NonCryptographicHashAlgorithm"/>.
     /// <br/><br/>
-    /// This implementation was based on miHoYo own <c>MurmurHash64B</c> function found on Honkai Impact 3rd v8.2 game.
+    /// This implementation is based on miHoYo's <c>MurmurHash64B</c> implementation found in Honkai Impact 3rd game (Starting from v8.2 update).
     /// </summary>
-    public sealed class MhyMurmurHash264B : NonCryptographicHashAlgorithm
+    public sealed class MhyMurmurHash264B() : NonCryptographicHashAlgorithm(8)
     {
         private const uint Bm = 0x5bd1e995;
         private const int  Br = 24;
@@ -27,7 +27,7 @@ namespace Hi3Helper.EncTool.Hashes
         /// </summary>
         /// <param name="readLengthTarget">The length in which the target <see cref="Stream"/> define.</param>
         /// <param name="seed">Optional seed for hashing.</param>
-        public MhyMurmurHash264B(uint readLengthTarget, ulong seed = 0) : base(8)
+        public MhyMurmurHash264B(uint readLengthTarget, ulong seed = 0) : this()
         {
             _readLengthTarget = readLengthTarget;
             _seed             = seed;
@@ -83,7 +83,7 @@ namespace Hi3Helper.EncTool.Hashes
         public override unsafe void Append(ReadOnlySpan<byte> source)
         {
             int len = source.Length;
-            AssertEnsureBufferLengthEven(len);
+            // AssertEnsureBufferLengthEven(len);
 
             fixed (byte* bytePtr = &MemoryMarshal.GetReference(source))
             {
@@ -96,6 +96,7 @@ namespace Hi3Helper.EncTool.Hashes
             }
         }
 
+        /*
         private void AssertEnsureBufferLengthEven(int len)
         {
             _remained -= (uint)len;
@@ -106,6 +107,7 @@ namespace Hi3Helper.EncTool.Hashes
                                                     "If you're getting the data from a Stream, Please use Stream.ReadAtLeast() or Stream.ReadExactly() to " +
                                                     "ensure that your buffer is always filled!");
         }
+        */
 
         private unsafe void ComputeRemainedBytes(byte* start, byte* end)
         {

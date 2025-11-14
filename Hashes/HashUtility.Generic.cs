@@ -37,8 +37,9 @@ public partial class HashUtility<T>
     // Instead of hitting the Task from the ReadAsync call multiple times, we can bulk read the data in bigger
     // buffer size in one time. In our parallel benchmark scenario, we gained significant peak read speed
     // from only 1.7 GB/s to 3.1 GB/s on NVMe SSD.
-    private const int  AsyncBufferSize   = 512 << 10;
+    private const int  AsyncBufferSize   = 128 << 10;
     private const int  BufferSize        = 16 << 10;
+    private const int  MaxStackallocSize = 128 << 10; // 128 KiB
     private const byte MaxHashBufferSize = 32; // BLAKE2 (Currently not implemented on .NET)
 
     // Lock for Synchronous and Semaphore for Asynchronous respectively.
@@ -268,6 +269,55 @@ public partial class HashUtility<T>
         CancellationToken token           = default)
     {
         hashBytesWritten = 0;
+
+        // Enter the lock scope and acquire hasher
+        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher);
+        if (hasher == null)
+        {
+            lockScope.Dispose();
+            return HashOperationStatus.HashNotSupported;
+        }
+
+        try
+        {
+            return TryGetHashFromStream(hasher,
+                                        sourceStream,
+                                        hashBytesDestination,
+                                        out hashBytesWritten,
+                                        readBytesAction,
+                                        bufferSize,
+                                        token);
+        }
+        finally
+        {
+            if (isSharedMode)
+            {
+                lockScope.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Try to perform hashing from <see cref="Stream"/> source using a custom <see cref="NonCryptographicHashAlgorithm"/> instance.
+    /// </summary>
+    /// <param name="hasher">A custom <see cref="NonCryptographicHashAlgorithm"/> instance for hashing.</param>
+    /// <param name="sourceStream">The source of span/array to compute the hash from.</param>
+    /// <param name="hashBytesDestination">The buffer where the hash result will be written.</param>
+    /// <param name="hashBytesWritten">The total bytes written into the <paramref name="hashBytesDestination"/> span.</param>
+    /// <param name="readBytesAction">A callback to gather how many bytes of data have been computed.</param>
+    /// <param name="bufferSize">Defines the buffer size for reading data from the <see cref="Stream"/> source.</param>
+    /// <param name="token">Token to notify cancellation while computing the hash.</param>
+    /// <returns>The hash operation status.</returns>
+    public HashOperationStatus TryGetHashFromStream(
+        NonCryptographicHashAlgorithm hasher,
+        Stream                        sourceStream,
+        Span<byte>                    hashBytesDestination,
+        out int                       hashBytesWritten,
+        Action<int>?                  readBytesAction = null,
+        int                           bufferSize      = BufferSize,
+        CancellationToken             token           = default)
+    {
+        hashBytesWritten = 0;
         if (token.IsCancellationRequested)
         {
             return HashOperationStatus.OperationCancelled;
@@ -279,18 +329,9 @@ public partial class HashUtility<T>
             bufferSize = BufferSize;
         }
 
-        // Enter the lock scope and acquire hasher
-        bool isSharedMode = TryAcquireLockAndHasher(out Lock.Scope lockScope, out T? hasher);
-        if (hasher == null)
-        {
-            lockScope.Dispose();
-            return HashOperationStatus.HashNotSupported;
-        }
-
         byte[]? buffer = null;
         try
         {
-
             if (hashBytesDestination.Length < hasher.HashLengthInBytes)
             {
                 return HashOperationStatus.DestinationBufferTooSmall;
@@ -299,14 +340,18 @@ public partial class HashUtility<T>
             // Reset state of hasher
             hasher.Reset();
 
-            // Compute hash
-            buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-            int read;
+            // Alloc buffer
+            buffer = bufferSize > MaxStackallocSize
+                ? ArrayPool<byte>.Shared.Rent(bufferSize)
+                : null;
+            Span<byte> bufferSpan = buffer ?? stackalloc byte[bufferSize];
 
-            while ((read = sourceStream.ReadAtLeast(buffer, bufferSize, false)) > 0)
+            // Compute hash
+            int read;
+            while ((read = sourceStream.ReadAtLeast(bufferSpan, bufferSize, false)) > 0)
             {
                 token.ThrowIfCancellationRequested();
-                hasher.Append(buffer[..read]);
+                hasher.Append(bufferSpan[..read]);
                 readBytesAction?.Invoke(read);
             }
 
@@ -317,11 +362,6 @@ public partial class HashUtility<T>
         }
         finally
         {
-            if (isSharedMode)
-            {
-                lockScope.Dispose();
-            }
-
             if (buffer != null)
             {
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -338,25 +378,13 @@ public partial class HashUtility<T>
     /// <param name="bufferSize">Defines the buffer size for reading data from the <see cref="Stream"/> source.</param>
     /// <param name="token">Token to notify cancellation while computing the hash.</param>
     /// <returns>Returns a Value Tuple of <see cref="HashOperationStatus"/> and length of bytes written to <paramref name="hashBytesDestination"/>.</returns>
-    public async ValueTask<(HashOperationStatus Status, int HashBytesWritten)>
+    public async Task<(HashOperationStatus Status, int HashBytesWritten)>
         TryGetHashFromStreamAsync(Stream            sourceStream,
                                   Memory<byte>      hashBytesDestination,
                                   Action<int>?      readBytesAction = null,
                                   int               bufferSize      = AsyncBufferSize,
                                   CancellationToken token           = default)
     {
-
-        if (token.IsCancellationRequested)
-        {
-            return (HashOperationStatus.OperationCancelled, 0);
-        }
-
-        // Ensure buffer size is valid
-        if (bufferSize <= 0)
-        {
-            bufferSize = AsyncBufferSize;
-        }
-
         // Enter the lock scope and acquire hasher
         (T? hasher, bool isSharedMode) = await WaitForSemaphoreAndHasher(token);
         if (hasher == null)
@@ -370,40 +398,14 @@ public partial class HashUtility<T>
             return (HashOperationStatus.HashNotSupported, 0);
         }
 
-        byte[]? buffer = null;
         try
         {
-            if (hashBytesDestination.Length < hasher.HashLengthInBytes)
-            {
-                return (HashOperationStatus.DestinationBufferTooSmall, 0);
-            }
-
-            // Reset state of hasher
-            hasher.Reset();
-
-            // Compute hash
-            buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-
-            try
-            {
-                int read;
-                while ((read = await sourceStream
-                                    .ReadAtLeastAsync(buffer, bufferSize, false, token)
-                                    .ConfigureAwait(false)) > 0)
-                {
-                    hasher.Append(buffer[..read]);
-                    readBytesAction?.Invoke(read);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                return (HashOperationStatus.OperationCancelled, 0);
-            }
-
-            // Return hash
-            return !hasher.TryGetHashAndReset(hashBytesDestination.Span, out int hashLengthWritten)
-                ? (HashOperationStatus.InvalidOperation, 0)
-                : (HashOperationStatus.Success, hashLengthWritten);
+            return await TryGetHashFromStreamAsync(hasher,
+                                                   sourceStream,
+                                                   hashBytesDestination,
+                                                   readBytesAction,
+                                                   bufferSize,
+                                                   token);
         }
         finally
         {
@@ -411,10 +413,95 @@ public partial class HashUtility<T>
             {
                 _sharedSemaphore?.Release();
             }
+        }
+    }
 
-            if (buffer != null)
+    /// <summary>
+    /// Try to asynchronously perform hashing from <see cref="Stream"/> source using a custom <see cref="NonCryptographicHashAlgorithm"/> instance.
+    /// </summary>
+    /// <param name="hasher">A custom <see cref="NonCryptographicHashAlgorithm"/> instance for hashing.</param>
+    /// <param name="sourceStream">The source of span/array to compute the hash from.</param>
+    /// <param name="hashBytesDestination">The buffer where the hash result will be written.</param>
+    /// <param name="readBytesAction">A callback to gather how many bytes of data have been computed.</param>
+    /// <param name="bufferSize">Defines the buffer size for reading data from the <see cref="Stream"/> source.</param>
+    /// <param name="token">Token to notify cancellation while computing the hash.</param>
+    /// <returns>Returns a Value Tuple of <see cref="HashOperationStatus"/> and length of bytes written to <paramref name="hashBytesDestination"/>.</returns>
+    public Task<(HashOperationStatus Status, int HashBytesWritten)>
+        TryGetHashFromStreamAsync(NonCryptographicHashAlgorithm hasher,
+                                  Stream                        sourceStream,
+                                  Memory<byte>                  hashBytesDestination,
+                                  Action<int>?                  readBytesAction = null,
+                                  int                           bufferSize      = AsyncBufferSize,
+                                  CancellationToken             token           = default)
+    {
+        if (token.IsCancellationRequested)
+        {
+            return Task.FromResult((HashOperationStatus.OperationCancelled, 0));
+        }
+
+        TaskCompletionSource<(HashOperationStatus Status, int HashBytesWritten)> tcs =
+            new TaskCompletionSource<(HashOperationStatus Status, int HashBytesWritten)>();
+
+        Task.Factory.StartNew(Worker, token);
+        return tcs.Task;
+
+        void Worker()
+        {
+            // Ensure buffer size is valid
+            if (bufferSize <= 0)
             {
-                ArrayPool<byte>.Shared.Return(buffer);
+                bufferSize = AsyncBufferSize;
+            }
+
+            byte[]? buffer = null;
+            try
+            {
+                if (hashBytesDestination.Length < hasher.HashLengthInBytes)
+                {
+                    tcs.SetResult((HashOperationStatus.DestinationBufferTooSmall, 0));
+                    return;
+                }
+
+                // Reset state of hasher
+                hasher.Reset();
+
+                // Alloc buffer
+                buffer = bufferSize > MaxStackallocSize
+                    ? ArrayPool<byte>.Shared.Rent(bufferSize)
+                    : null;
+                Span<byte> bufferSpan = buffer ?? stackalloc byte[bufferSize];
+
+                try
+                {
+                    int read;
+                    while ((read = sourceStream.ReadAtLeast(bufferSpan, bufferSize, false)) > 0)
+                    {
+                        hasher.Append(bufferSpan[..read]);
+                        readBytesAction?.Invoke(read);
+                        token.ThrowIfCancellationRequested();
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    tcs.SetResult((HashOperationStatus.OperationCancelled, 0));
+                    return;
+                }
+
+                // Return hash
+                tcs.SetResult(!hasher.TryGetHashAndReset(hashBytesDestination.Span, out int hashLengthWritten)
+                                  ? (HashOperationStatus.InvalidOperation, 0)
+                                  : (HashOperationStatus.Success, hashLengthWritten));
+            }
+            catch (Exception ex)
+            {
+                tcs.SetException(ex);
+            }
+            finally
+            {
+                if (buffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
     }

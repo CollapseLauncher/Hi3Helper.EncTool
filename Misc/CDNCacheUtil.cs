@@ -7,19 +7,82 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Hashing;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable CommentTypo
 // ReSharper disable InconsistentNaming
+// ReSharper disable CheckNamespace
 
 #nullable enable
 namespace Hi3Helper.EncTool;
+
+/// <summary>
+/// A record contains the status of the response from a URL.
+/// </summary>
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+public unsafe struct UrlStatus
+{
+    private const int urlStrLen = 512 - 16;
+
+    /// <summary>
+    /// The status code of the response.
+    /// </summary>
+    public readonly HttpStatusCode StatusCode;
+
+    /// <summary>
+    /// The size of the response data.
+    /// </summary>
+    public readonly long FileSize;
+
+    private fixed byte _urlString[urlStrLen]; // Fit to 512 bytes
+
+    /// <summary>
+    /// Whether the <see cref="UrlStatus.StatusCode"/> is a success status code (2xx) or not.
+    /// </summary>
+    public bool IsSuccessStatusCode => (int)StatusCode is > 199 and < 300;
+
+    /// <summary>
+    /// Gets the URL string of the request
+    /// </summary>
+    public string Url
+    {
+        get
+        {
+            fixed (byte* bufferP = _urlString)
+            {
+                ReadOnlySpan<byte> buffer = MemoryMarshal
+                   .CreateReadOnlySpanFromNullTerminated(bufferP);
+                return Encoding.UTF8.GetString(buffer);
+            }
+        }
+    }
+
+    internal UrlStatus(HttpResponseMessage message)
+        : this(message.StatusCode, message.RequestMessage?.RequestUri?.AbsoluteUri ?? "")
+    {
+        FileSize = message.Content.Headers.ContentLength ?? 0;
+    }
+
+    internal UrlStatus(HttpStatusCode statusCode, string url)
+    {
+        StatusCode = statusCode;
+
+        fixed (byte* urlBytesP = _urlString)
+        {
+            Span<byte> urlBytesSpan = new Span<byte>(urlBytesP, urlStrLen);
+            urlBytesSpan.Clear();
+            Encoding.UTF8.GetBytes(url, urlBytesSpan[..(urlStrLen - 1)]);
+        }
+    }
+}
 
 /// <summary>
 /// A record contains the result of the CDN cache.
@@ -51,6 +114,16 @@ public record CDNCacheResult
     /// A <see cref="CopyToStream"/> will be used if the response is actually determined to be cached. Otherwise, a <see cref="BridgedNetworkStream"/> will be used.<br/>
     /// </summary>
     public required Stream Stream { get; set; }
+
+    /// <summary>
+    /// The status code of the response.
+    /// </summary>
+    public HttpStatusCode StatusCode { get; set; } = 0;
+
+    /// <summary>
+    /// Whether the <see cref="CDNCacheResult.StatusCode"/> is a success status code (2xx) or not.
+    /// </summary>
+    public bool IsSuccessStatusCode => (int)StatusCode is > 199 and < 300;
 }
 
 public static class CDNCacheUtil
@@ -132,6 +205,91 @@ public static class CDNCacheUtil
     }
 
     /// <summary>
+    /// Gets the cached response status from the given URL using HEAD request. The return value: <see cref="UrlStatus"/> contains the HTTP status code and size of the response.
+    /// </summary>
+    /// <param name="client">Client to be used to retrieve the response.</param>
+    /// <param name="url">The URL to check</param>
+    /// <param name="token">Cancellation token for the async operation.</param>
+    /// <returns>The return status of the given URL.</returns>
+    public static ValueTask<UrlStatus> GetCachedUrlStatus(
+        this HttpClient   client,
+        string            url,
+        CancellationToken token) =>
+        client.GetCachedUrlStatus(new Uri(url), token);
+
+    /// <summary>
+    /// Gets the cached response status from the given URL using HEAD request. The return value: <see cref="UrlStatus"/> contains the HTTP status code and size of the response.
+    /// </summary>
+    /// <param name="client">Client to be used to retrieve the response.</param>
+    /// <param name="url">The URL to check</param>
+    /// <param name="token">Cancellation token for the async operation.</param>
+    /// <returns>The return status of the given URL.</returns>
+    public static async ValueTask<UrlStatus> GetCachedUrlStatus(
+        this HttpClient   client,
+        Uri               url,
+        CancellationToken token)
+    {
+        if (!IsEnabled || string.IsNullOrEmpty(CurrentCacheDir))
+        {
+            using HttpResponseMessage uncachedResponse =
+                await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url),
+                                       HttpCompletionOption.ResponseHeadersRead,
+                                       token)
+                            .ConfigureAwait(false);
+            return new UrlStatus(uncachedResponse);
+        }
+
+        string   cacheDir           = CurrentCacheDir;
+        string   cacheStampName     = $"cached_status_{GetXxh3HashFrom(url.AbsoluteUri.AsSpan())}";
+        string   cacheStampPath     = Path.Combine(cacheDir, cacheStampName);
+        FileInfo cacheStampFileInfo = new FileInfo(cacheStampPath);
+
+        DateTime dateTimeOffsetNow = DateTime.UtcNow;
+        if (cacheStampFileInfo.Exists &&
+            cacheStampFileInfo.LastWriteTimeUtc.Add(MaxAcceptedCacheExpireTime) >= dateTimeOffsetNow &&
+            ReadFromFile(cacheStampPath, out UrlStatus cachedStatus))
+        {
+            return cachedStatus;
+        }
+
+        using HttpResponseMessage response =
+            await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url),
+                                   HttpCompletionOption.ResponseHeadersRead,
+                                   token)
+                        .ConfigureAwait(false);
+
+        UrlStatus status = new UrlStatus(response);
+        WriteToFile(cacheStampPath, in status);
+        return status;
+
+        static unsafe void WriteToFile(string filePath, in UrlStatus urlStatus)
+        {
+            fixed (void* buffer = &urlStatus)
+            {
+                ReadOnlySpan<byte> bufferSpan = new ReadOnlySpan<byte>(buffer, sizeof(UrlStatus));
+                using FileStream fileStream = File.Open(filePath,
+                                                        FileMode.Create,
+                                                        FileAccess.ReadWrite,
+                                                        FileShare.ReadWrite);
+                fileStream.Write(bufferSpan);
+            }
+        }
+
+        static unsafe bool ReadFromFile(string filePath, out UrlStatus urlStatus)
+        {
+            using FileStream fileStream = File.Open(filePath,
+                                                    FileMode.Open,
+                                                    FileAccess.ReadWrite,
+                                                    FileShare.ReadWrite);
+            urlStatus = default;
+            Span<byte> urlStatusBuffer = new Span<byte>(Unsafe.AsPointer(ref urlStatus), sizeof(UrlStatus));
+            int read = fileStream.Read(urlStatusBuffer);
+
+            return read == sizeof(UrlStatus);
+        }
+    }
+
+    /// <summary>
     /// This method is used to perform a cache cleanup up of the current cache directory based on <see cref="MaxAcceptedCacheExpireTime"/>.<br/>
     /// It's kind of expensive but this requires synchronous operation to make sure that the cache directory is cleaned up properly and avoid any possible race-condition issue.<br/>
     /// </summary>
@@ -150,7 +308,7 @@ public static class CDNCacheUtil
             return cachePath[SkipGCPrefix.Length..];
         }
 
-        DirectoryInfo directoryInfo = new(cachePath);
+        DirectoryInfo directoryInfo = new DirectoryInfo(cachePath);
         if (!directoryInfo.Exists)
         {
             return cachePath;
@@ -258,9 +416,11 @@ public static class CDNCacheUtil
 
         if (!IsEnabled)
         {
+            BridgedNetworkStream responseStream = await BridgedNetworkStream.CreateStream(client, requestMessage, token);
             return new CDNCacheResult
             {
-                Stream = await BridgedNetworkStream.CreateStream(client, requestMessage, token)
+                StatusCode = responseStream.StatusCode,
+                Stream     = responseStream
             };
         }
 
@@ -269,7 +429,8 @@ public static class CDNCacheUtil
             response = await client.SendAsync(requestMessage, token);
             return new CDNCacheResult
             {
-                Stream = await BridgedNetworkStream.CreateStream(response, token)
+                StatusCode = response.StatusCode,
+                Stream     = await BridgedNetworkStream.CreateStream(response, token)
             };
         }
 
@@ -284,7 +445,8 @@ public static class CDNCacheUtil
                 response = await client.SendAsync(requestMessage, token);
                 return new CDNCacheResult
                 {
-                    Stream = await BridgedNetworkStream.CreateStream(client, requestMessage, token)
+                    StatusCode = response.StatusCode,
+                    Stream     = await BridgedNetworkStream.CreateStream(client, requestMessage, token)
                 };
             }
 
@@ -320,7 +482,7 @@ public static class CDNCacheUtil
                 CreateCacheStream(Path.Combine(cacheDir, hashString),
                                   cacheDir,
                                   hashString,
-                                  await response.Content.ReadAsStreamAsync(token),
+                                  await BridgedNetworkStream.CreateStream(response, token),
                                   true,
                                   nextExpireOffset) :
                 await BridgedNetworkStream.CreateStream(response, token);
@@ -330,7 +492,8 @@ public static class CDNCacheUtil
                 LocalCachePath     = Path.Combine(cacheDir, hashString),
                 CacheETag          = hashString,
                 CacheExpireTimeUtc = nextExpireOffset,
-                Stream             = fileStream
+                Stream             = fileStream,
+                StatusCode         = HttpStatusCode.OK
             };
         }
         catch
@@ -350,13 +513,15 @@ public static class CDNCacheUtil
 
     public static async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(this HttpResponseMessage? response, CancellationToken token = default)
     {
-        ArgumentNullException.ThrowIfNull(response, nameof(response));
+        ArgumentNullException.ThrowIfNull(response);
 
         if (!IsEnabled)
         {
+            BridgedNetworkStream stream = await BridgedNetworkStream.CreateStream(response, token);
             return new CDNCacheResult
             {
-                Stream = await BridgedNetworkStream.CreateStream(response, token)
+                StatusCode = stream.StatusCode,
+                Stream     = stream
             };
         }
 
@@ -390,7 +555,8 @@ public static class CDNCacheUtil
             {
                 return new CDNCacheResult
                 {
-                    Stream = bridgedNetworkStream
+                    StatusCode = bridgedNetworkStream.StatusCode,
+                    Stream     = bridgedNetworkStream
                 };
             }
 
@@ -417,7 +583,8 @@ public static class CDNCacheUtil
                 LocalCachePath     = string.IsNullOrEmpty(etag) ? null : Path.Combine(cacheDir, etag),
                 CacheETag          = etag,
                 CacheExpireTimeUtc = nextExpireTime,
-                Stream             = returnStream
+                Stream             = returnStream,
+                StatusCode         = HttpStatusCode.OK
             };
         }
         catch
@@ -504,7 +671,7 @@ public static class CDNCacheUtil
         HashCacheType     hashCacheType,
         CancellationToken token)
     {
-        ArgumentException.ThrowIfNullOrEmpty(etag, nameof(etag));
+        ArgumentException.ThrowIfNullOrEmpty(etag);
 
         string cachedFilePath = Path.Combine(cacheDir, etag);
         if (File.Exists(cachedFilePath) &&
@@ -515,7 +682,8 @@ public static class CDNCacheUtil
                 IsCached       = true,
                 LocalCachePath = cachedFilePath,
                 CacheETag      = etag,
-                Stream         = cachedStream
+                Stream         = cachedStream,
+                StatusCode     = HttpStatusCode.OK
             };
         }
 
@@ -545,13 +713,14 @@ public static class CDNCacheUtil
 
             if (hashCacheType.HasFlag(HashCacheType.CryptoType))
             {
+                // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
                 using HashAlgorithm hashAlgorithm = hashCacheType switch
-                {
-                    HashCacheType.MD5 => MD5.Create(),
-                    HashCacheType.Sha1 => SHA1.Create(),
-                    HashCacheType.Sha256 => SHA256.Create(),
-                    _ => throw new NotSupportedException($"Crypto Hash Type: {hashCacheType} isn't supported!")
-                };
+                                                    {
+                                                        HashCacheType.MD5 => MD5.Create(),
+                                                        HashCacheType.Sha1 => SHA1.Create(),
+                                                        HashCacheType.Sha256 => SHA256.Create(),
+                                                        _ => throw new NotSupportedException($"Crypto Hash Type: {hashCacheType} isn't supported!")
+                                                    };
 
                 // >> 3 is equal to divided by 8. HashSize must be calculated since it returns bits, not bytes.
                 if (hashAlgorithm.HashSize >> 3 != actualHashLen)
@@ -571,6 +740,7 @@ public static class CDNCacheUtil
 
             if (!hashCacheType.HasFlag(HashCacheType.CryptoType))
             {
+                // ReSharper disable once SwitchExpressionHandlesSomeKnownEnumValuesWithExceptionInDefault
                 NonCryptographicHashAlgorithm hashAlgorithm = hashCacheType switch
                 {
                     HashCacheType.Crc32 => new Crc32(),
@@ -873,7 +1043,7 @@ public static class CDNCacheUtil
 
     private static bool IsETagAttached(string? tag)
     {
-        ArgumentException.ThrowIfNullOrEmpty(tag, nameof(tag));
+        ArgumentException.ThrowIfNullOrEmpty(tag);
 
         using (ThisLock.EnterScope())
         {
@@ -883,7 +1053,7 @@ public static class CDNCacheUtil
 
     private static bool AttachETag(string? tag)
     {
-        ArgumentException.ThrowIfNullOrEmpty(tag, nameof(tag));
+        ArgumentException.ThrowIfNullOrEmpty(tag);
 
         using (ThisLock.EnterScope())
         {
@@ -893,7 +1063,7 @@ public static class CDNCacheUtil
 
     private static void DetachETag(string? tag)
     {
-        ArgumentException.ThrowIfNullOrEmpty(tag, nameof(tag));
+        ArgumentException.ThrowIfNullOrEmpty(tag);
 
         using (ThisLock.EnterScope())
         {

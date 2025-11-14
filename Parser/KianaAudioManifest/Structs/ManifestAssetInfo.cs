@@ -1,4 +1,5 @@
 using Hi3Helper.Data;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
@@ -38,16 +39,17 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #nullable enable
     public class ManifestAssetInfo
     {
-        public required string Name { get; set; } // 0x10
-        public required string Path { get; set; } // 0x18
-        public required byte[] Hash { get; set; } // 0x20
-        public string HashString { get => HexTool.BytesToHexUnsafe(Hash) ?? ""; }
-        public int Size { get; set; } // 0x30
-        public AudioLanguageType Language { get; set; } // 0x34
-        public AudioPCKType PckType { get; set; } // 0x38
-        public bool NeedMap { get; set; } // 0x3C
-        public bool IsHasPatch { get => PatchInfo != null; }
-        public ManifestAudioPatchInfo? PatchInfo { get; private set; }
+        public required string                       Name         { get; set; } // 0x10
+        public required string                       Path         { get; set; } // 0x18
+        public required byte[]                       Hash         { get; set; } // 0x20
+        public          string                       HashString   { get => HexTool.BytesToHexUnsafe(Hash) ?? ""; }
+        public          int                          Size         { get; set; } // 0x30
+        public          AudioLanguageType            Language     { get; set; } // 0x34
+        public          AudioPCKType                 PckType      { get; set; } // 0x38
+        public          bool                         NeedMap      { get; set; } // 0x3C
+        public          bool                         IsHasPatch   { get => AllPatchInfo.Count > 0; }
+        public          ManifestAudioPatchInfo?      PatchInfo    { get; private set; }
+        public          List<ManifestAudioPatchInfo> AllPatchInfo { get; set; } = [];
 
         public void AddPatchInfo(ManifestAudioPatchInfo? patchInfo)
         {

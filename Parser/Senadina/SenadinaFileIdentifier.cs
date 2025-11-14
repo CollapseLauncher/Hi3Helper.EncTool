@@ -20,6 +20,8 @@ namespace Hi3Helper.EncTool.Parser.Senadina
     public enum SenadinaKind { bricksBase, bricksCurrent, platformBase, wandCurrent, chiptunesCurrent, chiptunesPreload, wonderland }
     public partial class SenadinaFileIdentifier : IDisposable
     {
+        private bool _isDisposed;
+
         public string? relativePath   { get; set; }
         public string? lastIdentifier { get; set; }
         public long    fileTime       { get; set; }
@@ -28,17 +30,28 @@ namespace Hi3Helper.EncTool.Parser.Senadina
         public BrotliStream? fileStream { get; set; }
         public Dictionary<string, byte[]>? stringStore { get; set; }
 
-        ~SenadinaFileIdentifier() => Dispose();
+        ~SenadinaFileIdentifier() => DisposeCore(false);
 
         public void Dispose()
         {
-            stringStore?.Clear();
-            fileStream?.Dispose();
-
+            DisposeCore(true);
             GC.SuppressFinalize(this);
         }
 
+        private void DisposeCore(bool isDispose)
+        {
+            if (!isDispose || _isDisposed)
+            {
+                return;
+            }
+
+            stringStore?.Clear();
+            fileStream?.Dispose();
+            _isDisposed = true;
+        }
+
         public bool IsKeyStoreExist(string key) => stringStore?.ContainsKey(key) ?? false;
+
         public unsafe bool TryReadStringStoreArrayAs<T>(string key, out T[]? result)
             where T : unmanaged
         {
@@ -165,45 +178,27 @@ namespace Hi3Helper.EncTool.Parser.Senadina
                     KeyNotFoundException("origUrl from pustaka's store is not exist. Please report this issue to our Discord Server!");
             }
 
-            if (string.IsNullOrEmpty(result))
-                throw new NullReferenceException("origUrl from pustaka's store is null or just an empty string. Please report this issue to our Discord Server!");
-
-            return result;
+            return string.IsNullOrEmpty(result)
+                ? throw new NullReferenceException("origUrl from pustaka's store is null or just an empty string. Please report this issue to our Discord Server!")
+                : result;
         }
 
-        public async ValueTask<HttpResponseMessage> GetOriginalFileHttpResponse(HttpClient client, HttpMethod? method = null, CancellationToken token = default)
+        public async Task<Stream> GetOriginalFileStream(
+            HttpClient        client,
+            HttpMethod?       method = null,
+            CancellationToken token  = default)
         {
-            HttpRequestMessage?  message  = null;
-            HttpResponseMessage? response = null;
-
             string originalUrl = GetOriginalFileUrl();
+            return (await client.TryGetCachedStreamFrom(originalUrl, method, token)).Stream;
+        }
 
-            bool isFail = false;
-            try
-            {
-                message  = new HttpRequestMessage(method ?? HttpMethod.Get, originalUrl);
-                response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, token);
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new HttpRequestException($"Error while retrieving the original URL: {originalUrl} with status: {response.StatusCode} ({(int)response.StatusCode})", null, response.StatusCode);
-                }
-
-                return response;
-            }
-            catch
-            {
-                isFail = true;
-            }
-            finally
-            {
-                if (isFail)
-                {
-                    message?.Dispose();
-                    response?.Dispose();
-                }
-            }
-
-            throw new InvalidOperationException("This code shouldn't expect to be executed!");
+        public async Task<CDNCacheResult> GetOriginalFileHttpResponse(
+            HttpClient        client,
+            HttpMethod?       method = null,
+            CancellationToken token  = default)
+        {
+            string originalUrl = GetOriginalFileUrl();
+            return await client.TryGetCachedStreamFrom(originalUrl, method, token);
         }
     }
 }
