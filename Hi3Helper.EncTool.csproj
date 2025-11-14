@@ -36,12 +36,12 @@
 
     <ItemGroup>
         <PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" Condition="$(DefineConstants.Contains('USEZSTD'))" />
-        <PackageReference Include="Google.Protobuf" Version="3.32.0" />
-        <PackageReference Include="Google.Protobuf.Tools" Version="3.32.0">
+        <PackageReference Include="Google.Protobuf" Version="3.33.1" />
+        <PackageReference Include="Google.Protobuf.Tools" Version="3.33.1">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-		<PackageReference Include="System.IO.Hashing" Version="10.0.0-rc.2.25502.107" />
+		<PackageReference Include="System.IO.Hashing" Version="10.0.0" />
 	</ItemGroup>
 
     <ItemGroup>
