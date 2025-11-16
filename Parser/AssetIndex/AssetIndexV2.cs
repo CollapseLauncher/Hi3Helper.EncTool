@@ -50,10 +50,9 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
 
             // Deserialize lines of the JSON into the list
             List<PkgVersionProperties> versionList = [];
-            while (!streamReader.EndOfStream)
+            while (streamReader.ReadLine() is {} line)
             {
-                string line = streamReader.ReadLine()!;
-                versionList.Add((PkgVersionProperties)JsonSerializer.Deserialize(line, typeof(PkgVersionProperties), JsonContext.Default)!);
+                versionList.Add(JsonSerializer.Deserialize(line, JsonContext.Default.PkgVersionProperties));
             }
 
             // Serialize the list into binary format

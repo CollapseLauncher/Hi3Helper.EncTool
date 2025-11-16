@@ -53,10 +53,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 #if DEBUG
             int index = 0;
 #endif
-            while (!reader.EndOfStream)
+            while (reader.ReadLine() is {} line)
             {
             #nullable enable
-                string           line      = reader.ReadLine() ?? "";
                 SRJSONAssetInfo? assetInfo = JsonSerializer.Deserialize(line, SRJSONAssetInfoContext.Default.SRJSONAssetInfo);
 
                 SRAsset asset = new()
