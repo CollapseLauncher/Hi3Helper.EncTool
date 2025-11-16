@@ -50,6 +50,19 @@ public unsafe struct UrlStatus
     public bool IsSuccessStatusCode => (int)StatusCode is > 199 and < 300;
 
     /// <summary>
+    /// Throws if the HTTP Status returns unsuccessful code.
+    /// </summary>
+    /// <exception cref="HttpRequestException"/>
+    public void EnsureSuccessStatus()
+    {
+        if (!IsSuccessStatusCode)
+        {
+            throw new
+                HttpRequestException($"URL: {Url} returns unsuccessful return code: {(int)StatusCode} ({StatusCode})");
+        }
+    }
+
+    /// <summary>
     /// Gets the URL string of the request
     /// </summary>
     public string Url
