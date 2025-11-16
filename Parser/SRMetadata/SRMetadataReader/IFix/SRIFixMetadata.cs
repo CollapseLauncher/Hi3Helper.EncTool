@@ -53,9 +53,9 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         {
             using (StreamReader reader = new StreamReader(AssetProperty.MetadataStream, Encoding.UTF8, true, -1, false))
             {
-                while (!reader.EndOfStream)
+                while (reader.ReadLine() is {} line)
                 {
-                    string[] tuple = reader.ReadLine().Split(',');
+                    string[] tuple = line.Split(',');
                     if (tuple[0] == "empty")
                     {
                         Console.Write("SRIFix Cache returning empty! Skipping...\r\n");
