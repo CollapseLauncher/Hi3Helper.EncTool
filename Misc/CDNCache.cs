@@ -192,9 +192,18 @@ public class CDNCache
     /// This method is used to perform a cache cleanup up of the current cache directory based on <see cref="MaxAcceptedCacheExpireTime"/>.<br/>
     /// It's kind of expensive but this requires synchronous operation to make sure that the cache directory is cleaned up properly and avoid any possible race-condition issue.<br/>
     /// </summary>
+    /// <param name="forceClean">Remove all caches even though the file isn't expired yet.</param>
+    /// <returns>Current cache path used by the instance.</returns>
+    public string? PerformCacheGarbageCollection(bool forceClean = false)
+        => PerformCacheGarbageCollection(CurrentCacheDir, forceClean);
+
+    /// <summary>
+    /// This method is used to perform a cache cleanup up of the current cache directory based on <see cref="MaxAcceptedCacheExpireTime"/>.<br/>
+    /// It's kind of expensive but this requires synchronous operation to make sure that the cache directory is cleaned up properly and avoid any possible race-condition issue.<br/>
+    /// </summary>
     /// <param name="cachePath">The cache path to clean-up.</param>
     /// <param name="forceClean">Remove all caches even though the file isn't expired yet.</param>
-    /// <returns>The cache path to use.</returns>
+    /// <returns>Current cache path used by the instance.</returns>
     public string? PerformCacheGarbageCollection(string? cachePath, bool forceClean = false)
     {
         if (string.IsNullOrEmpty(cachePath))

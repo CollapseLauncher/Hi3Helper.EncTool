@@ -107,7 +107,7 @@ public static class CDNCacheUtil
     /// </summary>
     /// <param name="cachePath">The cache path to clean-up.</param>
     /// <param name="forceClean">Remove all caches even though the file isn't expired yet.</param>
-    /// <returns>The cache path to use.</returns>
+    /// <returns>Current cache path used by the instance.</returns>
     public static string? PerformCacheGarbageCollection(
         string? cachePath,
         bool    forceClean = false)
