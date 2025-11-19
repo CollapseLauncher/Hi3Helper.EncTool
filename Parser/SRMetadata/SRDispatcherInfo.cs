@@ -169,18 +169,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #endif
             // Get HttpClient and response
             HttpClient client = downloadClient.GetHttpClient();
-            using HttpResponseMessage designArchiveHttpResponse = await client.GetAsync(archiveURL, ThreadToken);
-            // Skip if the design archive is unreachable
-            if (!designArchiveHttpResponse.IsSuccessStatusCode)
-            {
-                Console.WriteLine("Cannot parse Design Archive resource as HTTP response returns a non-success code: {0} ({1})",
-                    designArchiveHttpResponse.StatusCode,
-                    designArchiveHttpResponse.StatusCode.ToString());
-                return;
-            }
-
             // Parse design archive and get Native Data resources
-            await using Stream designArchiveStream = (await designArchiveHttpResponse.TryGetCachedStreamFrom(ThreadToken)).Stream;
+            await using Stream designArchiveStream = (await client.TryGetCachedStreamFrom(archiveURL, token: ThreadToken)).Stream;
             await ParseArchiveInfoFromStream(designArchiveStream, "DesignDataBundleVersionUpdateUrl", ThreadToken);
 
             const string NativeDataRefDictKey  = "M_NativeDataV";
