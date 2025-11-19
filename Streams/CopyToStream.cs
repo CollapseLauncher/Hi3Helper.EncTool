@@ -37,7 +37,7 @@ public sealed class CopyToStream(
 
     public override long Length => TryGetStreamLength(sourceStream);
 
-    public override long Position { get => sourceStream.Position; set => Seek(value, SeekOrigin.Begin); }
+    public override long Position { get => destinationStream.Position; set => Seek(value, SeekOrigin.Begin); }
 
     ~CopyToStream() => Dispose(false);
 
