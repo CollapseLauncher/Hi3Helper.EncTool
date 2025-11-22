@@ -36,7 +36,7 @@ public unsafe struct UrlStatus
     /// Throws if the HTTP Status returns unsuccessful code.
     /// </summary>
     /// <exception cref="HttpRequestException"/>
-    public void EnsureSuccessStatus()
+    public void EnsureSuccessStatusCode()
     {
         if (!IsSuccessStatusCode)
         {
