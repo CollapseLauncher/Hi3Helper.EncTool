@@ -30,8 +30,7 @@ public partial class SimpleZipArchiveEntry
     public required bool           IsDeflate64    { get; init; }
     public required bool           IsDeflate      { get; init; }
 
-    public bool IsDirectory => !Flags.HasFlag(BitFlagValues.DataDescriptor) ||
-                               Filename[^1] is '/' or '\\';
+    public bool IsDirectory => Filename[^1] is '/' or '\\';
     #endregion
 
     #region Isolated Properties
