@@ -31,6 +31,11 @@ public partial class SimpleZipArchiveEntry
     public required bool           IsDeflate      { get; init; }
 
     public bool IsDirectory => Filename[^1] is '/' or '\\';
+
+    public override string ToString() => IsDirectory
+        ? Filename + (string.IsNullOrEmpty(Comment) ? string.Empty : $" | Comment: {Comment}")
+        : $"{Filename} | SizeU: {Size} | SizeC: {SizeCompressed}" + (string.IsNullOrEmpty(Comment) ? string.Empty : $" | Comment: {Comment}");
+
     #endregion
 
     #region Isolated Properties

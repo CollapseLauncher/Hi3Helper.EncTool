@@ -31,6 +31,12 @@ public partial class SimpleZipArchiveEntry
         public const int UncompressedSize  = sizeof(long);
         public const int CompressedSize    = sizeof(long);
         public const int LocalHeaderOffset = sizeof(long);
+        public const int StartDiskNumber   = sizeof(int);
+
+        public const int MaximumExtraFieldLength = UncompressedSize +
+                                                   CompressedSize +
+                                                   LocalHeaderOffset +
+                                                   StartDiskNumber;
     }
 
     internal static class FieldLengths
@@ -92,8 +98,9 @@ public partial class SimpleZipArchiveEntry
         {
             return false;
         }
-        ushort tag = MemoryMarshal.Read<ushort>(dataTrailing);
-        ushort size = MemoryMarshal.Read<ushort>(dataTrailing[sizeof(ushort)..]);
+
+        ushort             tag  = MemoryMarshal.Read<ushort>(dataTrailing);
+        ushort             size = MemoryMarshal.Read<ushort>(dataTrailing[sizeof(ushort)..]);
         ReadOnlySpan<byte> data = dataTrailing.Slice(tagSizeFieldLen, size);
 
         if (tag != tagConstant)
@@ -102,36 +109,57 @@ public partial class SimpleZipArchiveEntry
             goto TryReadAnother;
         }
 
-        switch (data.Length)
+        // The spec section 4.5.3:
+        //      The order of the fields in the zip64 extended
+        //      information record is fixed, but the fields MUST
+        //      only appear if the corresponding Local or Central
+        //      directory record field is set to 0xFFFF or 0xFFFFFFFF.
+        // However, tools commonly write the fields anyway; the prevailing convention
+        // is to respect the size, but only actually use the values if their 32 bit
+        // values were all 0xFF.
+        if (data.Length < FieldLengths.UncompressedSize)
         {
-            // The spec section 4.5.3:
-            //      The order of the fields in the zip64 extended
-            //      information record is fixed, but the fields MUST
-            //      only appear if the corresponding Local or Central
-            //      directory record field is set to 0xFFFF or 0xFFFFFFFF.
-            // However, tools commonly write the fields anyway; the prevailing convention
-            // is to respect the size, but only actually use the values if their 32 bit
-            // values were all 0xFF.
-            case < Zip64ExtraFieldLengths.UncompressedSize:
-                return true;
-            // Advancing the stream (by reading from it) is possible only when:
-            // 1. There is an explicit ask to do that (valid files, corresponding boolean flag(s) set to true).
-            // 2. When the size indicates that all the information is available ("slightly invalid files").
-            case >= Zip64ExtraFieldLengths.UncompressedSize:
-                uncompressedSize = MemoryMarshal.Read<long>(data);
-                data = data[Zip64ExtraFieldLengths.UncompressedSize..];
-                break;
+            return true;
         }
 
-        if (data.Length >= Zip64ExtraFieldLengths.CompressedSize)
+        // Advancing the stream (by reading from it) is possible only when:
+        // 1. There is an explicit ask to do that (valid files, corresponding boolean flag(s) set to true).
+        // 2. When the size indicates that all the information is available ("slightly invalid files").
+        bool readAllFields = size >= Zip64ExtraFieldLengths.MaximumExtraFieldLength;
+
+        if (uncompressedSize == Zip64Mask)
         {
-            compressedSize = MemoryMarshal.Read<long>(data);
+            uncompressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+            data             = data[Zip64ExtraFieldLengths.UncompressedSize..];
+        }
+        else if (readAllFields)
+        {
+            data = data[Zip64ExtraFieldLengths.UncompressedSize..];
+        }
+
+        if (data.Length < Zip64ExtraFieldLengths.CompressedSize)
+        {
+            return true;
+        }
+
+        if (compressedSize == Zip64Mask)
+        {
+            compressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+            data           = data[Zip64ExtraFieldLengths.CompressedSize..];
+        }
+        else if (readAllFields)
+        {
             data = data[Zip64ExtraFieldLengths.CompressedSize..];
         }
 
-        if (data.Length >= Zip64ExtraFieldLengths.LocalHeaderOffset)
+        if (data.Length < Zip64ExtraFieldLengths.LocalHeaderOffset)
         {
-            relativeOffsetOfLocalHeader = MemoryMarshal.Read<long>(data);
+            return true;
+        }
+
+        if (relativeOffsetOfLocalHeader == Zip64Mask)
+        {
+            relativeOffsetOfLocalHeader = BinaryPrimitives.ReadInt64LittleEndian(data);
         }
 
         return true;
@@ -192,11 +220,11 @@ public partial class SimpleZipArchiveEntry
         BitFlagValues flags = MemoryMarshal.Read<BitFlagValues>(currentBlockSpan[FieldLocations.GeneralPurposeBitFlags..]);
 
         ushort compressionType = MemoryMarshal.Read<ushort>(currentBlockSpan[FieldLocations.CompressionMethod..]);
-        uint lastModified = MemoryMarshal.Read<uint>(currentBlockSpan[FieldLocations.LastModified..]);
-        uint crc32 = MemoryMarshal.Read<uint>(currentBlockSpan[FieldLocations.Crc32..]);
-        ushort fileNameLen = MemoryMarshal.Read<ushort>(currentBlockSpan[FieldLocations.FilenameLength..]);
-        ushort extraFieldLen = MemoryMarshal.Read<ushort>(currentBlockSpan[FieldLocations.ExtraFieldLength..]);
-        ushort fileCommentLen = MemoryMarshal.Read<ushort>(currentBlockSpan[FieldLocations.FileCommentLength..]);
+        uint   lastModified    = MemoryMarshal.Read<uint>(currentBlockSpan[FieldLocations.LastModified..]);
+        uint   crc32           = MemoryMarshal.Read<uint>(currentBlockSpan[FieldLocations.Crc32..]);
+        ushort fileNameLen     = MemoryMarshal.Read<ushort>(currentBlockSpan[FieldLocations.FilenameLength..]);
+        ushort extraFieldLen   = MemoryMarshal.Read<ushort>(currentBlockSpan[FieldLocations.ExtraFieldLength..]);
+        ushort fileCommentLen  = MemoryMarshal.Read<ushort>(currentBlockSpan[FieldLocations.FileCommentLength..]);
 
         if (flags.HasFlag(BitFlagValues.IsEncrypted))
         {
@@ -208,22 +236,21 @@ public partial class SimpleZipArchiveEntry
             throw new NotSupportedException("Compression is not supported. It must be either Store, Deflate or Deflate64");
         }
 
-        long compressedSize = MemoryMarshal.Read<uint>(currentBlockSpan[FieldLocations.CompressedSize..]);
+        long compressedSize   = MemoryMarshal.Read<uint>(currentBlockSpan[FieldLocations.CompressedSize..]);
         long uncompressedSize = MemoryMarshal.Read<uint>(currentBlockSpan[FieldLocations.UncompressedSize..]);
 
         long relativeOffsetOfLocalHeader = MemoryMarshal.Read<uint>(currentBlockSpan[FieldLocations.RelativeOffsetOfLocalHeader..]);
-
         ReadOnlySpan<byte> dynamicRecord = currentBlockSpan[FieldLocations.DynamicData..];
 
-        ReadOnlySpan<byte> fileNameSpan = dynamicRecord[..fileNameLen];
-        ReadOnlySpan<byte> extraFieldSpan = dynamicRecord.Slice(fileNameLen, extraFieldLen);
+        ReadOnlySpan<byte> fileNameSpan    = dynamicRecord[..fileNameLen];
+        ReadOnlySpan<byte> extraFieldSpan  = dynamicRecord.Slice(fileNameLen, extraFieldLen);
         ReadOnlySpan<byte> fileCommentSpan = dynamicRecord.Slice(fileNameLen + extraFieldLen, fileCommentLen);
 
         // Parse filename and comment
         string? fileComment = null;
-        if (fileCommentLen > 0)
+        if (!fileCommentSpan.IsEmpty)
         {
-            fileComment = Encoding.UTF8.GetString(fileCommentSpan);
+            fileComment = Encoding.Default.GetString(fileCommentSpan);
         }
 
         _ = TryReadZip64SizeFromExtraField(extraFieldSpan,

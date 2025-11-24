@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,15 +33,19 @@ public delegate Task<Stream> StreamFactoryAsync(long? offset, long? length, Canc
 public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
 {
     #region Constants
-    private const   int                EOCDBufferLength = 64 << 10;
-    internal static ReadOnlySpan<byte> ZipEOCDRHeaderMagic    => "PK\x05\x06"u8;
-    internal static ReadOnlySpan<byte> Zip64EOCDRHeaderMagic  => "PK\x06\x06"u8;
-    internal static ReadOnlySpan<byte> Zip64EOCDRLHeaderMagic => "PK\x06\x07"u8;
+    private const   int                EOCDBufferLength = 128 << 10;
+    internal static ReadOnlySpan<byte> ZipEOCDRHeaderMagic   => "PK\x05\x06"u8;
+    internal static ReadOnlySpan<byte> Zip64EOCDRHeaderMagic => "PK\x06\x06"u8;
     #endregion
 
     #region Properties
-    public bool                        IsEmpty => Entries.Count == 0;
-    public List<SimpleZipArchiveEntry> Entries { get; } = [];
+    public bool                        IsEmpty        => Entries.Count == 0;
+    public List<SimpleZipArchiveEntry> Entries        { get; } = [];
+    public string?                     ArchiveComment { get; private set; }
+
+    public override string ToString() => $"Count: {Entries.Count} Entries" +
+                                         (string.IsNullOrEmpty(ArchiveComment) ? string.Empty : $" | Comment: {ArchiveComment}");
+
     #endregion
 
     #region Public Methods
@@ -77,8 +82,10 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
                 throw new NotSupportedException($"The requested URL: {url} doesn't have Content-Length response header or the file content is empty!");
             }
 
-            long offsetOfCD;
-            long sizeOfCD;
+            string? archiveComment;
+            long    offsetOfCD;
+            long    sizeOfCD;
+
             long offsetOfEOCD = Math.Clamp(response.FileSize - EOCDBufferLength,
                                            0,
                                            response.FileSize);
@@ -90,7 +97,7 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
                                                          null,
                                                          token))
             {
-                (offsetOfCD, sizeOfCD) =
+                (offsetOfCD, sizeOfCD, archiveComment) =
                     await FindCentralDirectoryOffsetAndSizeAsync(bufferStreamOfEOCD,
                                                                  EOCDBufferLength,
                                                                  token);
@@ -103,13 +110,20 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
 
             if (sizeOfCD == 0)
             {
-                return new ZipArchiveReader();
+                return new ZipArchiveReader
+                {
+                    ArchiveComment = archiveComment
+                };
             }
 
-            return await CreateFromCentralDirectoryStreamAsync(CreateStreamFromOffset,
-                                                               sizeOfCD,
-                                                               offsetOfCD,
-                                                               token);
+            ZipArchiveReader reader =
+                await CreateFromCentralDirectoryStreamAsync(CreateStreamFromOffset,
+                                                            sizeOfCD,
+                                                            offsetOfCD,
+                                                            token);
+
+            reader.ArchiveComment = archiveComment;
+            return reader;
         }
         finally
         {
@@ -150,8 +164,10 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
             throw new InvalidOperationException("Stream has 0 bytes in size!");
         }
 
-        long offsetOfCD;
-        long sizeOfCD;
+        string? archiveComment;
+        long    offsetOfCD;
+        long    sizeOfCD;
+
         long offsetOfEOCD = Math.Clamp(streamLength - EOCDBufferLength,
                                        0,
                                        streamLength);
@@ -159,7 +175,7 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
         await using (Stream bufferStreamOfEOCD =
                      await streamFactory(offsetOfEOCD, EOCDBufferLength, token))
         {
-            (offsetOfCD, sizeOfCD) =
+            (offsetOfCD, sizeOfCD, archiveComment) =
                 await FindCentralDirectoryOffsetAndSizeAsync(bufferStreamOfEOCD,
                                                              EOCDBufferLength,
                                                              token);
@@ -172,13 +188,20 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
 
         if (sizeOfCD == 0)
         {
-            return new ZipArchiveReader();
+            return new ZipArchiveReader
+            {
+                ArchiveComment = archiveComment
+            };
         }
 
-        return await CreateFromCentralDirectoryStreamAsync(streamFactory,
-                                                           sizeOfCD,
-                                                           offsetOfCD,
-                                                           token);
+        ZipArchiveReader reader =
+            await CreateFromCentralDirectoryStreamAsync(streamFactory,
+                                                        sizeOfCD,
+                                                        offsetOfCD,
+                                                        token);
+
+        reader.ArchiveComment = archiveComment;
+        return reader;
     }
     #endregion
 
@@ -251,7 +274,7 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
         return stream.Length;
     }
 
-    private static async ValueTask<(long Offset, long Size)>
+    private static async ValueTask<(long Offset, long Size, string? ArchiveComment)>
         FindCentralDirectoryOffsetAndSizeAsync(
             Stream stream,
             int bufferSize,
@@ -260,8 +283,8 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
         byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         try
         {
-            int                read             = await stream.ReadAtLeastAsync(buffer, bufferSize, false, token);
-            ReadOnlySpan<byte> bufferSpan       = buffer.AsSpan(0, read);
+            int                read       = await stream.ReadAtLeastAsync(buffer, bufferSize, false, token);
+            ReadOnlySpan<byte> bufferSpan = buffer.AsSpan(0, read);
 
             int lastIndexOfMagic32 = bufferSpan.LastIndexOf(ZipEOCDRHeaderMagic);
             int lastIndexOfMagic64 = bufferSpan.LastIndexOf(Zip64EOCDRHeaderMagic);
@@ -282,28 +305,43 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
         }
     }
 
-    private static (uint Offset, uint Size)
+    private static (uint Offset, uint Size, string? ArchiveComment)
         FindCentralDirectoryOffsetAndSize32(ReadOnlySpan<byte> buffer, int offset)
     {
+        const int MaxEOCDRLen = 22;
+
         buffer = buffer[offset..];
 
-        uint sizeCDOnStream   = MemoryMarshal.Read<uint>(buffer[12..]);
-        uint offsetCDOnStream = MemoryMarshal.Read<uint>(buffer[16..]);
-        return (offsetCDOnStream, sizeCDOnStream);
+        uint   sizeCDOnStream   = MemoryMarshal.Read<uint>(buffer[12..]);
+        uint   offsetCDOnStream = MemoryMarshal.Read<uint>(buffer[16..]);
+        ushort commentLength    = MemoryMarshal.Read<ushort>(buffer[20..]);
+
+        int bufferLenRemained = buffer.Length - MaxEOCDRLen;
+        if (bufferLenRemained < commentLength)
+        {
+            commentLength = (ushort)bufferLenRemained;
+        }
+        ReadOnlySpan<byte> commentSpan = buffer.Slice(MaxEOCDRLen, commentLength);
+
+        string? archiveComment = !commentSpan.IsEmpty
+            ? Encoding.Default.GetString(commentSpan)
+            : null;
+
+        return (offsetCDOnStream, sizeCDOnStream, archiveComment);
     }
 
-    private static (long Offset, long Size)
+    private static (long Offset, long Size, string? ArchiveComment)
         FindCentralDirectoryOffsetAndSize64(ReadOnlySpan<byte> buffer, int offset32, int offset64)
     {
         // Try to get the offset from Zip32 record first. Since the size can be dynamic
         // and not always be defined in Zip64 record.
-        (uint offsetEOCDR32, uint sizeEOCDR32) = FindCentralDirectoryOffsetAndSize32(buffer, offset32);
+        (uint offsetEOCDR32, uint sizeEOCDR32, string? archiveComment) = FindCentralDirectoryOffsetAndSize32(buffer, offset32);
 
         // Skip if both offset and size aren't exceeding uint.MaxValue, even though Zip64 EOCDR exist.
         if (offsetEOCDR32 != SimpleZipArchiveEntry.Zip64Mask &&
             sizeEOCDR32 != SimpleZipArchiveEntry.Zip64Mask)
         {
-            return (offsetEOCDR32, sizeEOCDR32);
+            return (offsetEOCDR32, sizeEOCDR32, archiveComment);
         }
 
         long offsetEOCDR64 = offsetEOCDR32;
@@ -322,7 +360,7 @@ public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
             offsetEOCDR64 = MemoryMarshal.Read<long>(buffer64[48..]);
         }
 
-        return (offsetEOCDR64, sizeEOCDR64);
+        return (offsetEOCDR64, sizeEOCDR64, archiveComment);
     }
 
     private static async Task<Stream> GetHttpStreamFromPosAsync(
