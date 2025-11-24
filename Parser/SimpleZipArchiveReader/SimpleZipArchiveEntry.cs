@@ -14,9 +14,9 @@ namespace Hi3Helper.EncTool.Parser.SimpleZipArchiveReader;
 public partial class SimpleZipArchiveEntry
 {
     #region Constants
-    private const uint ZipCentralDirectoryMagic = 0x02014b50;
-    private const uint ZipLocalHeaderMagic      = 0x04034b50;
-    private const uint Zip64Mask                = 0xffffffff;
+    private const  uint ZipCentralDirectoryMagic = 0x02014b50;
+    private const  uint ZipLocalHeaderMagic      = 0x04034b50;
+    internal const uint Zip64Mask                = uint.MaxValue;
     #endregion
 
     #region Public Properties

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -25,13 +26,16 @@ namespace Hi3Helper.EncTool.Parser.SimpleZipArchiveReader;
 public delegate Task<Stream> StreamFactoryAsync(long? offset, long? length, CancellationToken token);
 
 /// <summary>
-/// A Simple Zip Archive reader with ability to read from remote HTTP(S) source or any Stream factories.
+/// A Simple Zip Archive reader with ability to read from remote HTTP(S) source or any Stream factories.<br/>
+/// This instance extends <see cref="IReadOnlyCollection{T}"/> and can be enumerated.
 /// </summary>
-public class ZipArchiveReader
+public class ZipArchiveReader : IReadOnlyCollection<SimpleZipArchiveEntry>
 {
     #region Constants
     private const   int                EOCDBufferLength = 64 << 10;
-    internal static ReadOnlySpan<byte> ZipEODRHeaderMagic => "PK\x05\x06"u8;
+    internal static ReadOnlySpan<byte> ZipEOCDRHeaderMagic    => "PK\x05\x06"u8;
+    internal static ReadOnlySpan<byte> Zip64EOCDRHeaderMagic  => "PK\x06\x06"u8;
+    internal static ReadOnlySpan<byte> Zip64EOCDRLHeaderMagic => "PK\x06\x07"u8;
     #endregion
 
     #region Properties
@@ -73,8 +77,8 @@ public class ZipArchiveReader
                 throw new NotSupportedException($"The requested URL: {url} doesn't have Content-Length response header or the file content is empty!");
             }
 
-            uint offsetOfCD;
-            uint sizeOfCD;
+            long offsetOfCD;
+            long sizeOfCD;
             long offsetOfEOCD = Math.Clamp(response.FileSize - EOCDBufferLength,
                                            0,
                                            response.FileSize);
@@ -146,8 +150,8 @@ public class ZipArchiveReader
             throw new InvalidOperationException("Stream has 0 bytes in size!");
         }
 
-        uint offsetOfCD;
-        uint sizeOfCD;
+        long offsetOfCD;
+        long sizeOfCD;
         long offsetOfEOCD = Math.Clamp(streamLength - EOCDBufferLength,
                                        0,
                                        streamLength);
@@ -183,8 +187,8 @@ public class ZipArchiveReader
     private static async Task<ZipArchiveReader>
         CreateFromCentralDirectoryStreamAsync(
         StreamFactoryAsync streamFactory,
-        uint               size,
-        uint               offset,
+        long               size,
+        long               offset,
         CancellationToken  token = default)
     {
         if (size == 0)
@@ -211,7 +215,7 @@ public class ZipArchiveReader
 
                 if (read == 0)
                 {
-                    throw new IndexOutOfRangeException("Stream has prematurely reached End of Stream while more bytes needs to be read");
+                    throw new IndexOutOfRangeException("Stream has prematurely reached End of Stream while more bytes need to be read");
                 }
 
                 bufferOffset += read;
@@ -247,7 +251,7 @@ public class ZipArchiveReader
         return stream.Length;
     }
 
-    private static async ValueTask<(uint Offset, uint Size)>
+    private static async ValueTask<(long Offset, long Size)>
         FindCentralDirectoryOffsetAndSizeAsync(
             Stream stream,
             int bufferSize,
@@ -256,20 +260,21 @@ public class ZipArchiveReader
         byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         try
         {
-            int read = await stream.ReadAtLeastAsync(buffer, bufferSize, false, token);
-            ReadOnlySpan<byte> bufferSpan = buffer.AsSpan(0, read);
+            int                read             = await stream.ReadAtLeastAsync(buffer, bufferSize, false, token);
+            ReadOnlySpan<byte> bufferSpan       = buffer.AsSpan(0, read);
 
-            int lastIndexOfMagic = bufferSpan.LastIndexOf(ZipEODRHeaderMagic);
-            if (lastIndexOfMagic < 0)
+            int lastIndexOfMagic32 = bufferSpan.LastIndexOf(ZipEOCDRHeaderMagic);
+            int lastIndexOfMagic64 = bufferSpan.LastIndexOf(Zip64EOCDRHeaderMagic);
+            if (lastIndexOfMagic32 < 0 && lastIndexOfMagic64 < 0)
             {
                 throw new IndexOutOfRangeException("Cannot find an offset of the Central Directory");
             }
 
-            bufferSpan = bufferSpan[lastIndexOfMagic..];
-
-            uint sizeCDOnStream   = MemoryMarshal.Read<uint>(bufferSpan[12..]);
-            uint offsetCDOnStream = MemoryMarshal.Read<uint>(bufferSpan[16..]);
-            return (offsetCDOnStream, sizeCDOnStream);
+            // First, check if the archive uses Zip64 record for EOCDR.
+            // If so, parse the Zip64 instead.
+            return lastIndexOfMagic64 > 0
+                ? FindCentralDirectoryOffsetAndSize64(bufferSpan, lastIndexOfMagic32, lastIndexOfMagic64)
+                : FindCentralDirectoryOffsetAndSize32(bufferSpan, lastIndexOfMagic32);
         }
         finally
         {
@@ -277,11 +282,54 @@ public class ZipArchiveReader
         }
     }
 
+    private static (uint Offset, uint Size)
+        FindCentralDirectoryOffsetAndSize32(ReadOnlySpan<byte> buffer, int offset)
+    {
+        buffer = buffer[offset..];
+
+        uint sizeCDOnStream   = MemoryMarshal.Read<uint>(buffer[12..]);
+        uint offsetCDOnStream = MemoryMarshal.Read<uint>(buffer[16..]);
+        return (offsetCDOnStream, sizeCDOnStream);
+    }
+
+    private static (long Offset, long Size)
+        FindCentralDirectoryOffsetAndSize64(ReadOnlySpan<byte> buffer, int offset32, int offset64)
+    {
+        // Try to get the offset from Zip32 record first. Since the size can be dynamic
+        // and not always be defined in Zip64 record.
+        (uint offsetEOCDR32, uint sizeEOCDR32) = FindCentralDirectoryOffsetAndSize32(buffer, offset32);
+
+        // Skip if both offset and size aren't exceeding uint.MaxValue, even though Zip64 EOCDR exist.
+        if (offsetEOCDR32 != SimpleZipArchiveEntry.Zip64Mask &&
+            sizeEOCDR32 != SimpleZipArchiveEntry.Zip64Mask)
+        {
+            return (offsetEOCDR32, sizeEOCDR32);
+        }
+
+        long offsetEOCDR64 = offsetEOCDR32;
+        long sizeEOCDR64   = sizeEOCDR32;
+
+        // Then, we try to capture the offset and size from Zip64 EOCDR.
+        ReadOnlySpan<byte> buffer64 = buffer[offset64..];
+
+        if (sizeEOCDR32 == SimpleZipArchiveEntry.Zip64Mask)
+        {
+            sizeEOCDR64 = MemoryMarshal.Read<long>(buffer64[40..]);
+        }
+
+        if (offsetEOCDR32 == SimpleZipArchiveEntry.Zip64Mask)
+        {
+            offsetEOCDR64 = MemoryMarshal.Read<long>(buffer64[48..]);
+        }
+
+        return (offsetEOCDR64, sizeEOCDR64);
+    }
+
     private static async Task<Stream> GetHttpStreamFromPosAsync(
-        HttpClient client,
-        Uri url,
-        long? offset,
-        long? length,
+        HttpClient        client,
+        Uri               url,
+        long?             offset,
+        long?             length,
         CancellationToken token)
     {
         HttpRequestMessage request = new(HttpMethod.Get, url);
@@ -302,6 +350,28 @@ public class ZipArchiveReader
             }
         }
     }
+
+    #endregion
+
+    #region IReadOnlyCollection extensions
+
+    /// <summary>
+    /// Gets the <see cref="SimpleZipArchiveEntry"/> entry at specific index.
+    /// </summary>
+    public SimpleZipArchiveEntry this[int index]
+    {
+        get => Entries[index];
+        set => Entries[index] = value;
+    }
+
+    public IEnumerator<SimpleZipArchiveEntry> GetEnumerator() => Entries.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    /// <summary>
+    /// Gets the total count of available <see cref="SimpleZipArchiveEntry"/> entries
+    /// </summary>
+    public int Count => Entries.Count;
 
     #endregion
 }
