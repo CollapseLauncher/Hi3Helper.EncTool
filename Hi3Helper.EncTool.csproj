@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
-		<Platforms>x64</Platforms>
-		<Configurations>Debug;Release</Configurations>
-		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<IsTrimmable>true</IsTrimmable>
-		<DebugType>portable</DebugType>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Platforms>x64</Platforms>
+        <Configurations>Debug;Release</Configurations>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <IsTrimmable>true</IsTrimmable>
+        <DebugType>portable</DebugType>
         <!-- Assembly Info Properties -->
         <AssemblyName>Hi3Helper.EncTool</AssemblyName>
         <ProductName>Hi3Helper.EncTool</ProductName>
@@ -41,12 +41,12 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-		<PackageReference Include="System.IO.Hashing" Version="10.0.0" />
-	</ItemGroup>
+        <PackageReference Include="System.IO.Hashing" Version="10.0.0" />
+    </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Hi3Helper.Http\Hi3Helper.Http.csproj" />
-      <ProjectReference Include="..\Hi3Helper.Win32\Hi3Helper.Win32.csproj" />
+        <ProjectReference Include="..\Hi3Helper.Http\Hi3Helper.Http.csproj" />
+        <ProjectReference Include="..\Hi3Helper.Win32\Hi3Helper.Win32.csproj" />
     </ItemGroup>
 
     <!-- 
