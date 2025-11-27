@@ -198,19 +198,14 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             int readHeadInfo = ReadAdditionalHeaderInfo(fileStream);
 
             // Seek the position of the fileStream and try to get the data
-            if (fileStream.CanSeek)
-                fileStream.Position = dataPos;
-            else
+            // 22 is the total of length from the first initial read
+            int toSkip = dataPos - (22 + readHeadInfo);
+            // If the skip length is more than 0, then seek by reading the rest of the data into dummy buffer
+            if (toSkip > 0)
             {
-                // 22 is the total of length from the first initial read
-                int toSkip = dataPos - (22 + readHeadInfo);
-                // If the skip length is more than 0, then seek by reading the rest of the data into dummy buffer
-                if (toSkip > 0)
-                {
-                    // Read the data into dummy buffer
-                    byte[] dummy = new byte[toSkip];
-                    fileStream.ReadExactly(dummy, 0, toSkip);
-                }
+                // Read the data into dummy buffer
+                byte[] dummy = new byte[toSkip];
+                fileStream.ReadExactly(dummy, 0, toSkip);
             }
 
             using Stream streamInput = compressionType switch
