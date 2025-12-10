@@ -77,7 +77,7 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
 
     public override long Position
     {
-        get { throw new NotSupportedException(); }
+        get => 0;
         set { throw new NotSupportedException(); }
     }
 
