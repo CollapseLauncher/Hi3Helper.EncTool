@@ -382,6 +382,7 @@ public class CDNCache
         if (string.IsNullOrEmpty(CurrentCacheDir))
         {
             response = await client.SendAsync(requestMessage, token);
+            await HeadContentLengthOnNull(client, requestMessage, response, token);
             return new CDNCacheResult
             {
                 StatusCode = response.StatusCode,
@@ -398,10 +399,11 @@ public class CDNCache
             if (!IsEnabled)
             {
                 response = await client.SendAsync(requestMessage, token);
+                await HeadContentLengthOnNull(client, requestMessage, response, token);
                 return new CDNCacheResult
                 {
                     StatusCode = response.StatusCode,
-                    Stream     = await BridgedNetworkStream.CreateStream(client, requestMessage, token)
+                    Stream     = await BridgedNetworkStream.CreateStream(response, token)
                 };
             }
 
@@ -417,6 +419,7 @@ public class CDNCache
                                                    response.StatusCode);
                 }
 
+                await HeadContentLengthOnNull(client, requestMessage, response, token);
                 return await TryGetCachedStreamFrom(response, token);
             }
 
@@ -434,6 +437,7 @@ public class CDNCache
                                                response.StatusCode);
             }
 
+            await HeadContentLengthOnNull(client, requestMessage, response, token);
             DateTimeOffset nextExpireOffset = DateTimeOffset.UtcNow.Add(MaxAcceptedCacheExpireTime);
             Stream fileStream = AttachETag(hashString)
                 ? CreateCacheStream(Path.Combine(cacheDir, hashString),
@@ -1076,6 +1080,26 @@ public class CDNCache
         using (ThisLock.EnterScope())
         {
             CurrentETagToWrite.Remove(tag);
+        }
+    }
+
+    private async Task HeadContentLengthOnNull(HttpClient client,
+                                                     HttpRequestMessage requestMessage,
+                                                     HttpResponseMessage response,
+                                                     CancellationToken token)
+    {
+        if (requestMessage.Method == HttpMethod.Get && response.Content.Headers.ContentLength == null)
+        {
+            try
+            {
+                var head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, requestMessage.RequestUri),
+                                                  token);
+                response.Content.Headers.ContentLength = head.Content.Headers.ContentLength;
+            }
+            catch
+            {
+                // ignored
+            }
         }
     }
 }

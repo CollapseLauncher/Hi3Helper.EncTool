@@ -35,6 +35,20 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
                                                               token);
         response.EnsureSuccessStatusCode();
 
+        if (requestMessage.Method == HttpMethod.Get && response.Content.Headers.ContentLength == null)
+        {
+            try
+            {
+                var head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, requestMessage.RequestUri),
+                                                  token);
+                response.Content.Headers.ContentLength = head.Content.Headers.ContentLength;
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
         return await CreateStream(response, token);
     }
 
