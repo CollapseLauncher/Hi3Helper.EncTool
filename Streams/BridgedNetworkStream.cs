@@ -81,9 +81,9 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
 
     public override bool CanRead => true;
 
-    public override bool CanSeek => true;
+    public override bool CanSeek => false;
 
-    public override bool CanWrite => true;
+    public override bool CanWrite => false;
 
     public override void Flush() => networkStream.Flush();
 
