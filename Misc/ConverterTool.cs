@@ -640,5 +640,40 @@ namespace Hi3Helper.Data
             int consoleSpaceRemain = Math.Max(Console.WindowWidth - (leftMessage.Length + rightMessage.Length + 1), 0);
             Console.Write(leftMessage + new string(' ', consoleSpaceRemain) + rightMessage + '\r');
         }
+
+        public static Uri GetStringAsUri(this string asStringSource)
+        {
+            // Try to create URL with absolute path.
+            // If not (assume it's a relative local path), then try to get the fully qualified local path.
+            if (Uri.TryCreate(asStringSource, UriKind.Absolute, out Uri? sourceUri) ||
+                Path.IsPathFullyQualified(asStringSource))
+            {
+                return sourceUri ?? new Uri(asStringSource);
+            }
+
+            string             currentWorkingDir  = Directory.GetCurrentDirectory();
+            ReadOnlySpan<char> asStringSourceSpan = asStringSource.Trim("/\\");
+            asStringSource = Path.Join(currentWorkingDir, asStringSourceSpan);
+
+            return sourceUri ?? new Uri(asStringSource);
+        }
+
+        public static double TryGetDouble(this object? obj)
+        {
+            return obj switch
+            {
+                sbyte asSbyte   => asSbyte,
+                byte asByte     => asByte,
+                ushort asUshort => asUshort,
+                short asShort   => asShort,
+                uint asUint     => asUint,
+                int asInt       => asInt,
+                ulong asUlong   => asUlong,
+                long asLong     => asLong,
+                float asFloat   => asFloat,
+                double asDouble => asDouble,
+                _               => double.NaN
+            };
+        }
     }
 }
