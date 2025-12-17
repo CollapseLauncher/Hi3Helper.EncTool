@@ -323,6 +323,7 @@ public partial class CryptoHashUtility<T>
     /// <param name="hashBytesWritten">The total bytes written into the <paramref name="hashBytesDestination"/> span.</param>
     /// <param name="hmacKey">The secret-key used for <see cref="HMAC"/>-based Cryptographic hash.</param>
     /// <param name="bufferSize">Defines the buffer size for reading data from the <see cref="Stream"/> source.</param>
+    /// <param name="disposeHasher">Whether to dispose the hasher after operation or not.</param>
     /// <param name="token">Token to notify cancellation while computing the hash.</param>
     /// <remarks>
     /// When using <see cref="HMAC"/>-based Cryptographic hash, the <paramref name="hmacKey"/> must be provided.
@@ -336,6 +337,7 @@ public partial class CryptoHashUtility<T>
         Action<int>?      readBytesAction = null,
         byte[]?           hmacKey         = null,
         int               bufferSize      = BufferSize,
+        bool              disposeHasher   = false,
         CancellationToken token           = default)
     {
         hashBytesWritten = 0;
@@ -357,7 +359,7 @@ public partial class CryptoHashUtility<T>
                                         readBytesAction,
                                         hmacKey,
                                         bufferSize,
-                                        true,
+                                        disposeHasher,
                                         token);
         }
         finally

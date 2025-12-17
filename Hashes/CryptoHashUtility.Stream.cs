@@ -16,12 +16,14 @@ public partial class CryptoHashUtility<T>
     /// <param name="readBytesAction">A callback to gather how many bytes of data have been computed.</param>
     /// <param name="hmacKey">The secret-key used for <see cref="HMAC"/>-based Cryptographic hash.</param>
     /// <param name="bufferSize">Defines the buffer size for reading data from the <see cref="Stream"/> source.</param>
+    /// <param name="disposeHasher">Whether to dispose the hasher after operation or not.</param>
     /// <param name="token">Token to notify cancellation while computing the hash.</param>
     /// <returns>The computed hash of the source.</returns>
     public byte[] GetHashFromStream(Stream            sourceStream,
                                     Action<int>?      readBytesAction = null,
                                     byte[]?           hmacKey         = null,
                                     int               bufferSize      = BufferSize,
+                                    bool              disposeHasher   = false,
                                     CancellationToken token           = default)
     {
         scoped Span<byte> hashSpan = stackalloc byte[MaxHashBufferSize];
@@ -31,6 +33,7 @@ public partial class CryptoHashUtility<T>
                                                           readBytesAction,
                                                           hmacKey,
                                                           bufferSize,
+                                                          disposeHasher,
                                                           token);
 
         ThrowIfStatusNonSuccess(status, token);
