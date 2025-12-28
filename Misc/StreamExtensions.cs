@@ -3,6 +3,8 @@ using System;
 using System.Buffers;
 using System.IO;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,7 +12,7 @@ using System.Threading.Tasks;
 // ReSharper disable once CheckNamespace
 namespace Hi3Helper.EncTool;
 
-internal static class StreamExtensions
+public static class StreamExtensions
 {
     internal static Task PerformCopyToDownload(this DownloadClient       downloadClient,
                                                string                    url,
@@ -52,6 +54,63 @@ internal static class StreamExtensions
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    extension(Stream stream)
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async ValueTask<T> ReadAsync<T>(CancellationToken token = default)
+            where T : unmanaged
+        {
+            int    sizeOfData = Unsafe.SizeOf<T>();
+            byte[] buffer     = ArrayPool<byte>.Shared.Rent(sizeOfData);
+
+            try
+            {
+                await stream.ReadExactlyAsync(buffer.AsMemory(0, sizeOfData), cancellationToken: token)
+                            .ConfigureAwait(false);
+                return MemoryMarshal.Read<T>(buffer);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        public async ValueTask<int> SeekForwardAsync(int               seekBytesForward,
+                                                     CancellationToken token = default)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(seekBytesForward, 0); // Throw if bytes to seek is negative
+            if (seekBytesForward == 0)
+            {
+                return 0;
+            }
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Min(seekBytesForward, 4 << 10));
+            try
+            {
+                int          skipped      = 0;
+                Memory<byte> bufferMemory = buffer.AsMemory(0, seekBytesForward);
+                while (!bufferMemory.IsEmpty)
+                {
+                    int read = await stream.ReadAsync(bufferMemory, token)
+                                           .ConfigureAwait(false);
+                    skipped += read;
+                    if (read == 0)
+                    {
+                        break;
+                    }
+
+                    bufferMemory = bufferMemory[..read];
+                }
+
+                return skipped;
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
     }
 }

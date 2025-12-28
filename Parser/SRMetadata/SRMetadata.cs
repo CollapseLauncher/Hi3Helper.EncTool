@@ -61,7 +61,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             }
 
             PersistentPath = persistentDirectory;
-            await DispatcherInfo.Initialize(threadToken, downloadClient, downloadProgressDelegate, persistentDirectory, regionName);
+            await DispatcherInfo.Initialize(downloadClient, downloadProgressDelegate, persistentDirectory, regionName, threadToken);
 
             IsInitialized = true;
             return true;

@@ -39,7 +39,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
     [JsonSerializable(typeof(SRDispatchArchiveInfo))]
     internal sealed partial class SRDispatchArchiveInfoContext : JsonSerializerContext;
 
-    internal sealed partial class SRDispatcherInfo : IDisposable
+    public sealed partial class SRDispatcherInfo : IDisposable
     {
         private  string                PersistentDirectory { get; set; }
         private  string                DispatchURLFormat   { get; }
@@ -48,21 +48,39 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private  string                DispatchSeed        { get; }
         private  string                ProductID           { get; }
         private  string                ProductVer          { get; }
-        private  CancellationToken     ThreadToken         { get; set; }
-        internal string                RegionName          { get; set; }
         internal RegionInfo            RegionInfo          { get; set; }
-        internal StarRailGatewayStatic RegionGateway       { get; set; }
+        public   StarRailGatewayStatic RegionGateway       { get; set; }
 
         internal Dictionary<string, SRDispatchArchiveInfo>  ArchiveInfo { get; set; }
 
-        internal SRDispatcherInfo(string dispatchURL, string dispatchSeed, string dispatchFormatTemplate, string gatewayFormatTemplate, string productID, string productVer)
+        public SRDispatcherInfo(string dispatchURL,
+                                string dispatchSeed,
+                                string dispatchFormatTemplate,
+                                string gatewayFormatTemplate,
+                                string productID,
+                                string productVer)
         {
-            DispatchURL            = dispatchURL;
-            DispatchSeed           = dispatchSeed;
-            ProductID              = productID;
-            ProductVer             = productVer;
-            DispatchURLFormat      = dispatchFormatTemplate;
-            GatewayURLFormat       = gatewayFormatTemplate;
+            DispatchURL       = dispatchURL;
+            DispatchSeed      = dispatchSeed;
+            ProductID         = productID;
+            ProductVer        = productVer;
+            DispatchURLFormat = dispatchFormatTemplate;
+            GatewayURLFormat  = gatewayFormatTemplate;
+        }
+
+        public SRDispatcherInfo(List<string> dispatchUrls,
+                                string       dispatchSeed,
+                                string       dispatchFormatTemplate,
+                                string       gatewayFormatTemplate,
+                                string       productID,
+                                string       productVer)
+        {
+            DispatchURL       = dispatchUrls[Random.Shared.Next(0, dispatchUrls.Count - 1)];
+            DispatchSeed      = dispatchSeed;
+            ProductID         = productID;
+            ProductVer        = productVer;
+            DispatchURLFormat = dispatchFormatTemplate;
+            GatewayURLFormat  = gatewayFormatTemplate;
         }
 
         ~SRDispatcherInfo() => Dispose();
@@ -74,18 +92,25 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             GC.SuppressFinalize(this);
         }
 
-        internal async Task Initialize(CancellationToken threadToken, DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string persistentDirectory, string regionName)
+        internal async Task Initialize(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string persistentDirectory, string regionName, CancellationToken token = default)
         {
             PersistentDirectory = persistentDirectory;
-            ThreadToken = threadToken;
-            RegionName = regionName;
 
-            await ParseDispatch(downloadClient);
-            await ParseGateway(downloadClient);
-            await ParseArchive(downloadClient, downloadProgressDelegate);
+            await ParseDispatch(downloadClient.GetHttpClient(), regionName, token);
+            await ParseGateway(downloadClient.GetHttpClient(), token);
+            await ParseArchive(downloadClient, downloadProgressDelegate, token);
         }
 
-        private async Task ParseDispatch(DownloadClient downloadClient)
+        public async Task Initialize(
+            HttpClient        client,
+            string            regionName,
+            CancellationToken token = default)
+        {
+            await ParseDispatch(client, regionName, token);
+            await ParseGateway(client, token);
+        }
+
+        private async Task ParseDispatch(HttpClient client, string regionName, CancellationToken token = default)
         {
             // Format dispatcher URL
             string dispatchURL = DispatchURL + string.Format(DispatchURLFormat, ProductID, ProductVer, SRMetadata.GetUnixTimestamp());
@@ -95,13 +120,13 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #endif
 
             // Deserialize dispatcher and assign the region
-            StarRailDispatch dispatch = await ParseFromUrlAsync(dispatchURL, downloadClient.GetHttpClient(), StarRailDispatch.Parser, ThreadToken);
-            RegionInfo = dispatch.RegionList.FirstOrDefault(x => x.Name == RegionName);
+            StarRailDispatch dispatch = await ParseFromUrlAsync(dispatchURL, client, StarRailDispatch.Parser, token);
+            RegionInfo = dispatch.RegionList.FirstOrDefault(x => x.Name == regionName);
 
-            if (RegionInfo == null) throw new KeyNotFoundException($"Region: {RegionName} is not found in the dispatcher! Ignore this error if the game is under maintenance.");
+            if (RegionInfo == null) throw new KeyNotFoundException($"Region: {regionName} is not found in the dispatcher! Ignore this error if the game is under maintenance.");
         }
 
-        private async Task ParseGateway(DownloadClient downloadClient)
+        private async Task ParseGateway(HttpClient client, CancellationToken token = default)
         {
             // Format dispatcher URL
             string gatewayURL = RegionInfo.DispatchUrl + string.Format(GatewayURLFormat, ProductID, ProductVer, SRMetadata.GetUnixTimestamp(), DispatchSeed);
@@ -111,7 +136,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #endif
 
             // Deserialize gateway
-            RegionGateway = await ParseFromUrlAsync(gatewayURL, downloadClient.GetHttpClient(), StarRailGatewayStatic.Parser, ThreadToken);
+            RegionGateway = await ParseFromUrlAsync(gatewayURL, client, StarRailGatewayStatic.Parser, token);
         }
 
         private static async Task<T> ParseFromUrlAsync<T>(string            url,
@@ -138,7 +163,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             return parsedContent;
         }
 
-        private async Task ParseArchive(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate)
+        private async Task ParseArchive(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, CancellationToken token = default)
         {
             /* ===============================
              * Archive_V region
@@ -170,8 +195,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             // Get HttpClient and response
             HttpClient client = downloadClient.GetHttpClient();
             // Parse design archive and get Native Data resources
-            await using Stream designArchiveStream = (await client.TryGetCachedStreamFrom(archiveURL, token: ThreadToken)).Stream;
-            await ParseArchiveInfoFromStream(designArchiveStream, "DesignDataBundleVersionUpdateUrl", ThreadToken);
+            await using Stream designArchiveStream = (await client.TryGetCachedStreamFrom(archiveURL, token: token)).Stream;
+            await ParseArchiveInfoFromStream(designArchiveStream, "DesignDataBundleVersionUpdateUrl", token);
 
             const string NativeDataRefDictKey  = "M_NativeDataV";
             const string NativeDataDataDictKey = "NativeDataV_";
@@ -197,20 +222,20 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             }
         }
 
-        private async Task DownloadArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string archiveURL, string localPath)
+        private async Task DownloadArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string archiveURL, string localPath, CancellationToken token = default)
         {
             EnsureDirectoryExistence(localPath);
             await using FileStream stream = new(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-            await downloadClient.PerformCopyToDownload(archiveURL, downloadProgressDelegate, stream, ThreadToken);
+            await downloadClient.PerformCopyToDownload(archiveURL, downloadProgressDelegate, stream, token);
         }
 
-        private async Task DownloadAndParseArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string gatewayDictKey, string archiveURL, string localPath)
+        private async Task DownloadAndParseArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string gatewayDictKey, string archiveURL, string localPath, CancellationToken token = default)
         {
             EnsureDirectoryExistence(localPath);
             await using FileStream stream = new(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);
-            await downloadClient.PerformCopyToDownload(archiveURL, downloadProgressDelegate, stream, ThreadToken);
+            await downloadClient.PerformCopyToDownload(archiveURL, downloadProgressDelegate, stream, token);
             stream.Position = 0;
-            await ParseArchiveInfoFromStream(stream, gatewayDictKey, ThreadToken);
+            await ParseArchiveInfoFromStream(stream, gatewayDictKey, token);
         }
 
         private static void EnsureDirectoryExistence(string path)
