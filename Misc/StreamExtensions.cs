@@ -87,22 +87,23 @@ public static class StreamExtensions
                 return 0;
             }
 
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Min(seekBytesForward, 4 << 10));
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Min(seekBytesForward, 64 << 10));
             try
             {
-                int          skipped      = 0;
-                Memory<byte> bufferMemory = buffer.AsMemory(0, seekBytesForward);
-                while (!bufferMemory.IsEmpty)
+                int skipped  = 0;
+                int remained = seekBytesForward;
+
+                while (remained > 0)
                 {
-                    int read = await stream.ReadAsync(bufferMemory, token)
+                    int toRead = Math.Min(remained, buffer.Length);
+                    int read = await stream.ReadAsync(buffer.AsMemory(0, toRead), token)
                                            .ConfigureAwait(false);
-                    skipped += read;
+                    skipped  += read;
+                    remained -= read;
                     if (read == 0)
                     {
                         break;
                     }
-
-                    bufferMemory = bufferMemory[..read];
                 }
 
                 return skipped;
