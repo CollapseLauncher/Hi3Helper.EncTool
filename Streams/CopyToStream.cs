@@ -198,6 +198,11 @@ public sealed class CopyToStream(
 
     public override async ValueTask DisposeAsync()
     {
+        if (!isDisposeStream)
+        {
+            return;
+        }
+
         await sourceStream.DisposeAsync();
         await destinationStream.DisposeAsync();
         actionOnDispose?.Invoke();
