@@ -675,5 +675,38 @@ namespace Hi3Helper.Data
                 _               => double.NaN
             };
         }
+
+        public static ReadOnlySpan<char> GetSplit(this string?              str,
+                                                  Index                     index,
+                                                  params ReadOnlySpan<char> separators)
+            => GetSplit(str.AsSpan(), index, separators);
+
+        public static ReadOnlySpan<char> GetSplit(ReadOnlySpan<char>        str,
+                                                  Index                     index,
+                                                  params ReadOnlySpan<char> separators)
+            => GetSplit(str,
+                        index,
+                        32,
+                        StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries,
+                        separators);
+
+        public static ReadOnlySpan<char> GetSplit(ReadOnlySpan<char>        str,
+                                                  Index                     index,
+                                                  int                       rangeMaxBuffer,
+                                                  StringSplitOptions        splitOptions,
+                                                  params ReadOnlySpan<char> separators)
+        {
+            Span<Range> ranges = stackalloc Range[rangeMaxBuffer];
+            int         splits = str.SplitAny(ranges, separators, splitOptions);
+
+            int indexOffset = index.GetOffset(splits);
+            if (splits == -1 ||
+                indexOffset >= splits)
+            {
+                return ReadOnlySpan<char>.Empty;
+            }
+
+            return str[ranges[indexOffset]];
+        }
     }
 }
