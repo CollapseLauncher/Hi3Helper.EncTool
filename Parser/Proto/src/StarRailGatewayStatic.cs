@@ -3,6 +3,8 @@ using Google.Protobuf.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -212,7 +214,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
             }
         }
 
-        bool TryFindNaivePairsByMacro(Dictionary<string, string> dict,
+        private static bool TryFindNaivePairsByMacro(Dictionary<string, string> dict,
             KeyValuePair<string, string> kvp, List<string> results)
         {
             const string NUMREF_MACRO = "NUMREF";
@@ -222,7 +224,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
                 TryAssignKvpFromMacroLookup(dict, macroSpan, kvp, results);
         }
 
-        bool TryAssignKvpFromMacroNumref(ReadOnlySpan<char> key, KeyValuePair<string, string> kvp, Dictionary<string, string> dict)
+        private static bool TryAssignKvpFromMacroNumref(ReadOnlySpan<char> key, KeyValuePair<string, string> kvp, Dictionary<string, string> dict)
         {
             const char SEPARATOR = '_';
             const char HEAD = '|';
@@ -238,11 +240,11 @@ namespace Hi3Helper.EncTool.Proto.StarRail
 
             string keyString = key[splitRanges[0]].ToString();
             string firstWord = key[splitRanges[1]].ToString();
-            if (!dict.ContainsKey(keyString))
+            if (!dict.TryGetValue(keyString, out string foundKey))
                 return false;
 
-            ReadOnlySpan<char> resStr = dict[keyString];
-            int lastIndexOf = resStr.LastIndexOf(firstWord);
+            ReadOnlySpan<char> resStr      = foundKey;
+            int                lastIndexOf = resStr.LastIndexOf(firstWord);
             if (lastIndexOf < 0)
                 return false;
 
@@ -258,21 +260,27 @@ namespace Hi3Helper.EncTool.Proto.StarRail
             return true;
         }
 
-        bool TryAssignKvpFromMacroLookup(Dictionary<string, string> dict, ReadOnlySpan<char> key,
+        private static bool TryAssignKvpFromMacroLookup(Dictionary<string, string> dict, ReadOnlySpan<char> key,
             KeyValuePair<string, string> kvp, List<string> results)
         {
             int listLen = results.Count;
             for (int i = 0; i < listLen; i++)
             {
-                ReadOnlySpan<char> resStr = results[i];
+                string resStr = results[i];
                 int lastIndexOf = resStr.LastIndexOf(key);
                 if (lastIndexOf < 0)
                     continue;
 
-                if (!dict.ContainsKey(kvp.Key))
+                ref string lastValue = ref CollectionsMarshal.GetValueRefOrNullRef(dict, kvp.Key);
+                if (Unsafe.IsNullRef(ref lastValue) ||
+                    // Ignore if the value is already equal to the last value.
+                    // This is needed so the alternative KVP (which exist for Asb) doesn't use the first one.
+                    dict.ContainsValue(resStr))
+                {
                     continue;
+                }
 
-                dict[kvp.Key] = results[i];
+                lastValue = results[i];
                 return true;
             }
 
