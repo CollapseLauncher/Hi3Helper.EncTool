@@ -1029,7 +1029,8 @@ public class CDNCache
                 IsCached           = true,
                 LocalCachePath     = cacheFilePath,
                 CacheExpireTimeUtc = currentDateStampUtc,
-                Stream             = File.Open(cacheFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                Stream             = File.Open(cacheFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite),
+                StatusCode         = HttpStatusCode.OK
             };
         }
 
@@ -1083,17 +1084,17 @@ public class CDNCache
         }
     }
 
-    private async Task HeadContentLengthOnNull(HttpClient client,
-                                                     HttpRequestMessage requestMessage,
-                                                     HttpResponseMessage response,
-                                                     CancellationToken token)
+    private static async Task HeadContentLengthOnNull(HttpClient client,
+                                                      HttpRequestMessage requestMessage,
+                                                      HttpResponseMessage response,
+                                                      CancellationToken token)
     {
         if (requestMessage.Method == HttpMethod.Get && response.Content.Headers.ContentLength == null)
         {
             try
             {
-                var head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, requestMessage.RequestUri),
-                                                  token);
+                HttpResponseMessage head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, requestMessage.RequestUri),
+                                                                  token);
                 response.Content.Headers.ContentLength = head.Content.Headers.ContentLength;
             }
             catch
