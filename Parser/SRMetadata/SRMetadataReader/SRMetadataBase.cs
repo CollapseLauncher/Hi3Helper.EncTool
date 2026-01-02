@@ -17,7 +17,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
     public class SRAssetProperty
     {
         public string        BaseURL                { get; set; }
-        public string        BaseURLAlt             { get; set; }
         public string        StartBaseURL           { get; set; }
         public string        MetadataRemoteURL      { get; set; }
         public string        MetadataStartRemoteURL { get; set; }
@@ -63,7 +62,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
     {
         public string      LocalName { get; set; }
         public string      RemoteURL { get; set; }
-        public string      RemoteURAlt { get; set; }
         public long        Size      { get; set; }
         public byte[]      Hash      { get; set; }
         public SRAssetType AssetType { get; set; }
