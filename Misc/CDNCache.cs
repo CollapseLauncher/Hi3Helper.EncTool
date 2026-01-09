@@ -354,6 +354,26 @@ public class CDNCache
     }
 
     /// <summary>
+    /// Gets cached response as a Stream using a specified HTTP methods.
+    /// </summary>
+    /// <param name="client">HTTP Client instance to be used.</param>
+    /// <param name="url">URL source for the response.</param>
+    /// <param name="httpMethod">HTTP Method used for getting the response.</param>
+    /// <param name="token">Cancellation token for the async operation.</param>
+    /// <returns>The response as an instance of a Stream.</returns>
+    public async ValueTask<CDNCacheResult> TryGetCachedStreamFrom(
+        HttpClient        client,
+        Uri               url,
+        HttpMethod?       httpMethod = null,
+        CancellationToken token      = default)
+    {
+        ArgumentNullException.ThrowIfNull(url);
+
+        using HttpRequestMessage requestMessage = new(httpMethod ?? HttpMethod.Get, url);
+        return await TryGetCachedStreamFrom(client, requestMessage, token);
+    }
+
+    /// <summary>
     /// Gets cached response as a Stream using a specified HTTP request message.
     /// </summary>
     /// <param name="client">HTTP Client instance to be used.</param>
