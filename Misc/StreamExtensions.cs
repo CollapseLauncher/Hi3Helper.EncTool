@@ -81,6 +81,13 @@ public static class StreamExtensions
         public async ValueTask<int> SeekForwardAsync(int               seekBytesForward,
                                                      CancellationToken token = default)
         {
+            // Just change the position if stream is seekable.
+            if (stream.CanSeek)
+            {
+                stream.Position += seekBytesForward;
+                return seekBytesForward;
+            }
+
             ArgumentOutOfRangeException.ThrowIfLessThan(seekBytesForward, 0); // Throw if bytes to seek is negative
             if (seekBytesForward == 0)
             {
