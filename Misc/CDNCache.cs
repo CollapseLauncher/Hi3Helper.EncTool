@@ -493,6 +493,51 @@ public class CDNCache
     }
 
     /// <summary>
+    /// Try to get the aggressive cached file path.
+    /// </summary>
+    /// <param name="url">The initial URL of the file.</param>
+    /// <param name="cachedFilePath">Local path of the cached file.</param>
+    /// <returns><see langword="true"/> if file is already cached. <see langword="false"/> if the file isn't cached.</returns>
+    public bool TryGetAggressiveCachedFilePath(Uri                          url,
+                                               [NotNullWhen(true)] out Uri? cachedFilePath)
+    {
+        if (TryGetAggressiveCachedFilePath(url.ToString(), out string? cachedFilePathStr))
+        {
+            cachedFilePath = new Uri(cachedFilePathStr);
+            return true;
+        }
+
+        Unsafe.SkipInit(out cachedFilePath);
+        return false;
+    }
+
+    /// <summary>
+    /// Try to get the aggressive cached file path.
+    /// </summary>
+    /// <param name="url">The initial URL of the file.</param>
+    /// <param name="cachedFilePath">Local path of the cached file.</param>
+    /// <returns><see langword="true"/> if file is already cached. <see langword="false"/> if the file isn't cached.</returns>
+    public bool TryGetAggressiveCachedFilePath(string                          url,
+                                               [NotNullWhen(true)] out string? cachedFilePath)
+    {
+        Unsafe.SkipInit(out cachedFilePath);
+        if (string.IsNullOrEmpty(CurrentCacheDir))
+        {
+            return false;
+        }
+
+        string cacheDir = CurrentCacheDir;
+        string hashString = GetXxh3HashFrom(url.AsSpan());
+        if (TryCreateResultFromTimeCached(cacheDir, hashString, true) is not { IsCached: true } result)
+        {
+            return false;
+        }
+
+        cachedFilePath = result.LocalCachePath ?? "";
+        return true;
+    }
+
+    /// <summary>
     /// Gets cached response as a Stream using an existing HTTP response message.
     /// </summary>
     /// <param name="response">An existing HTTP response message.</param>
@@ -1022,7 +1067,7 @@ public class CDNCache
         return true;
     }
 
-    private static CDNCacheResult? TryCreateResultFromTimeCached(string cacheDir, string? requestHash)
+    private static CDNCacheResult? TryCreateResultFromTimeCached(string cacheDir, string? requestHash, bool onlyReturnPath = false)
     {
         if (string.IsNullOrEmpty(requestHash))
         {
@@ -1049,7 +1094,9 @@ public class CDNCache
                 IsCached           = true,
                 LocalCachePath     = cacheFilePath,
                 CacheExpireTimeUtc = currentDateStampUtc,
-                Stream             = File.Open(cacheFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite),
+                Stream             = onlyReturnPath
+                    ? null!
+                    : File.Open(cacheFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite),
                 StatusCode         = HttpStatusCode.OK
             };
         }
