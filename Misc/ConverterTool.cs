@@ -672,8 +672,30 @@ namespace Hi3Helper.Data
                 long asLong     => asLong,
                 float asFloat   => asFloat,
                 double asDouble => asDouble,
+                string asString => TryGetFromString(asString),
                 _               => double.NaN
             };
+
+            static double TryGetFromString(string str) =>
+                double.TryParse(str, out double result)
+                    ? result
+                    : double.NaN;
+        }
+
+        public static TTo TryGetInteger<TFrom, TTo>(this TFrom number)
+            where TFrom : IFloatingPoint<TFrom>
+            where TTo : IBinaryInteger<TTo>, IMinMaxValue<TTo>
+        {
+            if (!TFrom.IsFinite(number))
+            {
+                return TTo.Zero;
+            }
+
+            TFrom min = TFrom.CreateChecked(TTo.MinValue);
+            TFrom max = TFrom.CreateChecked(TTo.MaxValue);
+
+            number = TFrom.Clamp(number, min, max);
+            return TTo.CreateTruncating(number);
         }
 
         public static ReadOnlySpan<char> GetSplit(this string?              str,
