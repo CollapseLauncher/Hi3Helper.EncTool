@@ -698,6 +698,56 @@ namespace Hi3Helper.Data
             return TTo.CreateTruncating(number);
         }
 
+        public static object GetDoubleValueTo(this double value, Type targetType)
+        {
+            if (targetType == typeof(byte))
+            {
+                return value.TryGetInteger<double, byte>();
+            }
+
+            if (targetType == typeof(sbyte))
+            {
+                return value.TryGetInteger<double, sbyte>();
+            }
+
+            if (targetType == typeof(ushort))
+            {
+                return value.TryGetInteger<double, ushort>();
+            }
+
+            if (targetType == typeof(short))
+            {
+                return value.TryGetInteger<double, short>();
+            }
+
+            if (targetType == typeof(uint))
+            {
+                return value.TryGetInteger<double, uint>();
+            }
+
+            if (targetType == typeof(int))
+            {
+                return value.TryGetInteger<double, int>();
+            }
+
+            if (targetType == typeof(ulong))
+            {
+                return value.TryGetInteger<double, ulong>();
+            }
+
+            if (targetType == typeof(long))
+            {
+                return value.TryGetInteger<double, long>();
+            }
+
+            if (targetType == typeof(float))
+            {
+                return (float)value;
+            }
+
+            return value;
+        }
+
         public static ReadOnlySpan<char> GetSplit(this string?              str,
                                                   Index                     index,
                                                   params ReadOnlySpan<char> separators)
