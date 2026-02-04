@@ -143,6 +143,8 @@ public class CDNCache
         string   cacheStampPath     = Path.Combine(cacheDir, cacheStampName);
         FileInfo cacheStampFileInfo = new(cacheStampPath);
 
+        cacheStampFileInfo.Directory?.Create();
+
         DateTime dateTimeOffsetNow = DateTime.UtcNow;
         if (cacheStampFileInfo.Exists &&
             cacheStampFileInfo.LastWriteTimeUtc.Add(MaxAcceptedCacheExpireTime) >= dateTimeOffsetNow &&
