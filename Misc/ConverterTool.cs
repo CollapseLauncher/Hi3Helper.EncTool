@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -779,6 +780,44 @@ namespace Hi3Helper.Data
             }
 
             return str[ranges[indexOffset]];
+        }
+
+        private static readonly string? CurrentDirectoryPath = Directory.GetCurrentDirectory();
+        private static readonly string? CurrentRootPath      = Path.GetPathRoot(CurrentDirectoryPath);
+
+        [return: NotNullIfNotNull(nameof(path))]
+        public static string? GetFullyQualifiedPath(this string? path)
+        {
+            const string uwpRelPathScheme = "ms-appx:///";
+            const string uncStart = "\\";
+
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
+
+            // Check if path is already fully qualified.
+            if (Path.IsPathFullyQualified(path))
+            {
+                // Ensure the UNC path is resolved.
+                return path.StartsWith(uncStart)
+                    ? Path.GetFullPath(path)
+                    : path;
+            }
+
+            // Get if path is rooted, get the Fully Qualified path
+            if (path[0] == Path.DirectorySeparatorChar ||
+                path[0] == Path.AltDirectorySeparatorChar)
+            {
+                return Path.Combine(CurrentRootPath ?? "", path.TrimStart("\\/").ToString());
+            }
+
+            // If path starts with UWP path scheme, trim and recursively pass the path
+            return path.StartsWith(uwpRelPathScheme, StringComparison.OrdinalIgnoreCase)
+                // ReSharper disable once TailRecursiveCall
+                ? path.AsSpan(uwpRelPathScheme.Length).ToString().GetFullyQualifiedPath()
+                 // If path is relative, then combine with current directory
+                : Path.GetFullPath(Path.Combine(CurrentDirectoryPath ?? "", path));
         }
     }
 }
