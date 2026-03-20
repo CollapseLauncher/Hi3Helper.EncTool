@@ -135,7 +135,7 @@ public class CDNCache
                                        HttpCompletionOption.ResponseHeadersRead,
                                        token)
                             .ConfigureAwait(false);
-            return new UrlStatus(uncachedResponse);
+            return new UrlStatus(uncachedResponse, url);
         }
 
         string   cacheDir           = CurrentCacheDir;
@@ -159,7 +159,7 @@ public class CDNCache
                                    token)
                         .ConfigureAwait(false);
 
-        UrlStatus status = new(response);
+        UrlStatus status = new(response, url);
         WriteToFile(cacheStampPath, in status);
         return status;
 
@@ -184,7 +184,13 @@ public class CDNCache
                                                     FileShare.ReadWrite);
             urlStatus = default;
             Span<byte> urlStatusBuffer = new(Unsafe.AsPointer(ref urlStatus), sizeof(UrlStatus));
-            int        read            = fileStream.Read(urlStatusBuffer);
+            int        read            = fileStream.ReadAtLeast(urlStatusBuffer, urlStatusBuffer.Length, false);
+
+            // If read is 512 bytes. Accept and read as V1
+            if (read == 512)
+            {
+                return true;
+            }
 
             return read == sizeof(UrlStatus);
         }

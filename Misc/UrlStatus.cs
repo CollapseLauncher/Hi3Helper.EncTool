@@ -13,7 +13,7 @@ namespace Hi3Helper.EncTool;
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
 public unsafe struct UrlStatus
 {
-    private const int URLStrLen = 512 - 16;
+    private const int URLStrLen = 1024 - (16 + 40);
 
     /// <summary>
     /// The status code of the response.
@@ -25,7 +25,17 @@ public unsafe struct UrlStatus
     /// </summary>
     public readonly long FileSize;
 
-    private fixed byte _urlString[URLStrLen]; // Fit to 512 bytes
+    private fixed byte _urlString[URLStrLen]; // Fit to 968 bytes
+
+    /// <summary>
+    /// Version of the struct. If the value is 0 or 1, then assume it's V1. Otherwise, higher.
+    /// </summary>
+    private int Version;
+
+    private ulong _reserved1;
+    private ulong _reserved2;
+    private ulong _reserved3;
+    private ulong _reserved4;
 
     /// <summary>
     /// Whether the <see cref="UrlStatus.StatusCode"/> is a success status code (2xx) or not.
@@ -54,28 +64,47 @@ public unsafe struct UrlStatus
         {
             fixed (byte* bufferP = _urlString)
             {
-                ReadOnlySpan<byte> buffer = MemoryMarshal
-                   .CreateReadOnlySpanFromNullTerminated(bufferP);
-                return Encoding.UTF8.GetString(buffer);
+                if (bufferP == null)
+                {
+                    return "";
+                }
+
+                ReadOnlySpan<byte> buffer = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(bufferP);
+                return buffer.IsEmpty ? "" : Encoding.UTF8.GetString(buffer);
             }
         }
     }
 
-    internal UrlStatus(HttpResponseMessage message)
-        : this(message.StatusCode, message.RequestMessage?.RequestUri?.AbsoluteUri ?? "")
+    internal UrlStatus(HttpResponseMessage message, Uri? originUrl)
+        : this(message.StatusCode, originUrl, message.RequestMessage?.RequestUri)
     {
         FileSize = message.Content.Headers.ContentLength ?? 0;
     }
 
-    internal UrlStatus(HttpStatusCode statusCode, string url)
+    internal UrlStatus(HttpStatusCode statusCode, Uri? originUrl, Uri? responseUrl)
     {
         StatusCode = statusCode;
+        Version    = 1;
 
-        fixed (byte* urlBytesP = _urlString)
+        if (responseUrl != null &&
+            originUrl != null &&
+            originUrl != responseUrl)
         {
-            Span<byte> urlBytesSpan = new Span<byte>(urlBytesP, URLStrLen);
-            urlBytesSpan.Clear();
-            Encoding.UTF8.GetBytes(url, urlBytesSpan[..(URLStrLen - 1)]);
+            responseUrl = originUrl;
+        }
+
+        responseUrl ??= originUrl;
+        string url = responseUrl?.AbsoluteUri ?? "";
+
+        if (!string.IsNullOrEmpty(url))
+        {
+            fixed (byte* urlBytesP = _urlString)
+            {
+                Span<byte> urlBytesSpan = new(urlBytesP, URLStrLen);
+                urlBytesSpan.Clear();
+
+                Encoding.UTF8.TryGetBytes(url, urlBytesSpan[..(URLStrLen - 1)], out _);
+            }
         }
     }
 }
