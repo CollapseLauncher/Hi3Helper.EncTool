@@ -714,14 +714,8 @@ public class CDNCache
     }
 
     private static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFrom<T>(scoped in T data)
-        where T : unmanaged
-    {
-        fixed (void* dataP = &data)
-        {
-            int sizeOf = sizeof(T);
-            return new ReadOnlySpan<byte>(dataP, sizeOf);
-        }
-    }
+        where T : unmanaged =>
+        new(Unsafe.AsPointer(in data), sizeof(T));
 
     private static async ValueTask<CDNCacheResult?> TryCreateResultFromETagCached(
         string            cacheDir,
