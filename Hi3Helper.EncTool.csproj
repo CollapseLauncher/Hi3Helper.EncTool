@@ -35,7 +35,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-        <GoogleProtobufVersion>3.34.0</GoogleProtobufVersion>
+        <GoogleProtobufVersion>3.34.1</GoogleProtobufVersion>
     </PropertyGroup>
 
     <ItemGroup>
