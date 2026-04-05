@@ -188,8 +188,6 @@ public class KianaCgMetadata
                 SizeCn        = dataSizeCn,
                 SizeJp        = dataSizeJp
             };
-
-            Console.WriteLine(metadata);
         }
     }
 
