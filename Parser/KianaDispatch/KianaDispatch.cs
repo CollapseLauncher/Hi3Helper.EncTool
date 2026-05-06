@@ -12,7 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 // Resharper disable all
-
+#nullable enable
 namespace Hi3Helper.EncTool.Parser.KianaDispatch
 {
     [JsonSourceGenerationOptions(IncludeFields = false, GenerationMode = JsonSourceGenerationMode.Metadata, IgnoreReadOnlyFields = true)]
@@ -21,12 +21,12 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
 
     public class KianaDispatch
     {
-        public static ILogger DebugLogger { get; set; }
+        public static ILogger? DebugLogger { get; set; }
 
         #region Private Fields
-        private static string _dispatchQuery;
-        private static string _dispatchUrl;
-        private static string _keyString;
+        private static string? _dispatchQuery;
+        private static string? _dispatchUrl;
+        private static string? _keyString;
         #endregion
 
         #region Properties
@@ -57,15 +57,12 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
 
             // Concatenate the base key with the short version string
             _keyString = $"{ver[0]}.{ver[1]}{baseKey}";
-#if DEBUG
             DebugLogger?.LogDebug("Connecting to Dispatch Server with key: {key} at: {url}", _keyString, _dispatchUrl);
-#endif
 
             // Intialize HTTP client class and try start to parse the dispatch
             return await TryDeserializeResponse(client, _dispatchUrl, token);
         }
 
-#nullable enable
         public static async Task<KianaDispatch> GetGameserver(HttpClient client, KianaDispatch dispatch, string regionName, CancellationToken token)
         {
             // Find the correct region as per key from codename and select the first entry. If none, then return null (because .FirstOrDefault())
@@ -75,9 +72,8 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
 
             // Format the gameserver URL and set it to this instance, then try parsing the gateway (gameserver)
             string gameServerUrl = region.DispatchUrl + _dispatchQuery;
-#if DEBUG
             DebugLogger?.LogDebug("Connecting to Gateway Server at region: {region} with key: {key} at: {url}", region.DispatchCodename, _keyString, gameServerUrl);
-#endif
+
             return await TryDeserializeResponse(client, gameServerUrl, token);
         }
 
@@ -95,7 +91,6 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
             // If not, then :terikms:
             throw new NullReferenceException("The valid dispatch/region isn't exist!");
         }
-#nullable disable
 
         private static async Task<KianaDispatch> TryDeserializeResponse(HttpClient client, string dispatchUrl, CancellationToken token)
         {
@@ -114,22 +109,25 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
                     using (CryptoStream responseStream = GetTransformBase64Stream(memStream))
                     using (CryptoStream cryptStream = GetCryptStream(responseStream))
                     {
-#if DEBUG
-                        string line;
-                        using (StreamReader ln = new StreamReader(cryptStream))
+                        if (DebugLogger != null)
                         {
-                            line = ln.ReadLine();
-                            DebugLogger.LogDebug("Response {dispatchUrl}:\r\n{line}", dispatchUrl, line);
-                            return (KianaDispatch)JsonSerializer.Deserialize(line, typeof(KianaDispatch), KianaDispatchContext.Default);
+                            string? line;
+                            using (StreamReader ln = new StreamReader(cryptStream))
+                            {
+                                line = ln.ReadLine();
+                                DebugLogger.LogDebug("Response {dispatchUrl}:\r\n{line}", dispatchUrl, line);
+                                return (KianaDispatch)JsonSerializer.Deserialize(line ?? "", typeof(KianaDispatch), KianaDispatchContext.Default)!;
+                            }
                         }
-#else
-                        return (KianaDispatch)JsonSerializer.Deserialize(cryptStream, typeof(KianaDispatch), KianaDispatchContext.Default);
-#endif
+                        else
+                        {
+                            return (KianaDispatch)JsonSerializer.Deserialize(cryptStream, typeof(KianaDispatch), KianaDispatchContext.Default)!;
+                        }
                     }
                 }
 
                 // If not, then assume it's a JSON pure string and parse the response
-                return (KianaDispatch)JsonSerializer.Deserialize(memStream, typeof(KianaDispatch), KianaDispatchContext.Default);
+                return (KianaDispatch)JsonSerializer.Deserialize(memStream, typeof(KianaDispatch), KianaDispatchContext.Default)!;
             }
         }
 
@@ -170,7 +168,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
             Aes aes = Aes.Create();
 
             // Get the bytes of the phase 1 key string
-            byte[] phase1KeyBytes = Encoding.UTF8.GetBytes(_keyString);
+            byte[] phase1KeyBytes = Encoding.UTF8.GetBytes(_keyString ?? "");
             // Compute the hash bytes of the phase 1 key
             // NOTE: At this moment, the byte array always be expected as 16 bytes wide for MD5 hash.
             Span<byte> phase1KeyHash = stackalloc byte[16];
@@ -178,7 +176,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
 
             // Convert the phase 1 key hash to Hex string
             // NOTE: The result will always be a lowered case string
-            string phase2Key = HexTool.BytesToHexUnsafe(phase1KeyHash);
+            string? phase2Key = HexTool.BytesToHexUnsafe(phase1KeyHash);
 
             // Convert the hex string as phase 2 key bytes
             // NOTE: The phase 2 key array always be expected as 32 bytes wide as it means that
