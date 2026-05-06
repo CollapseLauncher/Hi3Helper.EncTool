@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Data;
+using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
 using System.Linq;
@@ -20,10 +21,12 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
 
     public class KianaDispatch
     {
+        public static ILogger DebugLogger { get; set; }
+
         #region Private Fields
-        private static          string _dispatchQuery;
-        private static          string _dispatchUrl;
-        private static          string _keyString;
+        private static string _dispatchQuery;
+        private static string _dispatchUrl;
+        private static string _keyString;
         #endregion
 
         #region Properties
@@ -54,9 +57,12 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
 
             // Concatenate the base key with the short version string
             _keyString = $"{ver[0]}.{ver[1]}{baseKey}";
+#if DEBUG
+            DebugLogger?.LogDebug("Connecting to Dispatch Server with key: {key} at: {url}", _keyString, _dispatchUrl);
+#endif
 
             // Intialize HTTP client class and try start to parse the dispatch
-            return await TryParseDispatch(client, _dispatchUrl, token);
+            return await TryDeserializeResponse(client, _dispatchUrl, token);
         }
 
 #nullable enable
@@ -69,7 +75,10 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
 
             // Format the gameserver URL and set it to this instance, then try parsing the gateway (gameserver)
             string gameServerUrl = region.DispatchUrl + _dispatchQuery;
-            return await TryParseDispatch(client, gameServerUrl, token);
+#if DEBUG
+            DebugLogger?.LogDebug("Connecting to Gateway Server at region: {region} with key: {key} at: {url}", region.DispatchCodename, _keyString, gameServerUrl);
+#endif
+            return await TryDeserializeResponse(client, gameServerUrl, token);
         }
 
         private static async ValueTask<KianaDispatch> TryGetPossibleMatchingRegion(HttpClient client, KianaDispatch dispatch, CancellationToken token)
@@ -88,7 +97,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
         }
 #nullable disable
 
-        private static async Task<KianaDispatch> TryParseDispatch(HttpClient client, string dispatchUrl, CancellationToken token)
+        private static async Task<KianaDispatch> TryDeserializeResponse(HttpClient client, string dispatchUrl, CancellationToken token)
         {
             // Initialize memory stream
             using (MemoryStream memStream = new MemoryStream())
@@ -110,7 +119,7 @@ namespace Hi3Helper.EncTool.Parser.KianaDispatch
                         using (StreamReader ln = new StreamReader(cryptStream))
                         {
                             line = ln.ReadLine();
-                            Console.WriteLine($"Response {dispatchUrl}:\r\n{line}");
+                            DebugLogger.LogDebug("Response {dispatchUrl}:\r\n{line}", dispatchUrl, line);
                             return (KianaDispatch)JsonSerializer.Deserialize(line, typeof(KianaDispatch), KianaDispatchContext.Default);
                         }
 #else
