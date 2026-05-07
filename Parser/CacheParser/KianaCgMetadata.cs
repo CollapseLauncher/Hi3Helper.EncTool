@@ -75,7 +75,7 @@ public class KianaCgMetadata
 
         try
         {
-            int read = stream.ReadAtLeast(data, data.Length, false);
+            int read = SpanReaderExtension.ReadStreamToBuffer(ref data, stream);
             ReadOnlySpan<byte> span = InitializeDictionary(data.AsSpan(0, read),
                                                            assetIds,
                                                            out int metadataSize,
@@ -157,8 +157,8 @@ public class KianaCgMetadata
             ReadOnlySpan<byte> chunkPathCn = chunk[pathCnOffset..];
             ReadOnlySpan<byte> chunkPathJp = chunk[pathJpOffset..];
 
-            string? dataPathCn = chunkPathCn.ReadFixedLengthString();
-            string? dataPathJp = chunkPathJp.ReadFixedLengthString();
+            string? dataPathCn = chunkPathCn.ReadFixedLengthString<short>();
+            string? dataPathJp = chunkPathJp.ReadFixedLengthString<short>();
 
             GetOtherFieldsInChunk(chunk,
                                   out CGCategory dataCgCategory,
@@ -295,14 +295,54 @@ file static class SpanReaderExtension
         return Unsafe.ByteOffset(in originRef, in targetRef);
     }
 
-    public static string? ReadFixedLengthString(this ReadOnlySpan<byte> data)
+    public static unsafe string? ReadFixedLengthString<T>(this ReadOnlySpan<byte> data)
+        where T : unmanaged
     {
         if (data.IsEmpty)
         {
             return null;
         }
 
-        data.Read(out ushort len);
-        return Encoding.UTF8.GetString(data.Slice(sizeof(ushort), len));
+        data.Read(out T lenGeneric);
+
+        int sizeOfLen = sizeof(T);
+        void* lenP = Unsafe.AsPointer(ref lenGeneric);
+        int len = sizeOfLen switch
+        {
+            1 => Unsafe.ReadUnaligned<byte>(lenP),
+            2 => Unsafe.ReadUnaligned<short>(lenP),
+            4 => Unsafe.ReadUnaligned<int>(lenP),
+            8 => (int)Unsafe.ReadUnaligned<long>(lenP),
+            _ => throw new IndexOutOfRangeException("Size of length T is not supported")
+        };
+
+        return Encoding.UTF8.GetString(data.Slice(sizeOfLen, len));
+    }
+
+    public static int ReadStreamToBuffer(ref byte[] rentBuffer, Stream stream)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(rentBuffer.Length, 0, nameof(rentBuffer));
+
+        int offset = 0;
+        while (true)
+        {
+            // Resize if offset read is equal to rent buffer's length.
+            if (offset == rentBuffer.Length)
+            {
+                byte[] newBuffer = ArrayPool<byte>.Shared.Rent(rentBuffer.Length * 2);
+                rentBuffer.AsSpan(0, offset).CopyTo(newBuffer);
+                ArrayPool<byte>.Shared.Return(rentBuffer);
+
+                rentBuffer = newBuffer;
+            }
+
+            int read;
+            if ((read = stream.Read(rentBuffer.AsSpan(offset))) == 0)
+                break;
+
+            offset += read;
+        }
+
+        return offset;
     }
 }
