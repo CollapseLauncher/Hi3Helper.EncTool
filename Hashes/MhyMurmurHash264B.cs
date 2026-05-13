@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.IO.Hashing;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Hi3Helper.EncTool.Hashes
 {
@@ -17,17 +21,21 @@ namespace Hi3Helper.EncTool.Hashes
         private const int  Br = 24;
 
         private readonly ulong _seed;
-        private readonly uint  _readLengthTarget;
-        private          uint  _highBytes;
-        private          uint  _lowBytes;
-        private          uint  _remained;
+        private readonly ulong _readLengthTarget;
+
+        private uint _highBytes;
+        private uint _lowBytes;
+
+        private readonly byte[] _tail = new byte[8];
+        private          int    _tailLength;
+        private          ulong  _appendedLength;
 
         /// <summary>
         /// Create a new instance with targeted data size, optionally with seed.
         /// </summary>
         /// <param name="readLengthTarget">The length in which the target <see cref="Stream"/> define.</param>
         /// <param name="seed">Optional seed for hashing.</param>
-        public MhyMurmurHash264B(uint readLengthTarget, ulong seed = 0) : this()
+        public MhyMurmurHash264B(ulong readLengthTarget, ulong seed = 0) : this()
         {
             _readLengthTarget = readLengthTarget;
             _seed             = seed;
@@ -47,18 +55,20 @@ namespace Hi3Helper.EncTool.Hashes
         public static MhyMurmurHash264B CreateForStream(Stream stream, ulong seed = 0, long? streamLengthExplicit = null)
         {
             ArgumentNullException.ThrowIfNull(stream);
+
             if (streamLengthExplicit is < 0)
-                throw new ArgumentOutOfRangeException(nameof(streamLengthExplicit), "Stream length must be non-negative.");
+                throw new ArgumentOutOfRangeException(nameof(streamLengthExplicit),
+                                                      "Stream length must be non-negative.");
 
             long streamLength = 0;
+
             if (streamLengthExplicit == null && !TryGetStreamLength(stream, out streamLength))
-                throw new NotSupportedException("Cannot get the length of the stream. Please explicitly define the stream length using streamLengthExplicit argument.");
+            {
+                throw new NotSupportedException($"Cannot get the length of the stream. Please explicitly define the stream length using {nameof(streamLengthExplicit)} argument.");
+            }
 
             long readLengthTarget = streamLengthExplicit ?? streamLength;
-            if (readLengthTarget > uint.MaxValue)
-                throw new InvalidOperationException("Stream length cannot be more than 4 GiB (4,294,967,295 bytes)");
-
-            return new MhyMurmurHash264B((uint)readLengthTarget, seed);
+            return new MhyMurmurHash264B((ulong)readLengthTarget, seed);
         }
 
         private static bool TryGetStreamLength(Stream stream, out long length)
@@ -82,132 +92,259 @@ namespace Hi3Helper.EncTool.Hashes
         /// </exception>
         public override unsafe void Append(ReadOnlySpan<byte> source)
         {
-            int len = source.Length;
-            // AssertEnsureBufferLengthEven(len);
+            if (source.IsEmpty)
+                return;
+
+            _appendedLength += (ulong)source.Length;
+
+            if (_tailLength != 0)
+            {
+                int needed = 8 - _tailLength;
+
+                if (source.Length < needed)
+                {
+                    source.CopyTo(_tail.AsSpan(_tailLength));
+                    _tailLength += source.Length;
+                    return;
+                }
+
+                source[..needed].CopyTo(_tail.AsSpan(_tailLength));
+
+                fixed (byte* tailPtr = _tail)
+                {
+                    MixHigh(ref _highBytes, ReadUInt32LittleEndian(tailPtr));
+                    MixLow(ref _lowBytes, ReadUInt32LittleEndian(tailPtr + 4));
+                }
+
+                _tailLength = 0;
+                source      = source[needed..];
+            }
 
             fixed (byte* bytePtr = &MemoryMarshal.GetReference(source))
             {
                 byte* start = bytePtr;
-                byte* end   = bytePtr + len;
+                byte* end   = bytePtr + source.Length;
 
-                start = ComputeRemainedBy8(start, end);
-                start = ComputeRemainedBy4(start, end);
-                ComputeRemainedBytes(start, end);
+                start = ProcessBlocks(ref _highBytes, ref _lowBytes, start, end);
+
+                int remaining = (int)(end - start);
+
+                if (remaining <= 0)
+                    return;
+
+                new ReadOnlySpan<byte>(start, remaining).CopyTo(_tail);
+                _tailLength = remaining;
             }
-        }
-
-        /*
-        private void AssertEnsureBufferLengthEven(int len)
-        {
-            _remained -= (uint)len;
-
-            if (_remained > 8 && len % 8 != 0)
-                throw new InvalidOperationException("While appending the buffer, the source buffer length must be 8 bytes aligned " +
-                                                    "(divided by 8) while remained data is still more than 8 bytes left! (due to MurmurHash2-64B design flaws). " +
-                                                    "If you're getting the data from a Stream, Please use Stream.ReadAtLeast() or Stream.ReadExactly() to " +
-                                                    "ensure that your buffer is always filled!");
-        }
-        */
-
-        private unsafe void ComputeRemainedBytes(byte* start, byte* end)
-        {
-            uint remain = (uint)(end - start);
-            if (remain <= 0)
-            {
-                return;
-            }
-
-            switch (remain)
-            {
-                case 3:
-                    _lowBytes ^= (uint)*(start + 2) << 16;
-                    _lowBytes ^= (uint)*(start + 1) << 8;
-                    _lowBytes ^= *start;
-                    break;
-                case 2:
-                    _lowBytes ^= (uint)*(start + 1) << 8;
-                    _lowBytes ^= *start;
-                    break;
-                case 1:
-                    _lowBytes ^= *start;
-                    break;
-            }
-            _lowBytes *= Bm;
-        }
-
-        private unsafe byte* ComputeRemainedBy4(byte* start, byte* end)
-        {
-            if (end < start + 4)
-            {
-                return start;
-            }
-
-            uint k1 = *(uint*)start;
-            k1         *= Bm;
-            k1         ^= k1 >> Br;
-            k1         *= Bm;
-            _highBytes *= Bm;
-            _highBytes ^= k1;
-            start      += 4;
-
-            return start;
-        }
-
-        private unsafe byte* ComputeRemainedBy8(byte* start, byte* end)
-        {
-            while (start + 8 <= end)
-            {
-                uint k1 = *(uint*)start;
-                k1         *= Bm;
-                k1         ^= k1 >> Br;
-                k1         *= Bm;
-                _highBytes *= Bm;
-                _highBytes ^= k1;
-
-                start += 4;
-
-                uint k2 = *(uint*)start;
-                k2        *= Bm;
-                k2        ^= k2 >> Br;
-                k2        *= Bm;
-                _lowBytes *= Bm;
-                _lowBytes ^= k2;
-
-                start += 4;
-            }
-
-            return start;
-        }
-
-        /// <inheritdoc/>
-        public override void Reset()
-        {
-            _highBytes = (uint)_seed ^ _readLengthTarget;
-            _lowBytes  = (uint)(_seed >> 32);
-            _remained  = _readLengthTarget;
         }
 
         /// <inheritdoc/>
         protected override void GetCurrentHashCore(Span<byte> destination)
         {
-            uint highBytes = (_highBytes ^ _lowBytes >> 18) * Bm;
-            uint lowBytes  = _lowBytes ^ highBytes >> 22;
+            uint highBytes = _highBytes;
+            uint lowBytes  = _lowBytes;
 
-            lowBytes  *= Bm;
-            highBytes ^= lowBytes >> 17;
-            highBytes *= Bm;
-            lowBytes  ^= highBytes >> 19;
-            lowBytes  *= Bm;
+            FinalizeTail(ref highBytes, ref lowBytes);
+            FinalizeHash(ref highBytes, ref lowBytes);
 
             ulong hash = ((ulong)highBytes << 32) | lowBytes;
             MemoryMarshal.Write(destination, in hash);
         }
 
         /// <inheritdoc/>
+        public override void Reset()
+        {
+            _highBytes = (uint)_seed ^ (uint)_readLengthTarget;
+
+            // This is the 64-bit length extension.
+            // For <= uint.MaxValue, this stays identical to your old behavior.
+            _lowBytes = (uint)(_seed >> 32) ^ (uint)(_readLengthTarget >> 32);
+
+            _tailLength     = 0;
+            _appendedLength = 0;
+        }
+
+        /// <inheritdoc/>
         protected override void GetHashAndResetCore(Span<byte> destination)
         {
+            if (_appendedLength != _readLengthTarget)
+            {
+                throw new InvalidOperationException($"Appended length does not match target length. Expected {_readLengthTarget} bytes, got {_appendedLength} bytes.");
+            }
+
             GetCurrentHashCore(destination);
             Reset();
+        }
+
+        private void FinalizeTail(ref uint highBytes, ref uint lowBytes)
+        {
+            ReadOnlySpan<byte> tail = _tail.AsSpan(0, _tailLength);
+
+            if (tail.Length >= 4)
+            {
+                MixHigh(ref highBytes, BinaryPrimitives.ReadUInt32LittleEndian(tail));
+                tail = tail[4..];
+            }
+
+            if (tail.Length == 0)
+                return;
+
+            switch (tail.Length)
+            {
+                case 3:
+                    lowBytes ^= (uint)tail[2] << 16;
+                    lowBytes ^= (uint)tail[1] << 8;
+                    lowBytes ^= tail[0];
+                    break;
+
+                case 2:
+                    lowBytes ^= (uint)tail[1] << 8;
+                    lowBytes ^= tail[0];
+                    break;
+
+                case 1:
+                    lowBytes ^= tail[0];
+                    break;
+            }
+
+            lowBytes *= Bm;
+        }
+
+        private static unsafe byte* ProcessBlocks(
+            ref uint highBytes,
+            ref uint lowBytes,
+            byte*    start,
+            byte*    end)
+        {
+            uint high = highBytes;
+            uint low  = lowBytes;
+
+            if (Avx2.IsSupported && BitConverter.IsLittleEndian)
+            {
+                Vector256<uint> bmVector = Vector256.Create(Bm);
+                uint* mixed = stackalloc uint[8];
+
+                while (start + 32 <= end)
+                {
+                    Vector256<uint> k = Unsafe.ReadUnaligned<Vector256<uint>>(start);
+                    k = MixKAvx2(k, bmVector);
+
+                    Avx.Store(mixed, k);
+
+                    high = (high * Bm) ^ mixed[0];
+                    low  = (low * Bm) ^ mixed[1];
+
+                    high = (high * Bm) ^ mixed[2];
+                    low  = (low * Bm) ^ mixed[3];
+
+                    high = (high * Bm) ^ mixed[4];
+                    low  = (low * Bm) ^ mixed[5];
+
+                    high = (high * Bm) ^ mixed[6];
+                    low  = (low * Bm) ^ mixed[7];
+
+                    start += 32;
+                }
+            }
+            else
+            {
+                while (start + 32 <= end)
+                {
+                    uint k0 = MixK(ReadUInt32LittleEndian(start + 0));
+                    uint k1 = MixK(ReadUInt32LittleEndian(start + 4));
+                    uint k2 = MixK(ReadUInt32LittleEndian(start + 8));
+                    uint k3 = MixK(ReadUInt32LittleEndian(start + 12));
+                    uint k4 = MixK(ReadUInt32LittleEndian(start + 16));
+                    uint k5 = MixK(ReadUInt32LittleEndian(start + 20));
+                    uint k6 = MixK(ReadUInt32LittleEndian(start + 24));
+                    uint k7 = MixK(ReadUInt32LittleEndian(start + 28));
+
+                    high = (high * Bm) ^ k0;
+                    low  = (low * Bm) ^ k1;
+
+                    high = (high * Bm) ^ k2;
+                    low  = (low * Bm) ^ k3;
+
+                    high = (high * Bm) ^ k4;
+                    low  = (low * Bm) ^ k5;
+
+                    high = (high * Bm) ^ k6;
+                    low  = (low * Bm) ^ k7;
+
+                    start += 32;
+                }
+            }
+
+            while (start + 8 <= end)
+            {
+                high = (high * Bm) ^ MixK(ReadUInt32LittleEndian(start));
+                low  = (low * Bm) ^ MixK(ReadUInt32LittleEndian(start + 4));
+
+                start += 8;
+            }
+
+            highBytes = high;
+            lowBytes  = low;
+
+            return start;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<uint> MixKAvx2(Vector256<uint> k, Vector256<uint> bm)
+        {
+            k = Avx2.MultiplyLow(k.AsInt32(), bm.AsInt32()).AsUInt32();
+            k = Avx2.Xor(k, Avx2.ShiftRightLogical(k, Br));
+            k = Avx2.MultiplyLow(k.AsInt32(), bm.AsInt32()).AsUInt32();
+
+            return k;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint MixK(uint k)
+        {
+            k *= Bm;
+            k ^= k >> Br;
+            k *= Bm;
+
+            return k;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void MixHigh(ref uint highBytes, uint k)
+        {
+            highBytes *= Bm;
+            highBytes ^= MixK(k);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void MixLow(ref uint lowBytes, uint k)
+        {
+            lowBytes *= Bm;
+            lowBytes ^= MixK(k);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void FinalizeHash(ref uint highBytes, ref uint lowBytes)
+        {
+            highBytes =  (highBytes ^ (lowBytes >> 18)) * Bm;
+            lowBytes  ^= highBytes >> 22;
+
+            lowBytes  *= Bm;
+            highBytes ^= lowBytes >> 17;
+
+            highBytes *= Bm;
+            lowBytes  ^= highBytes >> 19;
+
+            lowBytes *= Bm;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe uint ReadUInt32LittleEndian(byte* ptr)
+        {
+            uint value = Unsafe.ReadUnaligned<uint>(ptr);
+
+            return BitConverter.IsLittleEndian
+                ? value
+                : BinaryPrimitives.ReverseEndianness(value);
         }
     }
 }
