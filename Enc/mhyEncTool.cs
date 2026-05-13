@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Hi3Helper.Data;
+using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -26,7 +27,7 @@ public sealed class MhyEncTool
 
         Span<byte> hmacKeyEnc = stackalloc byte[keyString.Length / 2];
         Span<byte> hmacKeyDec = stackalloc byte[keyString.Length / 2];
-        if (Convert.FromHexString(keyString, hmacKeyEnc, out _, out _) != OperationStatus.Done)
+        if (!HexTool.TryHexToBytesUnsafe(keyString, hmacKeyEnc))
         {
             exception = new InvalidOperationException("Input Key is not a hex string!");
             return false;
