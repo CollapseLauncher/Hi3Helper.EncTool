@@ -66,7 +66,7 @@ public class KianaCgMetadata
     public override int GetHashCode() =>
         HashCode.Combine(Category, PlayMode, DownloadMode, PathJp, PathCn, SizeJp, SizeCn);
 
-    public override string ToString() => $"{Category} | {DownloadMode} | {PckType} | {SubCategoryId} | {PathJp ?? PathCn ?? ""}";
+    public override string ToString() => $"{Category} | {DownloadMode} | {PckType} | {PlayMode} | {SubCategoryId} | {PathJp ?? PathCn ?? ""}";
 
     public static Dictionary<int, KianaCgMetadata> Parse(Stream stream)
     {
