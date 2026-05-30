@@ -55,5 +55,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         {
             PatchInfo = patchInfo;
         }
+
+        public override string ToString() => $"{Name} | {Size} | {Language} | {PckType} | HasPatch: {IsHasPatch}";
     }
 }
