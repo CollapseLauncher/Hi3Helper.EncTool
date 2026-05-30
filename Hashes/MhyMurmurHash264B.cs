@@ -22,6 +22,7 @@ namespace Hi3Helper.EncTool.Hashes
 
         private readonly ulong _seed;
         private readonly ulong _readLengthTarget;
+        private readonly bool  _skipAppendLengthAssert;
 
         private uint _highBytes;
         private uint _lowBytes;
@@ -35,10 +36,12 @@ namespace Hi3Helper.EncTool.Hashes
         /// </summary>
         /// <param name="readLengthTarget">The length in which the target <see cref="Stream"/> define.</param>
         /// <param name="seed">Optional seed for hashing.</param>
-        public MhyMurmurHash264B(ulong readLengthTarget, ulong seed = 0) : this()
+        /// <param name="skipAppendLengthAssert">Whether to skip the append length assertion.</param>
+        public MhyMurmurHash264B(ulong readLengthTarget, ulong seed = 0, bool skipAppendLengthAssert = false) : this()
         {
-            _readLengthTarget = readLengthTarget;
-            _seed             = seed;
+            _readLengthTarget       = readLengthTarget;
+            _seed                   = seed;
+            _skipAppendLengthAssert = skipAppendLengthAssert;
             Reset();
         }
 
@@ -156,7 +159,7 @@ namespace Hi3Helper.EncTool.Hashes
             _highBytes = (uint)_seed ^ (uint)_readLengthTarget;
 
             // This is the 64-bit length extension.
-            // For <= uint.MaxValue, this stays identical to your old behavior.
+            // For <= uint.MaxValue, this stays identical to old behavior.
             _lowBytes = (uint)(_seed >> 32) ^ (uint)(_readLengthTarget >> 32);
 
             _tailLength     = 0;
@@ -166,7 +169,8 @@ namespace Hi3Helper.EncTool.Hashes
         /// <inheritdoc/>
         protected override void GetHashAndResetCore(Span<byte> destination)
         {
-            if (_appendedLength != _readLengthTarget)
+            if (_appendedLength != _readLengthTarget &&
+                !_skipAppendLengthAssert)
             {
                 throw new InvalidOperationException($"Appended length does not match target length. Expected {_readLengthTarget} bytes, got {_appendedLength} bytes.");
             }
