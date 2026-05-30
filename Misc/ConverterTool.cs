@@ -819,5 +819,25 @@ namespace Hi3Helper.Data
                  // If path is relative, then combine with current directory
                 : Path.GetFullPath(Path.Combine(CurrentDirectoryPath ?? "", path));
         }
+
+        /// <summary>
+        /// Gets the current offset of the <paramref name="current"/> Span relative to the <paramref name="source"/> Span in bytes.
+        /// </summary>
+        /// <param name="current">The current span.</param>
+        /// <param name="source">The source span.</param>
+        /// <returns>The byte offset of the current span relative to the source span.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe nint GetByteOffsetFromSource<TCurrent, TSource>(
+            this   ReadOnlySpan<TCurrent> current,
+            scoped ReadOnlySpan<TSource>  source)
+            where TCurrent : unmanaged
+            where TSource : unmanaged
+        {
+            ref TCurrent currentRef = ref MemoryMarshal.GetReference(current);
+            ref TSource  sourceRef  = ref MemoryMarshal.GetReference(source);
+
+            return (nint)Unsafe.AsPointer(ref currentRef) - 
+                   (nint)Unsafe.AsPointer(ref sourceRef);
+        }
     }
 }
