@@ -839,5 +839,28 @@ namespace Hi3Helper.Data
             return (nint)Unsafe.AsPointer(ref currentRef) - 
                    (nint)Unsafe.AsPointer(ref sourceRef);
         }
+
+        /// <summary>
+        /// Reverse endian of the value and make a copy. 
+        /// </summary>
+        /// <typeparam name="T">Struct type</typeparam>
+        /// <param name="source">The source value.</param>
+        /// <returns>The value with reversed endian.</returns>
+        public static T ReverseEndianess<T>(this ref T source)
+            where T : unmanaged, allows ref struct
+        {
+            T copy = source;
+            copy.ReverseEndianessInplace();
+            return copy;
+        }
+
+        /// <summary>
+        /// Reverse endian of the value in-place.
+        /// </summary>
+        /// <typeparam name="T">Struct type</typeparam>
+        /// <param name="source">The source value.</param>
+        public static unsafe void ReverseEndianessInplace<T>(this ref T source)
+            where T : unmanaged, allows ref struct =>
+            new Span<byte>(Unsafe.AsPointer(ref source), sizeof(T)).Reverse();
     }
 }
