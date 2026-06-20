@@ -35,13 +35,13 @@
     </ItemGroup>
 
     <PropertyGroup>
-        <GoogleProtobufVersion>3.35.0</GoogleProtobufVersion>
+        <GoogleProtobufVersion>3.35.1</GoogleProtobufVersion>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" Condition="$(DefineConstants.Contains('USEZSTD'))" />
-        <PackageReference Include="Google.Protobuf" Version="3.35.1" />
-        <PackageReference Include="Google.Protobuf.Tools" Version="3.35.1">
+        <PackageReference Include="Google.Protobuf" Version="$(GoogleProtobufVersion)" />
+        <PackageReference Include="Google.Protobuf.Tools" Version="$(GoogleProtobufVersion)">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
