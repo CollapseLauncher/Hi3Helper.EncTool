@@ -683,6 +683,18 @@ namespace Hi3Helper.Data
                     : double.NaN;
         }
 
+        public static TFloat UnNanOrInfinity<TFloat>(this TFloat number)
+            where TFloat : IFloatingPoint<TFloat>
+        {
+            if (TFloat.IsNaN(number) ||
+                TFloat.IsInfinity(number))
+            {
+                return TFloat.Zero;
+            }
+
+            return number;
+        }
+
         public static TTo TryGetInteger<TFrom, TTo>(this TFrom number)
             where TFrom : IFloatingPoint<TFrom>
             where TTo : IBinaryInteger<TTo>, IMinMaxValue<TTo>
