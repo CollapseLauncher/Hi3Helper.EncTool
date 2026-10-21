@@ -797,24 +797,18 @@ namespace Hi3Helper.Data
         private static readonly string? CurrentDirectoryPath = Directory.GetCurrentDirectory();
         private static readonly string? CurrentRootPath      = Path.GetPathRoot(CurrentDirectoryPath);
 
-        [return: NotNullIfNotNull(nameof(path))]
-        public static string? GetFullyQualifiedPath(this string? path)
+        public static string GetFullyQualifiedPath(this ReadOnlySpan<char> path)
         {
             const string uwpRelPathScheme = "ms-appx:///";
-            const string uncStart = "\\";
-
-            if (string.IsNullOrEmpty(path))
-            {
-                return null;
-            }
+            const string uncStart         = "\\";
 
             // Check if path is already fully qualified.
             if (Path.IsPathFullyQualified(path))
             {
                 // Ensure the UNC path is resolved.
                 return path.StartsWith(uncStart)
-                    ? Path.GetFullPath(path)
-                    : path;
+                    ? Path.GetFullPath(path.ToString())
+                    : path.ToString();
             }
 
             // Get if path is rooted, get the Fully Qualified path
@@ -827,9 +821,20 @@ namespace Hi3Helper.Data
             // If path starts with UWP path scheme, trim and recursively pass the path
             return path.StartsWith(uwpRelPathScheme, StringComparison.OrdinalIgnoreCase)
                 // ReSharper disable once TailRecursiveCall
-                ? path.AsSpan(uwpRelPathScheme.Length).ToString().GetFullyQualifiedPath()
-                 // If path is relative, then combine with current directory
-                : Path.GetFullPath(Path.Combine(CurrentDirectoryPath ?? "", path));
+                ? path[uwpRelPathScheme.Length..].TrimStart("\\/").ToString().GetFullyQualifiedPath()
+                // If path is relative, then combine with current directory
+                : Path.GetFullPath(Path.Combine(CurrentDirectoryPath ?? "", path.ToString()));
+        }
+
+        [return: NotNullIfNotNull(nameof(path))]
+        public static string? GetFullyQualifiedPath(this string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
+
+            return path.AsSpan().GetFullyQualifiedPath();
         }
 
         /// <summary>
