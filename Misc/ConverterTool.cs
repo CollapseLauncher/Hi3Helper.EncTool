@@ -29,6 +29,11 @@ namespace Hi3Helper.Data
 
     public static class ConverterTool
     {
+        static ConverterTool()
+        {
+            CurrentWindowsIdentity = OperatingSystem.IsWindows() ? WindowsIdentity.GetCurrent() : null!;
+        }
+
         private const  double   ScOneSecond   = 1000;
         private static string[] _sizeSuffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
@@ -322,7 +327,7 @@ namespace Hi3Helper.Data
         public static int GetUnixTimestamp(bool isUtc = false) => (int)Math.Truncate(isUtc ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : DateTime.Now.Subtract(new DateTime(1970, 1, 1)).TotalSeconds);
 
 #pragma warning disable CA1416
-        private static readonly WindowsIdentity CurrentWindowsIdentity = WindowsIdentity.GetCurrent();
+        private static readonly WindowsIdentity CurrentWindowsIdentity;
         public static bool IsUserHasPermission(string input)
         {
             // Assign the type
