@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <Platforms>x64</Platforms>
         <Configurations>Debug;Release</Configurations>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -17,6 +17,11 @@
         <Copyright>Copyright 2022-2026 $(Company)</Copyright>
         <IsAotCompatible>true</IsAotCompatible>
         <LangVersion>preview</LangVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+        <!-- .NET 11 feature - Runtime Async -->
+        <Features>runtime-async=on</Features>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -39,13 +44,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Hi3Helper.ZstdNet" Version="1.6.4" Condition="$(DefineConstants.Contains('USEZSTD'))" />
         <PackageReference Include="Google.Protobuf" Version="$(GoogleProtobufVersion)" />
         <PackageReference Include="Google.Protobuf.Tools" Version="$(GoogleProtobufVersion)">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="System.IO.Hashing" Version="10.0.14" />
+        <PackageReference Include="System.IO.Hashing" Version="11.0.0" />
     </ItemGroup>
 
     <ItemGroup>
