@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 #pragma warning disable IDE0130
 
 // ReSharper disable InconsistentNaming
@@ -22,6 +23,7 @@ public struct CachePatchInfo
 {
     public        string? OldFileName;
     private fixed byte    _oldFileHashSHA1[20];
+    [JsonIgnore]
     public unsafe Span<byte> OldFileHashSHA1
     {
         get
@@ -34,6 +36,7 @@ public struct CachePatchInfo
     public        string? NewFileName;
     private fixed byte    _newFileHashSHA1[20];
     private fixed byte    _newFileHashMD5[16];
+    [JsonIgnore]
     public unsafe Span<byte> NewFileHashSHA1
     {
         get
@@ -42,6 +45,7 @@ public struct CachePatchInfo
                 return new Span<byte>(p, 20);
         }
     }
+    [JsonIgnore]
     public unsafe Span<byte> NewFileHashMD5
     {
         get
@@ -53,6 +57,7 @@ public struct CachePatchInfo
 
     public        int  PatchFileSize;
     private fixed byte _patchFileHashMD5[16];
+    [JsonIgnore]
     public unsafe Span<byte> PatchFileHashMD5
     {
         get
