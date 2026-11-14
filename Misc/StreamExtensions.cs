@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
 // ReSharper disable once CheckNamespace
 namespace Hi3Helper.EncTool;
 

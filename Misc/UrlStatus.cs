@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 #pragma warning disable IDE0130
 
-#nullable enable
 // ReSharper disable CheckNamespace
 namespace Hi3Helper.EncTool;
 

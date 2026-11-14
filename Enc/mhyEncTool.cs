@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
-#nullable enable
 namespace Hi3Helper.EncTool.Enc;
 
 public sealed class MhyEncTool

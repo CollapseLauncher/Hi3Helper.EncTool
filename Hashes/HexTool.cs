@@ -1,5 +1,4 @@
-﻿#nullable enable
-using System;
+﻿using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 #if !NET9_0_OR_GREATER
@@ -8,14 +7,17 @@ using System.Runtime.InteropServices;
 
 namespace Hi3Helper.Data
 {
-    public
-#if !NET9_0_OR_GREATER
+    public static
+#if NET9_0_OR_GREATER
         unsafe
 #endif
         class HexTool
     {
+        private const int StackallocMaxSize = 512;
+
 #if !NET9_0_OR_GREATER
-        private static readonly byte[] _lookupFromHexTable = new byte[] {
+        private static readonly byte[] LookupFromHexTable =
+        [
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -27,9 +29,10 @@ namespace Hi3Helper.Data
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 10,  11,  12,
             13,  14,  15
-        };
+        ];
 
-        private static readonly byte[] _lookupFromHexTable16 = new byte[] {
+        private static readonly byte[] LookupFromHexTable16 =
+        [
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -41,10 +44,10 @@ namespace Hi3Helper.Data
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 160, 176, 192,
             208, 224, 240
-        };
+        ];
 
-        private static readonly uint[] _lookup32Unsafe = new uint[]
-        {
+        private static readonly uint[] Lookup32Unsafe =
+        [
             0x300030, 0x310030, 0x320030, 0x330030, 0x340030, 0x350030, 0x360030, 0x370030, 0x380030, 0x390030, 0x610030, 0x620030,
             0x630030, 0x640030, 0x650030, 0x660030, 0x300031, 0x310031, 0x320031, 0x330031, 0x340031, 0x350031, 0x360031, 0x370031,
             0x380031, 0x390031, 0x610031, 0x620031, 0x630031, 0x640031, 0x650031, 0x660031, 0x300032, 0x310032, 0x320032, 0x330032,
@@ -67,76 +70,59 @@ namespace Hi3Helper.Data
             0x340065, 0x350065, 0x360065, 0x370065, 0x380065, 0x390065, 0x610065, 0x620065, 0x630065, 0x640065, 0x650065, 0x660065,
             0x300066, 0x310066, 0x320066, 0x330066, 0x340066, 0x350066, 0x360066, 0x370066, 0x380066, 0x390066, 0x610066, 0x620066,
             0x630066, 0x640066, 0x650066, 0x660066
-        };
+        ];
 
-        private static readonly uint* _lookup32UnsafeP = (uint*)GCHandle.Alloc(_lookup32Unsafe, GCHandleType.Pinned).AddrOfPinnedObject();
-
-        public static string LongToHexUnsafe(long number)
-        {
-            uint* lookupP = &_lookup32UnsafeP[0];
-            ReadOnlySpan<char> result = stackalloc char[8];
-            byte* bytesP = (byte*)&number;
-            fixed (char* resultP = &result[0])
-            {
-                uint* resultP2 = (uint*)resultP;
-                for (int i = 0; i < 8; i++)
-                {
-                    resultP2[i] = lookupP[bytesP[i]];
-                }
-            }
-            return new string(result);
-        }
+        private static readonly uint* Lookup32UnsafeP = (uint*)GCHandle.Alloc(Lookup32Unsafe, GCHandleType.Pinned).AddrOfPinnedObject();
 #endif
 
         public static string? BytesToHexUnsafe(ReadOnlySpan<byte> bytes)
         {
-#if NET9_0_OR_GREATER
-            if (bytes.IsEmpty)
+            if (bytes.Length == 0)
                 return null;
 
-            int returnLen = bytes.Length * 2;
+            int bufferSize = bytes.Length * 2;
+            char[]? buffer = bufferSize > StackallocMaxSize
+                ? ArrayPool<char>.Shared.Rent(bufferSize)
+                : null;
+
+            try
             {
-                char[] returnChar = returnLen > (2 << 10) / 2 ? GC.AllocateUninitializedArray<char>(returnLen) : new char[returnLen];
-                if (!TryBytesToHexUnsafe(bytes, returnChar, out _))
+                Span<char> result = (buffer ?? stackalloc char[bufferSize])[..bufferSize];
+#if NET9_0_OR_GREATER
+                if (!TryBytesToHexUnsafe(bytes, result, out _))
                 {
                     throw new InvalidOperationException($"Cannot convert {nameof(bytes)} to Hex string");
                 }
 
-                return new string(returnChar);
-            }
+                return new string(result);
 #else
-            if (bytes.Length == 0)
-                return null;
+                byte* bytesP  = bytes.GetUnsafePointer();
+                char* resultP = result.GetUnsafePointer();
 
-            uint* lookupP = &_lookup32UnsafeP[0];
-            ReadOnlySpan<char> result = stackalloc char[bytes.Length * 2];
-            fixed (byte* bytesP = &bytes[0])
-                fixed (char* resultP = &result[0])
-                {
-                    uint* resultP2 = (uint*)resultP;
-                    for (int i = 0; i < bytes.Length; i++)
-                    {
-                        resultP2[i] = lookupP[bytesP[i]];
-                    }
-                }
-            return new string(result);
+                uint* resultP2 = (uint*)resultP;
+                for (int i = 0; i < bytes.Length; i++)
+                    resultP2[i] = Lookup32UnsafeP[bytesP[i]];
+
+                return new string(result);
 #endif
+            }
+            finally
+            {
+                if (buffer != null) ArrayPool<char>.Shared.Return(buffer);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryBytesToHexUnsafe(ReadOnlySpan<byte> bytes, Span<char> result)
 #if !NET9_0_OR_GREATER
         {
-            uint* lookupP = &_lookup32UnsafeP[0];
-            fixed (byte* bytesP = &bytes[0])
-            fixed (char* resultP = &result[0])
-            {
-                uint* resultP2 = (uint*)resultP;
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    resultP2[i] = lookupP[bytesP[i]];
-                }
-            }
+            byte* bytesP   = bytes.GetUnsafePointer();
+            char* resultP  = result.GetUnsafePointer();
+            uint* resultP2 = (uint*)resultP;
+
+            for (int i = 0; i < bytes.Length; i++)
+                resultP2[i] = Lookup32UnsafeP[bytesP[i]];
+
             return true;
         }
 #else
@@ -169,40 +155,37 @@ namespace Hi3Helper.Data
             int index = 0;
             int len = source.Length >> 1;
 
-            fixed (char* sourceRef = &source[0])
+            char* sourceRef = source.GetUnsafePointer();
+
+            if (*(int*)sourceRef == 7864368)
             {
-                if (*(int*)sourceRef == 7864368)
+                if (source.Length == 2)
                 {
-                    if (source.Length == 2)
-                    {
-                        throw new ArgumentException();
-                    }
-
-                    index += 2;
-                    len -= 1;
+                    throw new ArgumentException("Source length cannot be just 2 characters at a time.", nameof(source));
                 }
 
-                byte add = 0;
-                byte[] result = new byte[len];
-
-                fixed (byte* hiRef = &_lookupFromHexTable16[0])
-                fixed (byte* lowRef = &_lookupFromHexTable[0])
-                fixed (byte* resultRef = &result[0])
-                {
-                    char* s = &sourceRef[index];
-                    byte* r = &resultRef[0];
-
-                    while (*s != 0)
-                    {
-                        if (*s > 102 || (*r = hiRef[*s++]) == 255 || *s > 102 || (add = lowRef[*s++]) == 255)
-                        {
-                            throw new ArgumentException();
-                        }
-                        *r++ += add;
-                    }
-                    return result;
-                }
+                index += 2;
+                len   -= 1;
             }
+
+            byte[] result = new byte[len];
+
+            byte* hiRef     = LookupFromHexTable16.GetUnsafePointer();
+            byte* lowRef    = LookupFromHexTable.GetUnsafePointer();
+            byte* resultRef = result.GetUnsafePointer();
+
+            char* s = &sourceRef[index];
+
+            while (*s != 0)
+            {
+                byte add;
+                if (*s > 102 || (*resultRef = hiRef[*s++]) == 255 || *s > 102 || (add = lowRef[*s++]) == 255)
+                {
+                    throw new ArgumentException();
+                }
+                *resultRef++ += add;
+            }
+            return result;
 #endif
         }
 
@@ -211,41 +194,37 @@ namespace Hi3Helper.Data
 #if !NET9_0_OR_GREATER
         {
             int index = 0;
-            int len = buffer.Length;
 
-            fixed (char* sourceRef = &source[0])
+            char* sourceRef = source.GetUnsafePointer();
+
+            if (*(int*)sourceRef == 7864368)
             {
-                if (*(int*)sourceRef == 7864368)
+                if (source.Length == 2)
                 {
-                    if (source.Length == 2)
-                    {
-                        return false;
-                    }
-
-                    index += 2;
-                    len -= 1;
+                    return false;
                 }
 
-                byte add = 0;
-
-                fixed (byte* hiRef = &_lookupFromHexTable16[0])
-                fixed (byte* lowRef = &_lookupFromHexTable[0])
-                fixed (byte* resultRef = &buffer[0])
-                {
-                    char* s = &sourceRef[index];
-                    byte* r = &resultRef[0];
-
-                    while (*s != 0)
-                    {
-                        if (*s > 102 || (*r = hiRef[*s++]) == 255 || *s > 102 || (add = lowRef[*s++]) == 255)
-                        {
-                            return false;
-                        }
-                        *r++ += add;
-                    }
-                    return true;
-                }
+                index += 2;
             }
+
+
+            byte* hiRef     = LookupFromHexTable16.GetUnsafePointer();
+            byte* lowRef    = LookupFromHexTable.GetUnsafePointer();
+            byte* resultRef = buffer.GetUnsafePointer();
+
+            char* s = &sourceRef[index];
+
+            while (*s != 0)
+            {
+                byte add;
+                if (*s > 102 || (*resultRef = hiRef[*s++]) == 255 || *s > 102 || (add = lowRef[*s++]) == 255)
+                {
+                    return false;
+                }
+                *resultRef++ += add;
+            }
+            return true;
+
         }
 #else
             => OperationStatus.Done == TryHexToBytesUnsafe(source, buffer, out _, out _);
@@ -259,17 +238,16 @@ namespace Hi3Helper.Data
 
         public static bool IsHexString(ReadOnlySpan<char> source)
         {
-            const int stackallocThreshold = 4 << 10;
-
             if (source.Length % 2 != 0)
             {
                 return false;
             }
 
             int dummyBufferSize = source.Length / 2;
-            byte[]? buffer = dummyBufferSize > stackallocThreshold
+            byte[]? buffer = dummyBufferSize > StackallocMaxSize
                 ? ArrayPool<byte>.Shared.Rent(dummyBufferSize)
                 : null;
+
             scoped Span<byte> spanBuffer = buffer ?? stackalloc byte[dummyBufferSize];
 
             try

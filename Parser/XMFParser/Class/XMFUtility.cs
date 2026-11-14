@@ -14,7 +14,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         /// </summary>
         public static int XMFVersionLength { get => XMFParser.VersioningLength; }
 
-#nullable enable
         /// <summary>
         /// Get the version from XMF file
         /// </summary>
@@ -47,7 +46,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             using FileStream xmfFS = xmf.OpenRead();
             return GetXMFVersion(xmfFS);
         }
-#nullable restore
 
         /// <summary>
         /// Compares the version given from <c>versionBytes</c> with the one from xmfPath.

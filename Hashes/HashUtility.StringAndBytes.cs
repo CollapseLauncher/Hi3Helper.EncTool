@@ -1,6 +1,5 @@
 ﻿using System;
 
-#nullable enable
 namespace Hi3Helper.EncTool.Hashes;
 
 public partial class HashUtility<T>

@@ -12,7 +12,6 @@ using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Hi3Helper.EncTool.Parser.Sleepy
 {
     public enum FileInfoKind

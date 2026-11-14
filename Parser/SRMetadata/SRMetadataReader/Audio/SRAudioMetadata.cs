@@ -67,7 +67,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                     Size      = assetInfo?.Size ?? 0,
                     IsPatch   = assetInfo?.Patch ?? false
                 };
-            #nullable restore
 
 #if DEBUG
                 Console.WriteLine($"    {index} {assetInfo?.Path} -> {assetInfo?.Md5} | {assetInfo?.Size} bytes | IsPatch: {assetInfo?.Patch}");

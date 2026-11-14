@@ -4,7 +4,6 @@ using System.Threading;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Hi3Helper.EncTool.Hashes;
 
 public partial class CryptoHashUtility<T>

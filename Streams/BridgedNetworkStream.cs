@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 // ReSharper disable PartialTypeWithSinglePart
 // ReSharper disable CheckNamespace
 
-#nullable enable
 namespace Hi3Helper.EncTool;
 
 public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResponse, Stream networkStream) : Stream

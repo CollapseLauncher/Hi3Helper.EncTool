@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 // ReSharper disable InconsistentNaming
 // ReSharper disable CheckNamespace
 
-#nullable enable
 namespace Hi3Helper.EncTool;
 
 public static class CDNCacheUtil

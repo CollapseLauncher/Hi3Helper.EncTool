@@ -1,4 +1,5 @@
 ﻿using Hi3Helper.Data;
+using Hi3Helper.UABT;
 using Hi3Helper.UABT.Binary;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         public  byte[] PatchHash     { get; set; }
         public  string PatchName     { get; set; }
         public  int[]  OldVersion    { get; set; }
-        public  uint   PatchSize     { get; set; }
+        public  int    PatchSize     { get; set; }
         public  string OldVersionDir { get => $"{string.Join('_', OldVersion)}"; }
 
         public BlockOldPatchInfo Copy() => new()
@@ -36,9 +37,8 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 
     public class BlockPatchManifest
     {
-
-        public Dictionary<string, int> NewBlockCatalog = [];
-        public List<BlockPatchInfo>    PatchAsset { get; private set; }
+        public Dictionary<string, int> NewBlockCatalog { get; } = [];
+        public List<BlockPatchInfo>    PatchAsset      { get; } = [];
 
         public BlockPatchManifest(string filePath)
         {
@@ -59,51 +59,52 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         private void Initialize(Stream stream)
         {
             // Initialize the stream into the endian reader
-            EndianBinaryReader reader = new(stream);
+            using EndianBinaryReader reader = new(stream, EndianType.BigEndian, true);
 
             // Start deserializing
-            PatchAsset = DeserializeManifest(reader);
+            DeserializeManifest(reader);
         }
 
-        private List<BlockPatchInfo> DeserializeManifest(EndianBinaryReader reader)
+        private void DeserializeManifest(EndianBinaryReader reader)
         {
-            // Initialize return list
-            List<BlockPatchInfo> ret = [];
+            // Clear the reference directory
+            PatchAsset.Clear();
+            NewBlockCatalog.Clear();
 
             // Get the patch count
-            int patchCount = (int)reader.ReadUInt32();
-
-            // Clear the reference directory
-            NewBlockCatalog.Clear();
+            int patchCount = reader.ReadInt32();
 
             // Do loop to read patch information
             for (int i = 0; i < patchCount; i++)
             {
                 // Get the props
-                string oldHash   = TrimBlockName(reader.ReadString());
-                string newHash   = TrimBlockName(reader.ReadString());
-                string patchHash = TrimBlockName(reader.ReadString());
-                int[]  version   = TrimVersionStringToArray(reader.ReadString());
-                uint   patchSize = reader.ReadUInt32();
+                string oldFileName   = reader.ReadString();
+                string newFileName   = reader.ReadString();
+                string patchFileName = reader.ReadString();
+                int[]  version       = TrimVersionStringToArray(reader.ReadString());
+                int    patchSize     = reader.ReadInt32();
+
+                ReadOnlySpan<char> oldFileHash   = Path.GetFileNameWithoutExtension(oldFileName);
+                ReadOnlySpan<char> newFileHash   = Path.GetFileNameWithoutExtension(newFileName);
+                ReadOnlySpan<char> patchFileHash = Path.GetFileNameWithoutExtension(patchFileName);
 
                 // Check if the patch info reference already exist. If not, then
                 // add it as a new one.
-                string newHashKey = newHash + ".wmv";
-                if (NewBlockCatalog.TryAdd(newHashKey, ret.Count))
+                if (NewBlockCatalog.TryAdd(newFileName, PatchAsset.Count))
                 {
                     // Initialize the patch info
                     BlockPatchInfo info = new()
                     {
-                        NewName    = newHash + ".wmv",
-                        NewHash    = HexTool.HexToBytesUnsafe(newHash),
+                        NewName    = newFileName,
+                        NewHash    = HexTool.HexToBytesUnsafe(newFileHash),
                         PatchPairs =
                         [
                             new BlockOldPatchInfo
                             {
-                                OldName    = oldHash + ".wmv",
-                                OldHash    = HexTool.HexToBytesUnsafe(oldHash),
-                                PatchName  = patchHash + ".wmv",
-                                PatchHash  = HexTool.HexToBytesUnsafe(patchHash),
+                                OldName    = oldFileName,
+                                OldHash    = HexTool.HexToBytesUnsafe(oldFileHash),
+                                PatchName  = patchFileName,
+                                PatchHash  = HexTool.HexToBytesUnsafe(patchFileHash),
                                 OldVersion = version,
                                 PatchSize  = patchSize
                             }
@@ -111,39 +112,27 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                     };
 
                     // Add the index references and patch info
-                    ret.Add(info);
+                    PatchAsset.Add(info);
                 }
                 // Otherwise, try to add the old reference
                 else
                 {
                     // Get the index of the patch info
-                    int index = NewBlockCatalog[newHashKey];
+                    int index = NewBlockCatalog[newFileName];
 
                     // Get the reference and add another old patch info pairs
-                    BlockPatchInfo info = ret[index];
+                    BlockPatchInfo info = PatchAsset[index];
                     info.PatchPairs.Add(new BlockOldPatchInfo
                     {
-                        OldName    = oldHash + ".wmv",
-                        OldHash    = HexTool.HexToBytesUnsafe(oldHash),
-                        PatchName  = patchHash + ".wmv",
-                        PatchHash  = HexTool.HexToBytesUnsafe(patchHash),
+                        OldName    = oldFileName,
+                        OldHash    = HexTool.HexToBytesUnsafe(oldFileHash),
+                        PatchName  = patchFileName,
+                        PatchHash  = HexTool.HexToBytesUnsafe(patchFileHash),
                         OldVersion = version,
                         PatchSize  = patchSize
                     });
                 }
             }
-
-            // Return the value
-            return ret;
-        }
-
-        private static string TrimBlockName(ReadOnlySpan<char> name)
-        {
-            // Trim the filename without extension
-            ReadOnlySpan<char> split = Path.GetFileNameWithoutExtension(name);
-
-            // Return the trimmed filename
-            return new string(split);
         }
 
         private static int[] TrimVersionStringToArray(string version)

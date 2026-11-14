@@ -21,7 +21,6 @@ using System.Threading.Tasks;
 // ReSharper disable GrammarMistakeInComment
 // ReSharper disable InconsistentNaming
 
-#nullable enable
 namespace Hi3Helper.Data
 {
     public delegate ValueTask<TResult> GetSelectorSignedAsync<in TFrom, TResult>(TFrom item, CancellationToken token)
@@ -868,6 +867,7 @@ namespace Hi3Helper.Data
         /// <typeparam name="T">Struct type</typeparam>
         /// <param name="source">The source value.</param>
         /// <returns>The value with reversed endian.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ReverseEndianess<T>(this ref T source)
             where T : unmanaged, allows ref struct
         {
@@ -881,8 +881,23 @@ namespace Hi3Helper.Data
         /// </summary>
         /// <typeparam name="T">Struct type</typeparam>
         /// <param name="source">The source value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void ReverseEndianessInplace<T>(this ref T source)
             where T : unmanaged, allows ref struct =>
             new Span<byte>(Unsafe.AsPointer(ref source), sizeof(T)).Reverse();
+
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T* GetUnsafePointer<T>(this scoped ReadOnlySpan<T> span)
+            => (T*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T* GetUnsafePointer<T>(this scoped Span<T> span)
+            => (T*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T* GetUnsafePointer<T>(this T[] array)
+            => (T*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(array));
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
     }
 }

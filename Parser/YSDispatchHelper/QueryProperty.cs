@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
-#nullable enable
 namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
 {
     public class QueryProperty

@@ -36,7 +36,6 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
         All = 100
     }
 
-#nullable enable
     public class ManifestAssetInfo
     {
         public required string                       Name         { get; set; } // 0x10

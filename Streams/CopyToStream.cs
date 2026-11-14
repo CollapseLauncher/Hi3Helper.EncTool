@@ -5,7 +5,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Hi3Helper.EncTool;
 
 public sealed class CopyToStream(

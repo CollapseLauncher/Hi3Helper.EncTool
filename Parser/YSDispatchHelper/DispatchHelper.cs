@@ -1,5 +1,4 @@
-﻿#nullable enable
-using Hi3Helper.Data;
+﻿using Hi3Helper.Data;
 using Hi3Helper.EncTool.Parser.AssetIndex;
 using Hi3Helper.EncTool.Proto.Genshin;
 using Microsoft.Extensions.Logging;

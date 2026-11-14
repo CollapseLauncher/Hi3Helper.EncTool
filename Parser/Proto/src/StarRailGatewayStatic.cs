@@ -15,7 +15,6 @@ namespace Hi3Helper.EncTool.Proto.StarRail
     [JsonSerializable(typeof(DispatchGatewayProtoIdsInfo))]
     public partial class DispatchGatewayContext : JsonSerializerContext { }
 
-#nullable enable
     public class DispatchGatewayProtoIdsInfo
     {
         public Dictionary<string, uint>? dispatchInfo { get; set; }

@@ -9,7 +9,6 @@ using System.Text;
 // ReSharper disable IdentifierTypo
 // ReSharper disable UnusedMember.Global
 
-#nullable enable
 namespace Hi3Helper.EncTool.Parser.CacheParser;
 
 public enum CGPCKType : byte

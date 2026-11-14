@@ -17,7 +17,6 @@ using System.Threading.Tasks;
 // ReSharper disable StringLiteralTypo
 // ReSharper disable CommentTypo
 
-#nullable enable
 namespace Hi3Helper.EncTool.Parser.KianaDispatch
 {
     [JsonSerializable(typeof(KianaDispatch))]
