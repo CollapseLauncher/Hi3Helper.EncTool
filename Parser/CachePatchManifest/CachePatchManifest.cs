@@ -4,6 +4,7 @@ using Hi3Helper.UABT.Binary;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 #pragma warning disable IDE0130
@@ -83,31 +84,19 @@ public struct CachePatchInfo
     }
 }
 
-public class CachePatchManifest : IReadOnlyCollection<CachePatchInfo>
+public class CachePatchManifest : IReadOnlyDictionary<string, Dictionary<string, CachePatchInfo>>
 {
-    public List<CachePatchInfo> PatchAsset { get; } = [];
+    public static CachePatchManifest Empty => field ??= new CachePatchManifest();
 
-    public CachePatchManifest(string filePath)
+    private Dictionary<string, Dictionary<string, CachePatchInfo>> PatchAsset { get; }
+
+    private CachePatchManifest()
     {
-        using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        Initialize(fs);
+        PatchAsset = [];
     }
 
-    public CachePatchManifest(Stream stream, bool disposeStream = false)
+    public CachePatchManifest(Stream stream) : this()
     {
-        Initialize(stream);
-
-        if (disposeStream)
-        {
-            stream.Dispose();
-        }
-    }
-
-    private void Initialize(Stream stream)
-    {
-        // Initialize patch asset
-        PatchAsset.Clear();
-
         // Initialize the stream into the endian reader
         using EndianBinaryReader reader = new(stream, EndianType.BigEndian, true);
 
@@ -133,13 +122,28 @@ public class CachePatchManifest : IReadOnlyCollection<CachePatchInfo>
             ArgumentOutOfRangeException.ThrowIfLessThan(patchSize, 0);
 
             // Add it to list
-            PatchAsset.Add(new CachePatchInfo(oldName, newName, newHashMd5, patchMd5, patchSize));
+            ref Dictionary<string, CachePatchInfo>? cachePatchList =
+                ref CollectionsMarshal.GetValueRefOrAddDefault(PatchAsset, newName, out _);
+            (cachePatchList ??= []).Add(oldName, new CachePatchInfo(oldName, newName, newHashMd5, patchMd5, patchSize));
         }
     }
 
-    public IEnumerator<CachePatchInfo> GetEnumerator() => PatchAsset.GetEnumerator();
+    public IEnumerator<KeyValuePair<string, Dictionary<string, CachePatchInfo>>> GetEnumerator() => PatchAsset.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public int Count => PatchAsset.Count;
+
+    public bool ContainsKey(string key) => PatchAsset.ContainsKey(key);
+
+    public bool TryGetValue(string key, [NotNullWhen(true)] out Dictionary<string, CachePatchInfo>? value) => PatchAsset.TryGetValue(key, out value);
+
+    public Dictionary<string, CachePatchInfo> this[string key] => PatchAsset[key];
+
+    public IEnumerable<string> Keys => PatchAsset.Keys;
+
+    public IEnumerable<Dictionary<string, CachePatchInfo>> Values => PatchAsset.Values;
+
+    public Dictionary<string, Dictionary<string, CachePatchInfo>>.AlternateLookup<T> GetAlternateLookup<T>()
+        where T : notnull, allows ref struct => PatchAsset.GetAlternateLookup<T>();
 }
