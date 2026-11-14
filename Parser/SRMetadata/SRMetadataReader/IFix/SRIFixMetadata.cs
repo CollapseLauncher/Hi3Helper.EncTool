@@ -26,50 +26,48 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal static SRMetadataBase CreateInstance(string baseURL) => new SRIFixMetadata(baseURL);
 
-        internal override async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadClientProgress, string persistentPath, CancellationToken token, string localManifestPath)
+        internal override async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadClientProgress, string persistentPath, string localManifestPath, CancellationToken token)
         {
             PersistentPath = persistentPath;
-            using (SRMIMetadataReader _SRMIReader = new SRMIMetadataReader(BaseURL, ParentRemotePath, MetadataPath, SRMIID))
+            using SRMIMetadataReader _SRMIReader = new(BaseURL, ParentRemotePath, MetadataPath, SRMIID);
+            await _SRMIReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, localManifestPath, token);
+            _SRMIReader.Deserialize();
+            string metadataPath = Path.Combine(persistentPath, localManifestPath, _SRMIReader.AssetListFilename);
+            string metadataURL  = BaseURL + ParentRemotePath + '/' + _SRMIReader.AssetListFilename;
+
+            AssetProperty = new SRAssetProperty(metadataPath)
             {
-                await _SRMIReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, token, localManifestPath);
-                _SRMIReader.Deserialize();
-                string metadataPath = Path.Combine(persistentPath, localManifestPath, _SRMIReader.AssetListFilename);
-                string metadataURL = BaseURL + ParentRemotePath + '/' + _SRMIReader.AssetListFilename;
+                BaseURL           = BaseURL + ParentRemotePath,
+                MetadataRemoteURL = metadataURL,
+                MetadataRevision  = _SRMIReader.RemoteRevisionID,
+                MetadataLocalName = _SRMIReader.AssetListFilename
+            };
+            Magic  = _SRMIReader.Magic;
+            TypeID = _SRMIReader.TypeID;
 
-                AssetProperty = new SRAssetProperty(metadataPath);
-                AssetProperty.BaseURL = BaseURL + ParentRemotePath;
-                AssetProperty.MetadataRemoteURL = metadataURL;
-                AssetProperty.MetadataRevision = _SRMIReader.RemoteRevisionID;
-                AssetProperty.MetadataLocalName = _SRMIReader.AssetListFilename;
-                Magic = _SRMIReader.Magic;
-                TypeID = _SRMIReader.TypeID;
-
-                await downloadClient.PerformCopyToDownload(metadataURL, downloadClientProgress, AssetProperty.MetadataStream, token);
-                AssetProperty.MetadataStream.Position = 0;
-            }
+            await downloadClient.PerformCopyToDownload(metadataURL, downloadClientProgress, AssetProperty.MetadataStream, token);
+            AssetProperty.MetadataStream.Position = 0;
         }
 
         internal override void Deserialize()
         {
-            using (StreamReader reader = new StreamReader(AssetProperty.MetadataStream, Encoding.UTF8, true, -1, false))
+            using StreamReader reader = new(AssetProperty.MetadataStream, Encoding.UTF8, true, -1, false);
+            while (reader.ReadLine() is {} line)
             {
-                while (reader.ReadLine() is {} line)
+                string[] tuple = line.Split(',');
+                if (tuple[0] == "empty")
                 {
-                    string[] tuple = line.Split(',');
-                    if (tuple[0] == "empty")
-                    {
-                        Console.Write("SRIFix Cache returning empty! Skipping...\r\n");
-                        return;
-                    }
-                    AssetProperty.AssetList.Add(new SRAsset
-                    {
-                        AssetType = SRAssetType.IFix,
-                        Hash = HexTool.HexToBytesUnsafe(tuple[1]),
-                        Size = long.Parse(tuple[2]),
-                        LocalName = tuple[0],
-                        RemoteURL = BaseURL + ParentRemotePath + '/' + tuple[0]
-                    });
+                    Console.Write("SRIFix Cache returning empty! Skipping...\r\n");
+                    return;
                 }
+                AssetProperty.AssetList.Add(new SRAsset
+                {
+                    AssetType = SRAssetType.IFix,
+                    Hash      = HexTool.HexToBytesUnsafe(tuple[1]),
+                    Size      = long.Parse(tuple[2]),
+                    LocalName = tuple[0],
+                    RemoteURL = BaseURL + ParentRemotePath + '/' + tuple[0]
+                });
             }
         }
 

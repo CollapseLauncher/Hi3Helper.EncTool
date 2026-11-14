@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Security.Cryptography;
 
+#nullable enable
 namespace Hi3Helper.EncTool.Hashes;
 
 public partial class CryptoHashUtility<T>

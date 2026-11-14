@@ -133,7 +133,7 @@ namespace Hi3Helper.EncTool.Parser
         {
             // Check if the block catalog contains the key name.
             // If not, then throw.
-            if (!BlockIndexCatalog.TryGetValue(hash, out var value))
+            if (!BlockIndexCatalog.TryGetValue(hash, out uint value))
             {
                 throw new KeyNotFoundException($"Block: {hash} doesn't exist!");
             }

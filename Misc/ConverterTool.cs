@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -21,6 +22,7 @@ using System.Threading.Tasks;
 // ReSharper disable GrammarMistakeInComment
 // ReSharper disable InconsistentNaming
 
+#nullable enable
 namespace Hi3Helper.Data
 {
     public delegate ValueTask<TResult> GetSelectorSignedAsync<in TFrom, TResult>(TFrom item, CancellationToken token)
@@ -255,11 +257,11 @@ namespace Hi3Helper.Data
 
         public static unsafe Span<T> UnsafeUnlockSpan<T>(this ReadOnlySpan<T> span)
             where T : unmanaged
-            => new Span<T>(Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)), span.Length);
+            => new(Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)), span.Length);
 
         public static unsafe Span<T> UnsafeUnlockSpan<T>(this ReadOnlySpan<T> span, out void* ptr)
             where T : unmanaged
-            => new Span<T>(ptr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)), span.Length);
+            => new(ptr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span)), span.Length);
 
         // Reference: https://github.com/dotnet/aspnetcore/blob/c65dac77cf6540c81860a42fff41eb11b9804367/src/Shared/QueryStringEnumerable.cs#L169
         private static unsafe void NormalizePathUnsafeCore(Span<char> buffer, char replaceFrom, char replaceTo, void* state)
@@ -461,10 +463,10 @@ namespace Hi3Helper.Data
                             goto CopySegments;
                         }
 
-                        CreateStringFast:
+                    CreateStringFast:
                         // Perform a return string creation by how much data being written into the buffer by decrementing
                         // bufferWrittenPtr with initial base pointer, bufferPtr.
-                        string returnString = new string(bufferPtr, 0, (int)(bufferWrittenPtr - bufferPtr));
+                        string returnString = new(bufferPtr, 0, (int)(bufferWrittenPtr - bufferPtr));
                         // Then return the string
                         return returnString;
                     }
@@ -682,37 +684,37 @@ namespace Hi3Helper.Data
             };
 
             static double TryGetFromString(string str) =>
-                double.TryParse(str, out double result)
+                double.TryParse(str, CultureInfo.InvariantCulture, out double result)
                     ? result
                     : double.NaN;
         }
 
-        public static TFloat UnNanOrInfinity<TFloat>(this TFloat number)
-            where TFloat : IFloatingPoint<TFloat>
+        extension<TFloat>(TFloat number) where TFloat : IFloatingPoint<TFloat>
         {
-            if (TFloat.IsNaN(number) ||
-                TFloat.IsInfinity(number))
+            public TFloat UnNanOrInfinity()
             {
-                return TFloat.Zero;
+                if (TFloat.IsNaN(number) ||
+                    TFloat.IsInfinity(number))
+                {
+                    return TFloat.Zero;
+                }
+
+                return number;
             }
 
-            return number;
-        }
-
-        public static TTo TryGetInteger<TFrom, TTo>(this TFrom number)
-            where TFrom : IFloatingPoint<TFrom>
-            where TTo : IBinaryInteger<TTo>, IMinMaxValue<TTo>
-        {
-            if (!TFrom.IsFinite(number))
+            public TTo TryGetInteger<TTo>() where TTo : IBinaryInteger<TTo>, IMinMaxValue<TTo>
             {
-                return TTo.Zero;
+                if (!TFloat.IsFinite(number))
+                {
+                    return TTo.Zero;
+                }
+
+                TFloat min = TFloat.CreateChecked(TTo.MinValue);
+                TFloat max = TFloat.CreateChecked(TTo.MaxValue);
+
+                number = TFloat.Clamp(number, min, max);
+                return TTo.CreateTruncating(number);
             }
-
-            TFrom min = TFrom.CreateChecked(TTo.MinValue);
-            TFrom max = TFrom.CreateChecked(TTo.MaxValue);
-
-            number = TFrom.Clamp(number, min, max);
-            return TTo.CreateTruncating(number);
         }
 
         public static object GetDoubleValueTo(this double value, Type targetType)

@@ -10,8 +10,8 @@ namespace Hi3Helper.EncTool.Proto.StarRail
 {
     public sealed partial class StarRailDispatchStatic : IMessage<StarRailDispatchStatic>, IBufferMessage
     {
-        public static MessageParser<StarRailDispatchStatic> Parser { get; } = new MessageParser<StarRailDispatchStatic>(() => new StarRailDispatchStatic());
-        private UnknownFieldSet _unknownFields;
+        public static MessageParser<StarRailDispatchStatic> Parser { get; } = new(() => new StarRailDispatchStatic());
+        private       UnknownFieldSet                       _unknownFields;
 
         MessageDescriptor IMessage.Descriptor => null;
 
@@ -23,7 +23,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
             _unknownFields = UnknownFieldSet.Clone(other._unknownFields);
         }
 
-        public StarRailDispatchStatic Clone() => new StarRailDispatchStatic(this);
+        public StarRailDispatchStatic Clone() => new(this);
 
         private FieldCodec<RegionInfoStatic> _repeated_regionList_codec { get; } = GetFieldCodec();
 
@@ -38,7 +38,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
             return FieldCodec.ForMessage(tag, RegionInfoStatic.Parser);
         }
 
-        public RepeatedField<RegionInfoStatic> RegionList { get; set; } = new RepeatedField<RegionInfoStatic>();
+        public RepeatedField<RegionInfoStatic> RegionList { get; set; } = new();
 
         public override bool Equals(object other) => Equals(other as StarRailDispatchStatic);
 
@@ -112,9 +112,9 @@ namespace Hi3Helper.EncTool.Proto.StarRail
     public sealed partial class RegionInfoStatic : IMessage<RegionInfoStatic>, IBufferMessage
     {
         private UnknownFieldSet _unknownFields;
-        public static MessageParser<RegionInfoStatic> Parser { get; } = new MessageParser<RegionInfoStatic>(() => new RegionInfoStatic());
+        public static MessageParser<RegionInfoStatic> Parser { get; } = new(() => new RegionInfoStatic());
 
-        public Dictionary<string, string> ValuePairs = new Dictionary<string, string>
+        public Dictionary<string, string> ValuePairs = new()
         {
             { "name", "" },
             { "title", "" },
@@ -139,7 +139,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
             _unknownFields = UnknownFieldSet.Clone(other._unknownFields);
         }
 
-        public RegionInfoStatic Clone() => new RegionInfoStatic(this);
+        public RegionInfoStatic Clone() => new(this);
 
         public override bool Equals(object other) => Equals(other as RegionInfoStatic);
 

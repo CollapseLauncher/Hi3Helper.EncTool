@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable StringLiteralTypo
 
+#nullable enable
 namespace Hi3Helper.EncTool.Hashes;
 
 /// <summary>

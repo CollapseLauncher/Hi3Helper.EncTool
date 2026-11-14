@@ -106,32 +106,35 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
                 byte[] bufferOut = new byte[sizeOf];
 
                 // Get the struct array
-                AssetProperty[] assets = versionList
-                    .Select(x =>
-                    {
-                        var assetProperty = new AssetProperty
-                        {
-                            size = (uint)x.fileSize
-                        };
+                AssetProperty[] assets =
+                [
+                    .. versionList
+                       .Select(x =>
+                               {
+                                   AssetProperty assetProperty = new()
+                                   {
+                                       size = (uint)x.fileSize
+                                   };
 
-                        // Convert the MD5 hash into byte array and copy it into the struct
-                        Span<byte> hashPtr = new(assetProperty.hash, 16);
-                        byte[] md5Bytes = HexTool.HexToBytesUnsafe(x.md5);
+                                   // Convert the MD5 hash into byte array and copy it into the struct
+                                   Span<byte> hashPtr  = new(assetProperty.hash, 16);
+                                   byte[]     md5Bytes = HexTool.HexToBytesUnsafe(x.md5);
 
-                        md5Bytes.CopyTo(hashPtr);
+                                   md5Bytes.CopyTo(hashPtr);
 
-                        return assetProperty;
-                    }).ToArray();
+                                   return assetProperty;
+                               })
+                ];
 
                 // Serialize the AssetProperty struct array into the output buffer
-                ConverterTool.TrySerializeStruct<AssetProperty>(bufferOut, out _, assets.AsSpan());
+                ConverterTool.TrySerializeStruct(bufferOut, out _, assets.AsSpan());
 
                 // Write the size of the output buffer and output buffer itself
                 binaryWriter.Write(sizeOf);
                 writeOutStream.Write(bufferOut);
 
                 // Get the path array
-                string[] paths = versionList.Select(x => x.remoteName).ToArray()!;
+                string[] paths = [.. versionList.Select(x => x.remoteName)]!;
                 // Get the size of the path array
                 uint stringBytesLen = (uint)paths.Sum(x => (uint)x.Length + 1);
                 // Assign the size of the string output buffer and write the size into the writer

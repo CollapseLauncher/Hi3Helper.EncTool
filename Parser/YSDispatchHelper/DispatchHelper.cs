@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -17,6 +16,7 @@ using System.Threading.Tasks;
 // ReSharper disable StringLiteralTypo
 // ReSharper disable CommentTypo
 
+#nullable enable
 namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
 {
     [JsonSerializable(typeof(DispatchInfo))]
@@ -110,8 +110,8 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
 
         private void ParseGameResPkgProp(QueryProperty valProp)
         {
-            var jsonDesignData    = _gateway!.GatewayProperties!.RepoDesignDataJSON;
-            var jsonDesignDataSil = _gateway!.GatewayProperties!.RepoDesignDataSilenceJSON;
+            string  jsonDesignData    = _gateway!.GatewayProperties!.RepoDesignDataJSON;
+            string? jsonDesignDataSil = _gateway!.GatewayProperties!.RepoDesignDataSilenceJSON;
 #if DEBUG
             _logger?.LogDebug("[GenshinDispatchHelper::ParseGameResPkgProp] DesignData Response:" +
                               "\r\n\tDesignData:\r\n{jsonDesignData}" +
@@ -124,7 +124,7 @@ namespace Hi3Helper.EncTool.Parser.YSDispatchHelper
 
                 foreach (string designData in designDataArr)
                 {
-                    var designDataSer =
+                    PkgVersionProperties? designDataSer =
                         JsonSerializer.Deserialize(designData, DispatchHelperContext.Default.PkgVersionProperties);
                     // Only serialize data_versions
                     if (designDataSer is { remoteName: "data_versions" })

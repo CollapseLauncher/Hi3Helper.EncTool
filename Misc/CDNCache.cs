@@ -4,6 +4,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.IO.Hashing;
 using System.Linq;
@@ -22,6 +23,7 @@ using System.Threading.Tasks;
 // ReSharper disable InconsistentNaming
 // ReSharper disable CheckNamespace
 
+#nullable enable
 namespace Hi3Helper.EncTool;
 
 public class CDNCache
@@ -757,7 +759,7 @@ public class CDNCache
         byte[] hashOutput = ArrayPool<byte>.Shared.Rent(MaxHashLengthInBytes);
         bool isMatched = false;
 
-        etag = etag.ToLower();
+        etag = etag.ToLowerInvariant();
 
         try
         {
@@ -1062,7 +1064,7 @@ public class CDNCache
         }
 
         Span<char> loweredETag = stackalloc char[etagSpan.Length];
-        int        written     = etagSpan.ToLower(loweredETag, null);
+        int        written     = etagSpan.ToLower(loweredETag, CultureInfo.InvariantCulture);
 
         etag = loweredETag[..written].ToString();
         return true;

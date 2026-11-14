@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #endif
 
+#nullable enable
 namespace Hi3Helper.Data
 {
     public static

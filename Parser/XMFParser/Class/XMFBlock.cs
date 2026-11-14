@@ -119,7 +119,7 @@ namespace Hi3Helper.EncTool.Parser
         /// <exception cref="KeyNotFoundException"></exception>
         public XMFAsset GetAssetByName(string name)
         {
-            if (!AssetIndexCatalog.TryGetValue(name, out var value))
+            if (!AssetIndexCatalog.TryGetValue(name, out uint value))
             {
                 throw new KeyNotFoundException($"Asset \"{name}\" in block: {BlockName} doesn't exist!");
             }

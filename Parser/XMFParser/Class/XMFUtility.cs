@@ -5,6 +5,7 @@ using System.IO;
 // ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
 
+#nullable enable
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
     public static class XMFUtility
@@ -63,7 +64,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
             ReadOnlySpan<int> versionXMF = GetXMFVersion(xmfPath);
 
             return (versionXMF[0] == versionBytes[0] && versionXMF[1] == versionBytes[1] && versionXMF[2] == versionBytes[2] && (!use4LengthArrayCompare || versionXMF[3] == versionBytes[3]),
-                    versionXMF.ToArray());
+                    [.. versionXMF]);
         }
     }
 }

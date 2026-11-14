@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 // ReSharper disable CheckNamespace
 
+#nullable enable
 namespace Hi3Helper.EncTool;
 
 /// <summary>

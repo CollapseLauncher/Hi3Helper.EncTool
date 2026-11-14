@@ -1,12 +1,12 @@
 ﻿using Hi3Helper.Data;
 using System;
-using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace Hi3Helper.EncTool.Enc;
 
+#nullable enable
 public sealed class MhyEncTool
 {
     public static bool TryGetSalt(

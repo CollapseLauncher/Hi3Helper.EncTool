@@ -191,7 +191,7 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             {
                 foreach (KeyValuePair<string, ConcurrentBag<AssetBundleReferenceData>> item in dictionary)
                 {
-                    foreach (var data in item.Value)
+                    foreach (AssetBundleReferenceData data in item.Value)
                     {
                         yield return data;
                     }
@@ -204,9 +204,9 @@ namespace Hi3Helper.EncTool.Parser.AssetIndex
             AssetBundleReferenceKvpData[] kvp = new AssetBundleReferenceKvpData[dictionary.Count];
             int dataSize = sizeof(AssetBundleReferenceData);
 
-            foreach ((var index, (var key, ConcurrentBag<AssetBundleReferenceData> value)) in dictionary.Index())
+            foreach ((int index, (string key, ConcurrentBag<AssetBundleReferenceData> value)) in dictionary.Index())
             {
-                AssetBundleReferenceKvpData kvpData = new AssetBundleReferenceKvpData
+                AssetBundleReferenceKvpData kvpData = new()
                 {
                     DataCount = value.Count,
                     DataSize = dataSize

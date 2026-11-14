@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 // ReSharper disable UnusedMember.Global
 // ReSharper disable CollectionNeverQueried.Global
 
+#nullable enable
 namespace Hi3Helper.EncTool.Parser.AssetMetadata;
 
 [StructLayout(LayoutKind.Sequential, Pack = 2)]

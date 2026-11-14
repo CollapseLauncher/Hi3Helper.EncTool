@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 // ReSharper disable PartialTypeWithSinglePart
 // ReSharper disable CheckNamespace
 
+#nullable enable
 namespace Hi3Helper.EncTool;
 
 public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResponse, Stream networkStream) : Stream
@@ -38,8 +39,8 @@ public sealed partial class BridgedNetworkStream(HttpResponseMessage networkResp
         {
             try
             {
-                var head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, requestMessage.RequestUri),
-                                                  token);
+                HttpResponseMessage head = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, requestMessage.RequestUri),
+                                                                  token);
                 response.Content.Headers.ContentLength = head.Content.Headers.ContentLength;
             }
             catch

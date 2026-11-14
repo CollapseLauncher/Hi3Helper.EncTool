@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Hi3Helper.EncTool.Streams;
 
 /// <summary>Provides a nop stream but with position tracking while reading or writing files.</summary>

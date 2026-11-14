@@ -109,7 +109,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             if (string.IsNullOrEmpty(BaseURL)) throw new NullReferenceException("BaseURL is empty!");
         }
 
-        internal virtual async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string persistentPath, CancellationToken token, string localManifestPath)
+        internal virtual async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string persistentPath, string localManifestPath, CancellationToken token)
         {
             PersistentPath = persistentPath;
             string metadataPath = Path.Combine(PersistentPath, localManifestPath, MetadataPath.TrimStart('/'));
@@ -171,7 +171,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
         internal abstract void Dispose(bool Disposing);
         internal static string GetMetadataPathFromArchiveInfo(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string key)
         {
-            if (!dictArchiveInfo.TryGetValue(key, out var archiveInfo)) throw new KeyNotFoundException($"Key: {key} in ArchiveInfo dictionary does not exist!");
+            if (!dictArchiveInfo.TryGetValue(key, out SRDispatchArchiveInfo archiveInfo)) throw new KeyNotFoundException($"Key: {key} in ArchiveInfo dictionary does not exist!");
 
             ReadOnlySpan<char> baseName = archiveInfo.FileName.AsSpan()[2..];
 

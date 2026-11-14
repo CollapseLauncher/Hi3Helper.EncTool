@@ -180,7 +180,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
 #endif
 
             // Parse M_ArchiveV first
-            await DownloadAndParseArchiveInfo(downloadClient, downloadProgressDelegate, "AssetBundleVersionUpdateUrl", archiveURL, localPath);
+            await DownloadAndParseArchiveInfo(downloadClient, downloadProgressDelegate, "AssetBundleVersionUpdateUrl", archiveURL, localPath, token);
 
             /* ===============================
              * Design_Archive_V region
@@ -209,7 +209,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 Console.WriteLine($"    NativeDataRefUrl: {localNativeDataRefUrl}");
                 Console.WriteLine($"    NativeDataRefPath: {localNativeDataRefPath}");
 #endif
-                await DownloadArchiveInfo(downloadClient, downloadProgressDelegate, localNativeDataRefUrl, localNativeDataRefPath);
+                await DownloadArchiveInfo(downloadClient, downloadProgressDelegate, localNativeDataRefUrl, localNativeDataRefPath, token);
 
                 string localNativeDataResName = NativeDataDataDictKey + nativeDataArchiveInfo.ContentHash + ".bytes";
                 string localNativeDataResUrl  = nativeDataArchiveInfo.FullAssetsDownloadUrl.CombineURLFromString(localNativeDataResName);
@@ -218,11 +218,11 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata
                 Console.WriteLine($"    NativeDataResUrl: {localNativeDataResUrl}");
                 Console.WriteLine($"    NativeDataResPath: {localNativeDataResPath}");
 #endif
-                await DownloadArchiveInfo(downloadClient, downloadProgressDelegate, localNativeDataResUrl, localNativeDataResPath);
+                await DownloadArchiveInfo(downloadClient, downloadProgressDelegate, localNativeDataResUrl, localNativeDataResPath, token);
             }
         }
 
-        private async Task DownloadArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string archiveURL, string localPath, CancellationToken token = default)
+        private static async Task DownloadArchiveInfo(DownloadClient downloadClient, DownloadProgressDelegate downloadProgressDelegate, string archiveURL, string localPath, CancellationToken token = default)
         {
             EnsureDirectoryExistence(localPath);
             await using FileStream stream = new(localPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite);

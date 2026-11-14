@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Hi3Helper.EncTool.WindowTool
 {
     public class ResizableWindowHook
@@ -81,7 +82,7 @@ namespace Hi3Helper.EncTool.WindowTool
                             targetWindow.RefreshCurrentPosition();
                             if (height != null && width != null)
                             {
-                                logger?.LogDebug("Moving window to posX: {oldPos} posY: {oldPos} W: {width} H: {height}", oldPos.X, oldPos.Y, width, height);
+                                logger?.LogDebug("Moving window to posX: {oldPosX} posY: {oldPosY} W: {width} H: {height}", oldPos.X, oldPos.Y, width, height);
                                 targetWindow.ChangePosition(oldPos.X, oldPos.Y, oldPos.Width, oldPos.Height);
                             }
 

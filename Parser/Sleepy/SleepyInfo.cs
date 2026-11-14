@@ -12,6 +12,7 @@ using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Hi3Helper.EncTool.Parser.Sleepy
 {
     public enum FileInfoKind
@@ -38,7 +39,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
         }
 
         public static SleepyInfo CreateSleepyInfo(HttpClient httpClient, RSA rsaInstance, SleepyProperty property) =>
-            new SleepyInfo(httpClient, rsaInstance, property);
+            new(httpClient, rsaInstance, property);
 
         public async Task Initialize(CancellationToken token = default)
         {
@@ -191,7 +192,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
         private async Task<T?> GetJsonFromUrl<T>(Uri url, Dictionary<string, string> httpHeader, JsonTypeInfo<T?> typeInfo, CancellationToken token = default)
             where T : class
         {
-            using HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+            using HttpRequestMessage requestMessage = new(HttpMethod.Get, url);
             foreach (KeyValuePair<string, string> headerKvp in httpHeader)
             {
                 requestMessage.Headers.Add(headerKvp.Key, headerKvp.Value);

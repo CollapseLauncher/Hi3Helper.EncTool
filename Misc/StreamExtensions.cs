@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 // ReSharper disable once CheckNamespace
+#nullable enable
 namespace Hi3Helper.EncTool;
 
 public static class StreamExtensions
@@ -34,7 +35,7 @@ public static class StreamExtensions
             CDNCacheResult     result       = await client.TryGetCachedStreamFrom(url, null, token);
             await using Stream resultStream = result.Stream;
 
-            DownloadProgress progress = new DownloadProgress
+            DownloadProgress progress = new()
             {
                 BytesTotal      = resultStream.Length,
                 BytesDownloaded = 0

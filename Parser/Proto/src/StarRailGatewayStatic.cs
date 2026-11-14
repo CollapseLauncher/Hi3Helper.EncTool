@@ -10,6 +10,7 @@ using System.Text.Json.Serialization;
 
 // Resharper disable all
 
+#nullable enable
 namespace Hi3Helper.EncTool.Proto.StarRail
 {
     [JsonSerializable(typeof(DispatchGatewayProtoIdsInfo))]
@@ -60,12 +61,12 @@ namespace Hi3Helper.EncTool.Proto.StarRail
 
     public sealed partial class StarRailGatewayStatic : IMessage<StarRailGatewayStatic>, IBufferMessage
     {
-        public static MessageParser<StarRailGatewayStatic> Parser { get; } = new MessageParser<StarRailGatewayStatic>(() => new StarRailGatewayStatic());
+        public static MessageParser<StarRailGatewayStatic> Parser { get; } = new(() => new StarRailGatewayStatic());
 
         private UnknownFieldSet _unknownFields { get; set; }
         MessageDescriptor IMessage.Descriptor => null;
 
-        public Dictionary<string, string> ValuePairs = new Dictionary<string, string>
+        public Dictionary<string, string> ValuePairs = new()
         {
             { "AssetBundleVersionUpdateUrl", "$/asb/" },
             { "AssetBundleVersionUpdateUrlAlt", "$/asb/" },
@@ -84,7 +85,7 @@ namespace Hi3Helper.EncTool.Proto.StarRail
             _unknownFields = UnknownFieldSet.Clone(other._unknownFields);
         }
 
-        public StarRailGatewayStatic Clone() => new StarRailGatewayStatic(this);
+        public StarRailGatewayStatic Clone() => new(this);
 
         public override bool Equals(object other) => Equals(other as StarRailGatewayStatic);
 
@@ -166,13 +167,13 @@ namespace Hi3Helper.EncTool.Proto.StarRail
 
         public void MergeFrom(CodedInputStream input) => input.ReadRawMessage(this);
 
-        uint                       parserTag;
-        Dictionary<string, uint>   gatewayPairs = StarRailDispatchGatewayProps.ProtoIDs.gatewayInfo;
+        uint                              parserTag;
+        readonly Dictionary<string, uint> gatewayPairs = StarRailDispatchGatewayProps.ProtoIDs.gatewayInfo;
         
         void IBufferMessage.InternalMergeFrom(ref ParseContext input)
         {
             StarRailDispatchGatewayProps.EnsureProtoIdInitialized();
-            List<string> values = new List<string>();
+            List<string> values = [];
             
             while ((parserTag = input.ReadTag()) != 0)
             {

@@ -6,6 +6,7 @@ using System.Text;
 #pragma warning disable IDE0130
 
 // ReSharper disable CheckNamespace
+#nullable enable
 namespace Hi3Helper.EncTool;
 
 /// <summary>

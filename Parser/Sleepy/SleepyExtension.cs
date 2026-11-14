@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 // ReSharper disable PartialTypeWithSinglePart
 // ReSharper disable UnusedMember.Global
+// ReSharper disable GrammarMistakeInComment
 
 namespace Hi3Helper.EncTool.Parser.Sleepy
 {
@@ -297,7 +298,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
                                 + JsonConstants.UnicodePlane01StartValue;
                         }
 
-                        var  rune    = new Rune(scalar);
+                        Rune rune    = new(scalar);
                         bool success = rune.TryEncodeToUtf8(destination[written..], out int bytesWritten);
                         if (!success)
                         {
@@ -311,7 +312,7 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
                 if (++idx == source.Length)
                 {
-                    goto Success;
+                    break;
                 }
 
                 if (source[idx] == JsonConstants.BackSlash)
@@ -357,11 +358,10 @@ namespace Hi3Helper.EncTool.Parser.Sleepy
 
                 if (idx == source.Length)
                 {
-                    goto Success;
+                    break;
                 }
             }
 
-            Success:
             return true;
 
         DestinationTooShort:

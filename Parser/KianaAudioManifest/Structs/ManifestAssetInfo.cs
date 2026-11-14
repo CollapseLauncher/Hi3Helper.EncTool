@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 // ReSharper disable UnusedMember.Global
 // ReSharper disable CheckNamespace
 
+#nullable enable
 namespace Hi3Helper.EncTool.Parser.AssetMetadata
 {
     [JsonConverter(typeof(JsonStringEnumConverter<AudioLanguageType>))]

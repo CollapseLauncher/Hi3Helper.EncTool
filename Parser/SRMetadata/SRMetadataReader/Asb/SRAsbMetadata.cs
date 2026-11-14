@@ -32,7 +32,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
         internal static SRMetadataBase CreateInstance(Dictionary<string, SRDispatchArchiveInfo> dictArchiveInfo, string baseURL, string baseURLAlt) => new SRAsbMetadata(dictArchiveInfo, baseURL, baseURLAlt);
 
-        internal override async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadClientProgress, string persistentPath, CancellationToken token, string localManifestPath)
+        internal override async Task GetRemoteMetadata(DownloadClient downloadClient, DownloadProgressDelegate downloadClientProgress, string persistentPath, string localManifestPath, CancellationToken token)
         {
             PersistentPath = persistentPath;
             MetadataPath   = GetMetadataPathFromArchiveInfo(_dispatchArchiveInfo, MetadataRemoteName);
@@ -48,7 +48,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
             {
                 using (SRAMBMMetadataReader _SRAMReader = new(BaseURL, ParentRemotePath, MetadataPath, MetadataType))
                 {
-                    await _SRAMReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, token, "Asb\\Windows");
+                    await _SRAMReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, "Asb\\Windows", token);
                     _SRAMReader.Deserialize();
                     Magic  = _SRAMReader.Magic;
                     TypeID = _SRAMReader.TypeID;
@@ -64,7 +64,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
 
                 using (SRAMBMMetadataReader _SRAMReader = new(BaseURL, ParentRemotePath, MetadataStartPath, MetadataType))
                 {
-                    await _SRAMReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, token, "Asb\\Windows");
+                    await _SRAMReader.GetRemoteMetadata(downloadClient, downloadClientProgress, persistentPath, "Asb\\Windows", token);
                 }
 
                 return;
@@ -117,7 +117,7 @@ namespace Hi3Helper.EncTool.Parser.AssetMetadata.SRMetadataAsset
                 SRAsset asset = new()
                 {
                     AssetType = AssetType,
-                    Hash      = hash.ToArray(),
+                    Hash      = [.. hash],
                     LocalName = assetName,
                     RemoteURL = (isStart ? AssetProperty.StartBaseURL : AssetProperty.BaseURL) + '/' + assetName,
                     Size      = size
