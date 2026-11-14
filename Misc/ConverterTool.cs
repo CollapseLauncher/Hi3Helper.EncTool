@@ -400,8 +400,8 @@ namespace Hi3Helper.Data
             // 
             // Once we get a length of the base URL, get a sum of all lengths
             // of the segment's span.
-            int baseUrlLen = baseUrl.Length - (baseUrl[^1] == '/' ? 1 : 0);
-            int bufferLen = baseUrlLen + SumSegmentsLength(segments);
+            int  baseUrlLen  = baseUrl.Length > 0 ? baseUrl.Length - (baseUrl[^1] == '/' ? 1 : 0) : 0;
+            int  bufferLen   = baseUrlLen + SumSegmentsLength(segments);
             uint toWriteBase = (uint)baseUrlLen;
 
             // Allocate temporary buffer from the shared ArrayPool<T>
