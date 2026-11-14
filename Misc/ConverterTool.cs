@@ -770,9 +770,9 @@ namespace Hi3Helper.Data
         public static ReadOnlySpan<char> GetSplit(this string?              str,
                                                   Index                     index,
                                                   params ReadOnlySpan<char> separators)
-            => GetSplit(str.AsSpan(), index, separators);
+            => str.AsSpan().GetSplit(index, separators);
 
-        public static ReadOnlySpan<char> GetSplit(ReadOnlySpan<char>        str,
+        public static ReadOnlySpan<char> GetSplit(this ReadOnlySpan<char>   str,
                                                   Index                     index,
                                                   params ReadOnlySpan<char> separators)
             => GetSplit(str,
