@@ -4,7 +4,6 @@ using Hi3Helper.Win32.Native.Enums;
 using Hi3Helper.Win32.Native.LibraryImport;
 using Hi3Helper.Win32.Native.Structs;
 using System;
-using System.Runtime.CompilerServices;
 // ReSharper disable CommentTypo
 // ReSharper disable IdentifierTypo
 // ReSharper disable UnusedMember.Global
@@ -13,20 +12,20 @@ namespace Hi3Helper.EncTool.WindowTool
 {
     internal unsafe struct WindowProperty
     {
-        public nint       Hwnd;
-        public int        ProcId;
-        public WS_STYLE   InitialStyle;
-        public WS_STYLE   CurrentStyle;
-        public WindowRect InitialPos;
-        public WindowRect CurrentPos;
-        public bool       IsEmpty;
+        public nint     Hwnd;
+        public int      ProcId;
+        public WS_STYLE InitialStyle;
+        public WS_STYLE CurrentStyle;
+        public Rect     InitialPos;
+        public Rect     CurrentPos;
+        public bool     IsEmpty;
 
         public WindowProperty()
         {
             IsEmpty = true;
         }
 
-        public WindowProperty(nint hwndFrom, int procIdFrom, WS_STYLE initialStyleFrom, WindowRect windowRectFrom)
+        public WindowProperty(nint hwndFrom, int procIdFrom, WS_STYLE initialStyleFrom, Rect windowRectFrom)
         {
             if (hwndFrom == IntPtr.Zero || procIdFrom == 0)
                 return;
@@ -72,15 +71,18 @@ namespace Hi3Helper.EncTool.WindowTool
         public void ChangePosition(int? x = null, int? y = null, int? width = null, int? height = null)
         {
             // Assign a number with the current position if one of the arguments is null
-            x ??= CurrentPos.X;
-            y ??= CurrentPos.Y;
-            width ??= CurrentPos.Width;
+            x      ??= CurrentPos.X;
+            y      ??= CurrentPos.Y;
+            width  ??= CurrentPos.Width;
             height ??= CurrentPos.Height;
 
+            CurrentPos.X      = x.Value;
+            CurrentPos.Y      = y.Value;
+            CurrentPos.Width  = width.Value;
+            CurrentPos.Height = height.Value;
+
             // Assign the current value of the currentPos and call the SetWindowPos function
-            // ReSharper disable ConstantNullCoalescingCondition
-            PInvoke.SetWindowPos(Hwnd, 0, CurrentPos.X = x ?? 0, CurrentPos.Y = y ?? 0, CurrentPos.Width = width ?? 0, CurrentPos.Height = height ?? 0, SWP_FLAGS.SWP_NOZORDER);
-            // ReSharper restore ConstantNullCoalescingCondition
+            PInvoke.SetWindowPos(Hwnd, 0, CurrentPos.X, CurrentPos.Y, CurrentPos.Width, CurrentPos.Height, SWP_FLAGS.SWP_NOZORDER);
         }
 
         public bool IsWindowBorderlessFullscreen()
@@ -99,9 +101,9 @@ namespace Hi3Helper.EncTool.WindowTool
             return hasMask != maskedCurrentStyle;
         }
 
-        public void RefreshCurrentStyle() => CurrentStyle = PInvoke.GetWindowLong(Hwnd, GWL_INDEX.GWL_STYLE);
+        public void RefreshCurrentStyle() => PInvoke.GetWindowLong(Hwnd, GWL_INDEX.GWL_STYLE, out CurrentStyle);
 
-        public void RefreshCurrentPosition() => PInvoke.GetWindowRect(Hwnd, (WindowRect*)Unsafe.AsPointer(ref CurrentPos));
+        public void RefreshCurrentPosition() => PInvoke.GetWindowRect(Hwnd, out CurrentPos);
 
         public void ResetStyleToDefault()
         {

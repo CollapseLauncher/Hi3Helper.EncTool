@@ -5,7 +5,6 @@ using Hi3Helper.Win32.Native.LibraryImport;
 using Hi3Helper.Win32.Native.Structs;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,7 +30,7 @@ namespace Hi3Helper.EncTool.WindowTool
 
                 // Assign the current style and initial pos + size of the window to old variable
                 WS_STYLE oldStyle = targetWindow.InitialStyle;
-                WindowRect oldPos = targetWindow.InitialPos;
+                Rect     oldPos   = targetWindow.InitialPos;
 
                 // Always set the window border and resizable flag to true
                 targetWindow.ToggleBorder(true);
@@ -48,7 +47,7 @@ namespace Hi3Helper.EncTool.WindowTool
 
                     // Get the current style and pos + size of the window
                     WS_STYLE curStyle = targetWindow.CurrentStyle;
-                    WindowRect curPos = targetWindow.CurrentPos;
+                    Rect     curPos   = targetWindow.CurrentPos;
 
                     // Check if the window is in a borderless fullscreen (by checking if it doesn't have SYS_MENU flag)
                     // and the style is changed, then reset the style and pos + size to the last state.
@@ -71,7 +70,7 @@ namespace Hi3Helper.EncTool.WindowTool
 
                             // If reset to the initial style is required and the pos + size is changed,
                             // then reset the pos + size to its initial style
-                            if (isNeedResetOnInit && !curPos.Equals(ref oldPos))
+                            if (isNeedResetOnInit && !curPos.Equals(oldPos))
                             {
                                 isNeedResetOnInit = false;
                                 targetWindow.ResetPosToDefault();
@@ -142,11 +141,8 @@ namespace Hi3Helper.EncTool.WindowTool
                 }
 
                 // If the return process is assigned, then get the initial size + position and style of the window
-                WindowRect  initialRect    = new();
-                WindowRect* initialRectPtr = (WindowRect*)Unsafe.AsPointer(ref initialRect);
-
-                PInvoke.GetWindowRect(windowHandle, initialRectPtr);
-                WS_STYLE initialStyle = PInvoke.GetWindowLong(windowHandle, GWL_INDEX.GWL_STYLE);
+                PInvoke.GetWindowRect(windowHandle, out Rect initialRect);
+                PInvoke.GetWindowLong(windowHandle, GWL_INDEX.GWL_STYLE, out WS_STYLE initialStyle);
 
                 logger?.LogDebug("Got process handle with name: {processName} (PID: {processId}) - (WindowHandle at: 0x{windowHandle:x})", processName, processId, windowHandle);
                 logger?.LogDebug("Initial window style enum is: 0x{initialStyle:x}\t({inHex})", initialStyle, ConverterTool.ToBinaryString((uint)initialStyle));
